@@ -1,0 +1,4552 @@
+databaseChangeLog:
+- changeSet:
+    id: 1771552209546-1
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: admin_reviews_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: comments
+            type: TEXT
+        - column:
+            name: rejection_reason
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: reviewer_id
+            type: BIGINT
+        tableName: admin_reviews
+- changeSet:
+    id: 1771552209546-2
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_agenda_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: description
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: ends_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: event_type
+            type: VARCHAR(50)
+        - column:
+            name: location
+            type: VARCHAR(500)
+        - column:
+            name: notes
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: starts_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: title
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            name: visit_id
+            type: BIGINT
+        tableName: agent_agenda
+- changeSet:
+    id: 1771552209546-3
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_clients_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: max_bathrooms
+            type: INTEGER
+        - column:
+            name: min_bathrooms
+            type: INTEGER
+        - column:
+            name: max_bedrooms
+            type: INTEGER
+        - column:
+            name: min_bedrooms
+            type: INTEGER
+        - column:
+            name: max_budget
+            type: numeric(38, 2)
+        - column:
+            name: min_budget
+            type: numeric(38, 2)
+        - column:
+            name: last_contact_date
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: notes
+            type: TEXT
+        - column:
+            name: offers_count
+            type: INTEGER
+        - column:
+            name: preferred_contact_method
+            type: VARCHAR(20)
+        - column:
+            name: priority
+            type: VARCHAR(20)
+        - column:
+            name: status
+            type: VARCHAR(50)
+        - column:
+            name: tags
+            type: JSONB
+        - column:
+            name: visited_properties_count
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: agent_clients
+- changeSet:
+    id: 1771552209546-4
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_profiles_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: avg_rating
+            type: numeric(3, 2)
+        - column:
+            name: bio
+            type: TEXT
+        - column:
+            name: company_name
+            type: VARCHAR(255)
+        - column:
+            name: experience_years
+            type: INTEGER
+        - column:
+            name: license_number
+            type: VARCHAR(100)
+        - column:
+            name: total_reviews
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: agent_profiles
+- changeSet:
+    id: 1771552209546-5
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_reviews_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: comment
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: rating
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            name: property_id
+            type: BIGINT
+        tableName: agent_reviews
+- changeSet:
+    id: 1771552209546-6
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: alerts_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: alert_type
+            type: VARCHAR(50)
+        - column:
+            name: message
+            type: TEXT
+        - column:
+            name: read_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: property_id
+            type: BIGINT
+        - column:
+            name: search_preference_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: alerts
+- changeSet:
+    id: 1771552209546-7
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: audit_logs_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: action
+            type: VARCHAR(50)
+        - column:
+            name: entity_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: entity_type
+            type: VARCHAR(100)
+        - column:
+            name: ip_address
+            type: VARCHAR(45)
+        - column:
+            name: new_values
+            type: JSONB
+        - column:
+            name: old_values
+            type: JSONB
+        - column:
+            name: user_agent
+            type: TEXT
+        - column:
+            name: user_id
+            type: BIGINT
+        tableName: audit_logs
+- changeSet:
+    id: 1771552209546-8
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: client_interactions_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: note
+            type: TEXT
+        - column:
+            name: subject
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            name: agent_client_id
+            type: BIGINT
+        - column:
+            name: external_client_id
+            type: BIGINT
+        tableName: client_interactions
+- changeSet:
+    id: 1771552209546-9
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: contract_signatures_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: ip_address
+            type: VARCHAR(45)
+        - column:
+            constraints:
+              nullable: false
+            name: role
+            type: VARCHAR(50)
+        - column:
+            name: signature_data
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: signature_type
+            type: VARCHAR(50)
+        - column:
+            name: signed_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: contract_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: signer_id
+            type: BIGINT
+        tableName: contract_signatures
+- changeSet:
+    id: 1771552209546-10
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: contract_templates_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: active
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: content
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: contract_type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: template_version
+            type: VARCHAR(20)
+        tableName: contract_templates
+- changeSet:
+    id: 1771552209546-11
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: contracts_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: amount
+            type: numeric(12, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: contract_type
+            type: VARCHAR(50)
+        - column:
+            name: document_url
+            type: VARCHAR(500)
+        - column:
+            name: end_date
+            type: date
+        - column:
+            name: start_date
+            type: date
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            name: terms
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: buyer_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: seller_id
+            type: BIGINT
+        - column:
+            name: template_id
+            type: BIGINT
+        tableName: contracts
+- changeSet:
+    id: 1771552209546-12
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: documents_uploaded_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: document_type
+            type: VARCHAR(50)
+        - column:
+            name: file_size
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: file_url
+            type: VARCHAR(500)
+        - column:
+            name: mime_type
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: rejection_reason
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: reservation_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: uploaded_by_id
+            type: BIGINT
+        tableName: documents_uploaded
+- changeSet:
+    id: 1771552209546-13
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: external_clients_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: email
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: notes
+            type: TEXT
+        - column:
+            name: origin
+            type: VARCHAR(100)
+        - column:
+            name: phone
+            type: VARCHAR(20)
+        - column:
+            name: tags
+            type: JSONB
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        tableName: external_clients
+- changeSet:
+    id: 1771552209546-14
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: favorites_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: favorites
+- changeSet:
+    id: 1771552209546-15
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: lead_interactions_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: note
+            type: TEXT
+        - column:
+            name: subject
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: lead_id
+            type: BIGINT
+        - column:
+            name: new_status_id
+            type: BIGINT
+        - column:
+            name: old_status_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: performed_by_id
+            type: BIGINT
+        tableName: lead_interactions
+- changeSet:
+    id: 1771552209546-16
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: leads_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: email
+            type: VARCHAR(255)
+        - column:
+            name: metadata
+            type: JSONB
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        - column:
+            name: notes
+            type: TEXT
+        - column:
+            name: phone
+            type: VARCHAR(20)
+        - column:
+            name: source
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: status_id
+            type: BIGINT
+        - column:
+            name: user_id
+            type: BIGINT
+        tableName: leads
+- changeSet:
+    id: 1771552209546-17
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: locations_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: city
+            type: VARCHAR(100)
+        - column:
+            name: country
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: department
+            type: VARCHAR(100)
+        - column:
+            name: lat
+            type: numeric(10, 8)
+        - column:
+            name: lng
+            type: numeric(11, 8)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        tableName: locations
+- changeSet:
+    id: 1771552209546-18
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: messages_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: content
+            type: TEXT
+        - column:
+            name: read_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: parent_id
+            type: BIGINT
+        - column:
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: receiver_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: sender_id
+            type: BIGINT
+        tableName: messages
+- changeSet:
+    id: 1771552209546-19
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: notifications_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: action_url
+            type: VARCHAR(500)
+        - column:
+            name: data
+            type: JSONB
+        - column:
+            constraints:
+              nullable: false
+            name: message
+            type: TEXT
+        - column:
+            name: read_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: title
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: notifications
+- changeSet:
+    id: 1771552209546-20
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: offers_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: amount
+            type: numeric(12, 2)
+        - column:
+            name: counter_offer_amount
+            type: numeric(12, 2)
+        - column:
+            name: expires_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: message
+            type: TEXT
+        - column:
+            name: rejection_reason
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: buyer_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: offers
+- changeSet:
+    id: 1771552209546-21
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: properties_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: address
+            type: VARCHAR(500)
+        - column:
+            name: availability
+            type: VARCHAR(50)
+        - column:
+            name: bathrooms
+            type: numeric(3, 1)
+        - column:
+            name: bedrooms
+            type: INTEGER
+        - column:
+            name: built_area
+            type: numeric(10, 2)
+        - column:
+            name: category
+            type: VARCHAR(50)
+        - column:
+            name: floor_material
+            type: VARCHAR(100)
+        - column:
+            name: roof_material
+            type: VARCHAR(100)
+        - column:
+            name: construction_status
+            type: VARCHAR(50)
+        - column:
+            name: structure_material
+            type: VARCHAR(100)
+        - column:
+            name: walls_material
+            type: VARCHAR(100)
+        - column:
+            name: construction_year
+            type: INTEGER
+        - column:
+            name: deleted_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: description
+            type: TEXT
+        - column:
+            name: favorite_count
+            type: INTEGER
+        - column:
+            name: floors_count
+            type: INTEGER
+        - column:
+            name: full_bathrooms
+            type: INTEGER
+        - column:
+            name: lat
+            type: numeric(10, 8)
+        - column:
+            name: lng
+            type: numeric(11, 8)
+        - column:
+            name: half_bathrooms
+            type: INTEGER
+        - column:
+            name: highlighted
+            type: BOOLEAN
+        - column:
+            name: highlighted_until
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: parking_spaces
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: price
+            type: numeric(12, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: property_type
+            type: VARCHAR(50)
+        - column:
+            name: published_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            name: surface_area
+            type: numeric(10, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: title
+            type: VARCHAR(255)
+        - column:
+            name: electricity_installation
+            type: VARCHAR(50)
+        - column:
+            name: sanitary_installation
+            type: VARCHAR(50)
+        - column:
+            name: water_connection
+            type: VARCHAR(50)
+        - column:
+            name: view_count
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: visibility
+            type: VARCHAR(20)
+        - column:
+            name: agent_id
+            type: BIGINT
+        - column:
+            name: location_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: owner_id
+            type: BIGINT
+        tableName: properties
+- changeSet:
+    id: 1771552209546-22
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_flags_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: flag_type
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: reason
+            type: TEXT
+        - column:
+            name: resolution_notes
+            type: TEXT
+        - column:
+            name: resolved_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: reported_by_id
+            type: BIGINT
+        - column:
+            name: resolved_by_id
+            type: BIGINT
+        tableName: property_flags
+- changeSet:
+    id: 1771552209546-23
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_media_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: is_primary
+            type: BOOLEAN
+        - column:
+            name: order_index
+            type: INTEGER
+        - column:
+            name: thumbnail_url
+            type: TEXT
+        - column:
+            name: title
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: type
+            type: VARCHAR(20)
+        - column:
+            constraints:
+              nullable: false
+            name: url
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: property_media
+- changeSet:
+    id: 1771552209546-24
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_price_history_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: new_price
+            type: numeric(12, 2)
+        - column:
+            name: old_price
+            type: numeric(12, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: changed_by_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: property_price_history
+- changeSet:
+    id: 1771552209546-25
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_reviews_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: comment
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: rating
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: property_reviews
+- changeSet:
+    id: 1771552209546-26
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_rooms_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: area
+            type: numeric(8, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: property_rooms
+- changeSet:
+    id: 1771552209546-27
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_similar_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: calculated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: similarity_score
+            type: numeric(5, 4)
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: similar_property_id
+            type: BIGINT
+        tableName: property_similar
+- changeSet:
+    id: 1771552209546-28
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_status_history_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: new_status
+            type: VARCHAR(50)
+        - column:
+            name: old_status
+            type: VARCHAR(50)
+        - column:
+            name: reason
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: changed_by_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: property_status_history
+- changeSet:
+    id: 1771552209546-29
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: property_views_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: referrer
+            type: TEXT
+        - column:
+            name: ip_address
+            type: VARCHAR(45)
+        - column:
+            name: user_agent
+            type: TEXT
+        - column:
+            name: session_id
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            name: user_id
+            type: BIGINT
+        tableName: property_views
+- changeSet:
+    id: 1771552209546-30
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: reservations_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: cancelled_reason
+            type: TEXT
+        - column:
+            name: expires_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: notes
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: reservation_amount
+            type: numeric(12, 2)
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: buyer_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: reservations
+- changeSet:
+    id: 1771552209546-31
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: search_preferences_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: filters
+            type: JSONB
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: notifications_enabled
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: search_preferences
+- changeSet:
+    id: 1771552209546-32
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: user_sessions_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: expires_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: ip_address
+            type: VARCHAR(45)
+        - column:
+            name: user_agent
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: token_hash
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: user_sessions
+- changeSet:
+    id: 1771552209546-33
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: users_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: avatar_url
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: email
+            type: VARCHAR(255)
+        - column:
+            name: email_verified_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: name
+            type: VARCHAR(100)
+        - column:
+            constraints:
+              nullable: false
+            name: password_hash
+            type: VARCHAR(255)
+        - column:
+            name: phone
+            type: VARCHAR(20)
+        - column:
+            constraints:
+              nullable: false
+            name: role
+            type: VARCHAR(20)
+        - column:
+            name: suspended_until
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: suspension_reason
+            type: TEXT
+        tableName: users
+- changeSet:
+    id: 1771552209546-34
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: visits_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: agent_notes
+            type: TEXT
+        - column:
+            name: buyer_notes
+            type: TEXT
+        - column:
+            name: cancellation_reason
+            type: TEXT
+        - column:
+            name: duration_minutes
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: scheduled_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: status
+            type: VARCHAR(50)
+        - column:
+            name: agent_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: buyer_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        tableName: visits
+- changeSet:
+    id: 1771552209546-35
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_social_media_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: platform
+            type: VARCHAR(50)
+        - column:
+            constraints:
+              nullable: false
+            name: url
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        tableName: agent_social_media
+- changeSet:
+    id: 1771552209546-36
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: exterior_features_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            name: category
+            type: VARCHAR(50)
+        tableName: exterior_features
+- changeSet:
+    id: 1771552209546-37
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: interior_features_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        - column:
+            name: category
+            type: VARCHAR(50)
+        tableName: interior_features
+- changeSet:
+    id: 1771552209546-38
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: lead_statuses_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            name: active
+            type: BOOLEAN
+        - column:
+            name: color
+            type: VARCHAR(7)
+        - column:
+            name: display_order
+            type: INTEGER
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(50)
+        tableName: lead_statuses
+- changeSet:
+    id: 1771552209546-39
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: agent_specialties_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: updated_at
+            type: TIMESTAMP WITHOUT TIME ZONE
+        - column:
+            name: version
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(100)
+        tableName: agent_specialties
+- changeSet:
+    id: 1771552209546-40
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_admin_reviews_property
+        tableName: admin_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-41
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: reviewer_id
+        indexName: idx_admin_reviews_reviewer
+        tableName: admin_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-42
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_admin_reviews_status
+        tableName: admin_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-43
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_admin_reviews_date
+        tableName: admin_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-44
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_agent_agenda_agent
+        tableName: agent_agenda
+        using: btree
+- changeSet:
+    id: 1771552209546-45
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: visit_id
+        indexName: idx_agent_agenda_visit
+        tableName: agent_agenda
+        using: btree
+- changeSet:
+    id: 1771552209546-46
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: starts_at
+        - column:
+            name: ends_at
+        indexName: idx_agent_agenda_timerange
+        tableName: agent_agenda
+        using: btree
+- changeSet:
+    id: 1771552209546-47
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_agent_clients_agent
+        tableName: agent_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-48
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_agent_clients_user
+        tableName: agent_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-49
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_agent_clients_status
+        tableName: agent_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-50
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: priority
+        indexName: idx_agent_clients_priority
+        tableName: agent_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-51
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: avg_rating
+        indexName: idx_agent_profiles_rating
+        tableName: agent_profiles
+        using: btree
+- changeSet:
+    id: 1771552209546-52
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: user_id
+        constraintName: idx_agent_profiles_user
+        tableName: agent_profiles
+- changeSet:
+    id: 1771552209546-53
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_agent_reviews_agent
+        tableName: agent_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-54
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: rating
+        indexName: idx_agent_reviews_rating
+        tableName: agent_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-55
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_agent_reviews_date
+        tableName: agent_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-56
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_alerts_user
+        tableName: alerts
+        using: btree
+- changeSet:
+    id: 1771552209546-57
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: search_preference_id
+        indexName: idx_alerts_search
+        tableName: alerts
+        using: btree
+- changeSet:
+    id: 1771552209546-58
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_alerts_property
+        tableName: alerts
+        using: btree
+- changeSet:
+    id: 1771552209546-59
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: alert_type
+        indexName: idx_alerts_type
+        tableName: alerts
+        using: btree
+- changeSet:
+    id: 1771552209546-60
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_audit_logs_user
+        tableName: audit_logs
+        using: btree
+- changeSet:
+    id: 1771552209546-61
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: entity_type
+        - column:
+            name: entity_id
+        indexName: idx_audit_logs_entity
+        tableName: audit_logs
+        using: btree
+- changeSet:
+    id: 1771552209546-62
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: action
+        indexName: idx_audit_logs_action
+        tableName: audit_logs
+        using: btree
+- changeSet:
+    id: 1771552209546-63
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_audit_logs_date
+        tableName: audit_logs
+        using: btree
+- changeSet:
+    id: 1771552209546-64
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_interactions_agent
+        tableName: client_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-65
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_client_id
+        indexName: idx_interactions_client
+        tableName: client_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-66
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: external_client_id
+        indexName: idx_interactions_external
+        tableName: client_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-67
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: type
+        indexName: idx_interactions_type
+        tableName: client_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-68
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_interactions_date
+        tableName: client_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-69
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: contract_id
+        indexName: idx_signatures_contract
+        tableName: contract_signatures
+        using: btree
+- changeSet:
+    id: 1771552209546-70
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: signer_id
+        indexName: idx_signatures_signer
+        tableName: contract_signatures
+        using: btree
+- changeSet:
+    id: 1771552209546-71
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: signed_at
+        indexName: idx_signatures_signed
+        tableName: contract_signatures
+        using: btree
+- changeSet:
+    id: 1771552209546-72
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: contract_type
+        indexName: idx_contract_templates_type
+        tableName: contract_templates
+        using: btree
+- changeSet:
+    id: 1771552209546-73
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: active
+        indexName: idx_contract_templates_active
+        tableName: contract_templates
+        using: btree
+- changeSet:
+    id: 1771552209546-74
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_contracts_property
+        tableName: contracts
+        using: btree
+- changeSet:
+    id: 1771552209546-75
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: buyer_id
+        indexName: idx_contracts_buyer
+        tableName: contracts
+        using: btree
+- changeSet:
+    id: 1771552209546-76
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: seller_id
+        indexName: idx_contracts_seller
+        tableName: contracts
+        using: btree
+- changeSet:
+    id: 1771552209546-77
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_contracts_status
+        tableName: contracts
+        using: btree
+- changeSet:
+    id: 1771552209546-78
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: contract_type
+        indexName: idx_contracts_type
+        tableName: contracts
+        using: btree
+- changeSet:
+    id: 1771552209546-79
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: reservation_id
+        indexName: idx_documents_reservation
+        tableName: documents_uploaded
+        using: btree
+- changeSet:
+    id: 1771552209546-80
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: uploaded_by_id
+        indexName: idx_documents_uploaded_by
+        tableName: documents_uploaded
+        using: btree
+- changeSet:
+    id: 1771552209546-81
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: document_type
+        indexName: idx_documents_type
+        tableName: documents_uploaded
+        using: btree
+- changeSet:
+    id: 1771552209546-82
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_documents_status
+        tableName: documents_uploaded
+        using: btree
+- changeSet:
+    id: 1771552209546-83
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_external_clients_agent
+        tableName: external_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-84
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: origin
+        indexName: idx_external_clients_origin
+        tableName: external_clients
+        using: btree
+- changeSet:
+    id: 1771552209546-85
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_favorites_user
+        tableName: favorites
+        using: btree
+- changeSet:
+    id: 1771552209546-86
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_favorites_property
+        tableName: favorites
+        using: btree
+- changeSet:
+    id: 1771552209546-87
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: user_id, property_id
+        constraintName: idx_favorites_unique
+        tableName: favorites
+- changeSet:
+    id: 1771552209546-88
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: lead_id
+        indexName: idx_lead_interactions_lead
+        tableName: lead_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-89
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: performed_by_id
+        indexName: idx_lead_interactions_performed_by
+        tableName: lead_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-90
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: type
+        indexName: idx_lead_interactions_type
+        tableName: lead_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-91
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_lead_interactions_date
+        tableName: lead_interactions
+        using: btree
+- changeSet:
+    id: 1771552209546-92
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_leads_agent
+        tableName: leads
+        using: btree
+- changeSet:
+    id: 1771552209546-93
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_leads_user
+        tableName: leads
+        using: btree
+- changeSet:
+    id: 1771552209546-94
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_leads_property
+        tableName: leads
+        using: btree
+- changeSet:
+    id: 1771552209546-95
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status_id
+        indexName: idx_leads_status
+        tableName: leads
+        using: btree
+- changeSet:
+    id: 1771552209546-96
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: source
+        indexName: idx_leads_source
+        tableName: leads
+        using: btree
+- changeSet:
+    id: 1771552209546-97
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: city
+        - column:
+            name: department
+        indexName: idx_locations_city_dept
+        tableName: locations
+        using: btree
+- changeSet:
+    id: 1771552209546-98
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: name
+        constraintName: ukqvgktk8bt8v993m1k9ld5036k
+        tableName: locations
+- changeSet:
+    id: 1771552209546-99
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: sender_id
+        indexName: idx_messages_sender
+        tableName: messages
+        using: btree
+- changeSet:
+    id: 1771552209546-100
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: receiver_id
+        indexName: idx_messages_receiver
+        tableName: messages
+        using: btree
+- changeSet:
+    id: 1771552209546-101
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_messages_property
+        tableName: messages
+        using: btree
+- changeSet:
+    id: 1771552209546-102
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: parent_id
+        indexName: idx_messages_parent
+        tableName: messages
+        using: btree
+- changeSet:
+    id: 1771552209546-103
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_messages_created
+        tableName: messages
+        using: btree
+- changeSet:
+    id: 1771552209546-104
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_notifications_user
+        tableName: notifications
+        using: btree
+- changeSet:
+    id: 1771552209546-105
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: type
+        indexName: idx_notifications_type
+        tableName: notifications
+        using: btree
+- changeSet:
+    id: 1771552209546-106
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: read_at
+        indexName: idx_notifications_read
+        tableName: notifications
+        using: btree
+- changeSet:
+    id: 1771552209546-107
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_notifications_created
+        tableName: notifications
+        using: btree
+- changeSet:
+    id: 1771552209546-108
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_offers_property
+        tableName: offers
+        using: btree
+- changeSet:
+    id: 1771552209546-109
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: buyer_id
+        indexName: idx_offers_buyer
+        tableName: offers
+        using: btree
+- changeSet:
+    id: 1771552209546-110
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_offers_status
+        tableName: offers
+        using: btree
+- changeSet:
+    id: 1771552209546-111
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_offers_created
+        tableName: offers
+        using: btree
+- changeSet:
+    id: 1771552209546-112
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: owner_id
+        indexName: idx_properties_owner
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-113
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_properties_agent
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-114
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: location_id
+        indexName: idx_properties_location
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-115
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_type
+        indexName: idx_properties_type
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-116
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        - column:
+            name: visibility
+        - column:
+            name: deleted_at
+        indexName: idx_properties_listing
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-117
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: price
+        indexName: idx_properties_price
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-118
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: highlighted
+        indexName: idx_properties_highlighted
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-119
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_properties_created
+        tableName: properties
+        using: btree
+- changeSet:
+    id: 1771552209546-120
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_flags_property
+        tableName: property_flags
+        using: btree
+- changeSet:
+    id: 1771552209546-121
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: reported_by_id
+        indexName: idx_property_flags_reported_by
+        tableName: property_flags
+        using: btree
+- changeSet:
+    id: 1771552209546-122
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: flag_type
+        indexName: idx_property_flags_type
+        tableName: property_flags
+        using: btree
+- changeSet:
+    id: 1771552209546-123
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: resolved_at
+        indexName: idx_property_flags_resolved
+        tableName: property_flags
+        using: btree
+- changeSet:
+    id: 1771552209546-124
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_media_property
+        tableName: property_media
+        using: btree
+- changeSet:
+    id: 1771552209546-125
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        - column:
+            name: is_primary
+        indexName: idx_property_media_primary
+        tableName: property_media
+        using: btree
+- changeSet:
+    id: 1771552209546-126
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        - column:
+            name: order_index
+        indexName: idx_property_media_order
+        tableName: property_media
+        using: btree
+- changeSet:
+    id: 1771552209546-127
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_price_history_property
+        tableName: property_price_history
+        using: btree
+- changeSet:
+    id: 1771552209546-128
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_property_price_history_date
+        tableName: property_price_history
+        using: btree
+- changeSet:
+    id: 1771552209546-129
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_reviews_property
+        tableName: property_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-130
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: rating
+        indexName: idx_property_reviews_rating
+        tableName: property_reviews
+        using: btree
+- changeSet:
+    id: 1771552209546-131
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_rooms_property
+        tableName: property_rooms
+        using: btree
+- changeSet:
+    id: 1771552209546-132
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_similar_property
+        tableName: property_similar
+        using: btree
+- changeSet:
+    id: 1771552209546-133
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        - column:
+            name: similarity_score
+        indexName: idx_property_similar_score
+        tableName: property_similar
+        using: btree
+- changeSet:
+    id: 1771552209546-134
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_status_history_property
+        tableName: property_status_history
+        using: btree
+- changeSet:
+    id: 1771552209546-135
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_property_status_history_date
+        tableName: property_status_history
+        using: btree
+- changeSet:
+    id: 1771552209546-136
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_property_views_property
+        tableName: property_views
+        using: btree
+- changeSet:
+    id: 1771552209546-137
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_property_views_user
+        tableName: property_views
+        using: btree
+- changeSet:
+    id: 1771552209546-138
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: created_at
+        indexName: idx_property_views_date
+        tableName: property_views
+        using: btree
+- changeSet:
+    id: 1771552209546-139
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        - column:
+            name: created_at
+        indexName: idx_property_views_property_date
+        tableName: property_views
+        using: btree
+- changeSet:
+    id: 1771552209546-140
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_reservations_property
+        tableName: reservations
+        using: btree
+- changeSet:
+    id: 1771552209546-141
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: buyer_id
+        indexName: idx_reservations_buyer
+        tableName: reservations
+        using: btree
+- changeSet:
+    id: 1771552209546-142
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_reservations_status
+        tableName: reservations
+        using: btree
+- changeSet:
+    id: 1771552209546-143
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: expires_at
+        indexName: idx_reservations_expires
+        tableName: reservations
+        using: btree
+- changeSet:
+    id: 1771552209546-144
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_search_preferences_user
+        tableName: search_preferences
+        using: btree
+- changeSet:
+    id: 1771552209546-145
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: user_id
+        indexName: idx_sessions_user
+        tableName: user_sessions
+        using: btree
+- changeSet:
+    id: 1771552209546-146
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: expires_at
+        indexName: idx_sessions_expires
+        tableName: user_sessions
+        using: btree
+- changeSet:
+    id: 1771552209546-147
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: token_hash
+        constraintName: ukknsbk3ar7u5tjk79txuguwy75
+        tableName: user_sessions
+- changeSet:
+    id: 1771552209546-148
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: role
+        indexName: idx_users_role
+        tableName: users
+        using: btree
+- changeSet:
+    id: 1771552209546-149
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: suspended_until
+        indexName: idx_users_suspended
+        tableName: users
+        using: btree
+- changeSet:
+    id: 1771552209546-150
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: email
+        constraintName: uk6dotkott2kjsp8vw4d0m25fb7
+        tableName: users
+- changeSet:
+    id: 1771552209546-151
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: property_id
+        indexName: idx_visits_property
+        tableName: visits
+        using: btree
+- changeSet:
+    id: 1771552209546-152
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: buyer_id
+        indexName: idx_visits_buyer
+        tableName: visits
+        using: btree
+- changeSet:
+    id: 1771552209546-153
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: agent_id
+        indexName: idx_visits_agent
+        tableName: visits
+        using: btree
+- changeSet:
+    id: 1771552209546-154
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: scheduled_at
+        indexName: idx_visits_scheduled
+        tableName: visits
+        using: btree
+- changeSet:
+    id: 1771552209546-155
+    author: infor (generated)
+    changes:
+    - createIndex:
+        columns:
+        - column:
+            name: status
+        indexName: idx_visits_status
+        tableName: visits
+        using: btree
+- changeSet:
+    id: 1771552209546-156
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: name
+        constraintName: ukp8lv0vlwkl6c2lbniaq8i4uxg
+        tableName: exterior_features
+- changeSet:
+    id: 1771552209546-157
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: name
+        constraintName: ukk3jvqp7atnxf7cjweuxsn6obr
+        tableName: interior_features
+- changeSet:
+    id: 1771552209546-158
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: name
+        constraintName: ukispo2hwcno60rlkr5fnhf7x3y
+        tableName: lead_statuses
+- changeSet:
+    id: 1771552209546-159
+    author: infor (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: name
+        constraintName: ukkikf8bccsjnt2ulolqmt2tpx3
+        tableName: agent_specialties
+- changeSet:
+    id: 1771552209546-160
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: agent_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: specialty_id
+            type: BIGINT
+        tableName: agent_to_specialties
+- changeSet:
+    id: 1771552209546-161
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: property_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: feature_id
+            type: BIGINT
+        tableName: property_exterior_features
+- changeSet:
+    id: 1771552209546-162
+    author: infor (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: room_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: feature_id
+            type: BIGINT
+        tableName: property_room_features
+- changeSet:
+    id: 1771552209546-163
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: leads
+        constraintName: fk10u8b7klywjncgkn7xffx7ncu
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-164
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: search_preference_id
+        baseTableName: alerts
+        constraintName: fk1c4pmgoh8m8e0xxe6oy825f6y
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: search_preferences
+        validate: true
+- changeSet:
+    id: 1771552209546-165
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: changed_by_id
+        baseTableName: property_price_history
+        constraintName: fk1dok90ekh5f3co6nfviqsk0hb
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-166
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_rooms
+        constraintName: fk1wr7feioufe6inukujcx8fj36
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-167
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: similar_property_id
+        baseTableName: property_similar
+        constraintName: fk29w49o65pn7t7c4ienyaq9xpe
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-168
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: owner_id
+        baseTableName: properties
+        constraintName: fk32k2h9s30s0ukftb8hj947ef2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-169
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: visits
+        constraintName: fk3cwql3n9cluys48l1lp22ybt0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-170
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: visit_id
+        baseTableName: agent_agenda
+        constraintName: fk4kyqu89k3kbryjiw70yrdgafc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: visits
+        validate: true
+- changeSet:
+    id: 1771552209546-171
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: sender_id
+        baseTableName: messages
+        constraintName: fk4ui4nnwntodh6wjvck53dbk9m
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-172
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: buyer_id
+        baseTableName: contracts
+        constraintName: fk5fqurml6ryhf5qf8lh662w9qi
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-173
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: contracts
+        constraintName: fk6fb7gl7h3xbjdg8ogd83rmgdr
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-174
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: reviewer_id
+        baseTableName: admin_reviews
+        constraintName: fk6g6u1a58fk9ucx4ji9qt2y8ue
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-175
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_views
+        constraintName: fk79c0jhqhf9eragpdy3xx7gerh
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-176
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: reservation_id
+        baseTableName: documents_uploaded
+        constraintName: fk7tebwdtutwniklj5dg6h2h1f
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: reservations
+        validate: true
+- changeSet:
+    id: 1771552209546-177
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: user_sessions
+        constraintName: fk8klxsgb8dcjjklmqebqp1twd5
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-178
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: template_id
+        baseTableName: contracts
+        constraintName: fk970aup2fpinnyqy8936qy258u
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: contract_templates
+        validate: true
+- changeSet:
+    id: 1771552209546-179
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_media
+        constraintName: fk99cdrxg6g0gpa8h05p0xxpguw
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-180
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: admin_reviews
+        constraintName: fk9csyqecalhnmf332qbc0l5h7f
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-181
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: notifications
+        constraintName: fk9y21adhxn0ayjhfocscqox7bh
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-182
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: contract_id
+        baseTableName: contract_signatures
+        constraintName: fkagcyh7w6jxdp6npn77s9wgikv
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: contracts
+        validate: true
+- changeSet:
+    id: 1771552209546-183
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_price_history
+        constraintName: fkastg7h7c1kgfde0wvm24cn8ms
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-184
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: changed_by_id
+        baseTableName: property_status_history
+        constraintName: fkatmbw8pr2xhvhyxgeq8am4v27
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-185
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_client_id
+        baseTableName: client_interactions
+        constraintName: fkbqtwveyx090ai434ccp5gn4ew
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_clients
+        validate: true
+- changeSet:
+    id: 1771552209546-186
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_reviews
+        constraintName: fkbt9so3io93w6x84d2fwyrjmo6
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-187
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: resolved_by_id
+        baseTableName: property_flags
+        constraintName: fkbvovsy9e1de92nq4hrirql6pn
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-188
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: search_preferences
+        constraintName: fkckd95urwibhvywjulvsvga5qk
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-189
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: favorites
+        constraintName: fkd1rhumcrlv6g55lt8eprudthc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-190
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_similar
+        constraintName: fkdhmdg9tcwcnv6rgej27e0mbqi
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-191
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_flags
+        constraintName: fkdv0ootkgjer5h4icner70p9xk
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-192
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: agent_clients
+        constraintName: fke1lalukiitc2thfl607o162dg
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-193
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: agent_clients
+        constraintName: fke4wr9034y2nr0pgy7njj931k1
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-194
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: seller_id
+        baseTableName: contracts
+        constraintName: fkeihnykewrjkj078xse1pkgk2r
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-195
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: leads
+        constraintName: fkf6cril40sct1oa6df4ikwg1r3
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-196
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: buyer_id
+        baseTableName: visits
+        constraintName: fkfjxsaokdv4up2eblp20jsekdj
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-197
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: leads
+        constraintName: fkfywggbdu1wylrjgoom09owqqq
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-198
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: buyer_id
+        baseTableName: offers
+        constraintName: fkgc18i3k5pqq7ik9x23nw0ndau
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-199
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: alerts
+        constraintName: fkggb4pivryxmum9qaia4yhpgqm
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-200
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: external_clients
+        constraintName: fkgh9kqrec4xs23e11x9eb4j9si
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-201
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: room_id
+        baseTableName: property_room_features
+        constraintName: fkh1qrod7oagmy54nf3o3fvu07q
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: property_rooms
+        validate: true
+- changeSet:
+    id: 1771552209546-202
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: status_id
+        baseTableName: leads
+        constraintName: fkhf0937gd5pwqpbybs3621fq1l
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: lead_statuses
+        validate: true
+- changeSet:
+    id: 1771552209546-203
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: offers
+        constraintName: fkhgol4w22m5h4fq9m3r3qakkvj
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-204
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: feature_id
+        baseTableName: property_room_features
+        constraintName: fkhmp70d9g0lshg760viu9ilvdl
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: interior_features
+        validate: true
+- changeSet:
+    id: 1771552209546-205
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: new_status_id
+        baseTableName: lead_interactions
+        constraintName: fkhugineedhrvkmekwuawn7xdv
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: lead_statuses
+        validate: true
+- changeSet:
+    id: 1771552209546-206
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: client_interactions
+        constraintName: fkhv0fcs4cpycpsghdr2tbqfrdl
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-207
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: property_reviews
+        constraintName: fkiqbf6l5j7ce3b3ow3nmowex8p
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-208
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: agent_reviews
+        constraintName: fkiv07nlaxitkvxr8q3lo9b1exa
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-209
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_exterior_features
+        constraintName: fkjlm24625gjt68p3og8q8jfx3c
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-210
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: audit_logs
+        constraintName: fkjs4iimve3y0xssbtve5ysyef0
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-211
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: signer_id
+        baseTableName: contract_signatures
+        constraintName: fkjv0kqhivs99nbj215t85ky72o
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-212
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: favorites
+        constraintName: fkk7du8b8ewipawnnpg76d55fus
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-213
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: old_status_id
+        baseTableName: lead_interactions
+        constraintName: fkk8skv2prrpltxd6vs6ca6cv2i
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: lead_statuses
+        validate: true
+- changeSet:
+    id: 1771552209546-214
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: location_id
+        baseTableName: properties
+        constraintName: fklvrkbj2mvjull402jkbe9ifph
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: locations
+        validate: true
+- changeSet:
+    id: 1771552209546-215
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: buyer_id
+        baseTableName: reservations
+        constraintName: fklvt7c4d9faxhnqecjpeu5as86
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-216
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: properties
+        constraintName: fklxdrbnwv28ekhgd61edbuit00
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-217
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: agent_social_media
+        constraintName: fkmc5bkiwtqc684qvjw4962i5qf
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-218
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: reservations
+        constraintName: fko0x0js5gs43o4bj3aeq6ba62l
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-219
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: agent_profiles
+        constraintName: fko3kghcnui01ek5p6ymolvgmoc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-220
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: visits
+        constraintName: fkoagpkbidtv75i7752brb6amsa
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-221
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: specialty_id
+        baseTableName: agent_to_specialties
+        constraintName: fkon7f1djpsge6gtw6935t7paje
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_specialties
+        validate: true
+- changeSet:
+    id: 1771552209546-222
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: property_status_history
+        constraintName: fkoqswv6lsxkafet6tk3quhox8n
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-223
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: external_client_id
+        baseTableName: client_interactions
+        constraintName: fkox99fhtt4xwojbp2qd0ut2us8
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: external_clients
+        validate: true
+- changeSet:
+    id: 1771552209546-224
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: property_views
+        constraintName: fkoxuwei1q0495e0hncb48n2rth
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-225
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: uploaded_by_id
+        baseTableName: documents_uploaded
+        constraintName: fkpasjht8kabed70e077fccp1e5
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-226
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: feature_id
+        baseTableName: property_exterior_features
+        constraintName: fkpf0mr844gd2p9m9edmo13qlgc
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: exterior_features
+        validate: true
+- changeSet:
+    id: 1771552209546-227
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: property_id
+        baseTableName: messages
+        constraintName: fkq7yrg0fj3b6ebwu3bgjsc558s
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: properties
+        validate: true
+- changeSet:
+    id: 1771552209546-228
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: agent_reviews
+        constraintName: fkqa7hqubb20liqjmp8w3xbrle2
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-229
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: agent_to_specialties
+        constraintName: fkqvx56m8ctqbq0ignfomtbhwge
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-230
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: alerts
+        constraintName: fkqx4kjyy8qmc38cpa1pj5gp74i
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-231
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: performed_by_id
+        baseTableName: lead_interactions
+        constraintName: fkrbk008mp4taw22xqls32h0kau
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-232
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: parent_id
+        baseTableName: messages
+        constraintName: fkrmc5bh5td40lnkb2g2fgp2v8y
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: messages
+        validate: true
+- changeSet:
+    id: 1771552209546-233
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: agent_agenda
+        constraintName: fkru7gavgw1kg2mlvolkesv82gf
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-234
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: lead_id
+        baseTableName: lead_interactions
+        constraintName: fks3w3jqur0l5hcjmrttgu4wnvo
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: leads
+        validate: true
+- changeSet:
+    id: 1771552209546-235
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: agent_id
+        baseTableName: agent_reviews
+        constraintName: fksyow0tsr8kvtrdd9o2movq84j
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: agent_profiles
+        validate: true
+- changeSet:
+    id: 1771552209546-236
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: receiver_id
+        baseTableName: messages
+        constraintName: fkt05r0b6n0iis8u7dfna4xdh73
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1771552209546-237
+    author: infor (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: reported_by_id
+        baseTableName: property_flags
+        constraintName: fktcyc7oy0f4gcghgn083cyvlbr
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+
