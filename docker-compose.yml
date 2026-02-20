@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: openroof-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: openroof_db
+      POSTGRES_USER: openroof
+      POSTGRES_PASSWORD: openroof123
+    volumes:
+      - openroof_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openroof -d openroof_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  openroof_pgdata:
+    driver: local
