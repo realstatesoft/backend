@@ -6,6 +6,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users", indexes = {
@@ -18,7 +24,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends BaseEntity {
+public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
@@ -48,4 +54,53 @@ public class User extends BaseEntity {
 
     @Column(name = "suspension_reason", columnDefinition = "TEXT")
     private String suspensionReason;
+
+    /*
+     * Auth: Enrique Rios
+     * Desc:
+     * define la lógica de autenticación (email/password), los permisos basados en
+     * roles
+     * ultima modif: 21/02/2026
+     */
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    // ======= Métodos de estado de cuenta =======//
+    // necesario porque se implementa la interfaz UserDetails
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        // Si no hay fecha de suspensión o la fecha ya pasó, la cuenta NO está
+        // bloqueada.
+        return suspendedUntil == null || suspendedUntil.isBefore(LocalDateTime.now());
+    }
+
+    // Indica si la contraseña ha expirado y debe cambiarse.
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    // Verifica si la cuenta está habilitada (ej. si el usuario confirmó su email).
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }
