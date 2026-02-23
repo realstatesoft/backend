@@ -1,0 +1,282 @@
+databaseChangeLog:
+- changeSet:
+    id: seed-catalog-001
+    author: otto
+    comment: "Seed de datos de catálogo: exterior features"
+    changes:
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Piscina" }
+        - column: { name: category, value: "AMENITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Jardín" }
+        - column: { name: category, value: "OUTDOOR" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Garage" }
+        - column: { name: category, value: "AMENITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Parrilla / Quincho" }
+        - column: { name: category, value: "OUTDOOR" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Cerco eléctrico" }
+        - column: { name: category, value: "SECURITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Cámara de seguridad" }
+        - column: { name: category, value: "SECURITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Terraza" }
+        - column: { name: category, value: "OUTDOOR" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Portón automático" }
+        - column: { name: category, value: "SECURITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Cancha deportiva" }
+        - column: { name: category, value: "AMENITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: exterior_features
+        columns:
+        - column: { name: name, value: "Salón de eventos" }
+        - column: { name: category, value: "AMENITY" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+
+- changeSet:
+    id: seed-catalog-002
+    author: otto
+    comment: "Seed de datos de catálogo: interior features"
+    changes:
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Aire acondicionado" }
+        - column: { name: category, value: "APPLIANCE" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Piso de porcelanato" }
+        - column: { name: category, value: "FINISH" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Piso de madera" }
+        - column: { name: category, value: "FINISH" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Closet empotrado" }
+        - column: { name: category, value: "FURNITURE" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Cocina equipada" }
+        - column: { name: category, value: "APPLIANCE" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Calefón" }
+        - column: { name: category, value: "APPLIANCE" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Ventilador de techo" }
+        - column: { name: category, value: "APPLIANCE" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: interior_features
+        columns:
+        - column: { name: name, value: "Mesada de granito" }
+        - column: { name: category, value: "FINISH" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+
+- changeSet:
+    id: seed-catalog-003
+    author: otto
+    comment: "Seed de datos de catálogo: locations (ciudades y barrios de Paraguay)"
+    changes:
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Barrio Herrera" }
+        - column: { name: city, value: "Asunción" }
+        - column: { name: department, value: "Capital" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Villa Morra" }
+        - column: { name: city, value: "Asunción" }
+        - column: { name: department, value: "Capital" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Carmelitas" }
+        - column: { name: city, value: "Asunción" }
+        - column: { name: department, value: "Capital" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Manorá" }
+        - column: { name: city, value: "Asunción" }
+        - column: { name: department, value: "Capital" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Centro" }
+        - column: { name: city, value: "Asunción" }
+        - column: { name: department, value: "Capital" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "San Lorenzo" }
+        - column: { name: city, value: "San Lorenzo" }
+        - column: { name: department, value: "Central" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Luque" }
+        - column: { name: city, value: "Luque" }
+        - column: { name: department, value: "Central" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Lambaré" }
+        - column: { name: city, value: "Lambaré" }
+        - column: { name: department, value: "Central" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Fernando de la Mora" }
+        - column: { name: city, value: "Fernando de la Mora" }
+        - column: { name: department, value: "Central" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Encarnación" }
+        - column: { name: city, value: "Encarnación" }
+        - column: { name: department, value: "Itapúa" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Ciudad del Este" }
+        - column: { name: city, value: "Ciudad del Este" }
+        - column: { name: department, value: "Alto Paraná" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
+    - insert:
+        tableName: locations
+        columns:
+        - column: { name: name, value: "Mariano Roque Alonso" }
+        - column: { name: city, value: "Mariano Roque Alonso" }
+        - column: { name: department, value: "Central" }
+        - column: { name: country, value: "Paraguay" }
+        - column: { name: created_at, valueDate: "now()" }
+        - column: { name: updated_at, valueDate: "now()" }
+        - column: { name: version, valueNumeric: 0 }
