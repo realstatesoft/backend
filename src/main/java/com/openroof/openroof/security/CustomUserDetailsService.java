@@ -5,16 +5,29 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-/**
- * Implementación temporal de UserDetailsService.
- * TODO: Reemplazar con implementación real que consulte la BD cuando se cree la entidad User.
- */
+import lombok.RequiredArgsConstructor;
+import com.openroof.openroof.repository.UserRepository;
+
+
+
+
+
+
+/*Auth: Enrique Rios
+    Desc: loadUserByUsername(String username): 
+        Este método es invocado automáticamente por Spring Security cuando un usuario intenta iniciar sesión.
+    ultima modif: 21/02/2026
+*/
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
+    
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Implementación temporal — será reemplazada al crear el módulo de usuarios
-        throw new UsernameNotFoundException("Usuario no encontrado: " + username);
+        return userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
     }
+   
 }
