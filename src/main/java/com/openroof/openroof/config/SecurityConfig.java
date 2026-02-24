@@ -42,7 +42,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/actuator/health"
+            "/actuator/health",
+            "/properties/**" // TODO: Restringir POST/PUT/DELETE a usuarios autenticados
     };
 
     @Bean
