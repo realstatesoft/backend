@@ -35,7 +35,7 @@ public class ImageUploadController {
     private final ImageRepository imageRepository;
 
     /**
-     * Sube una imagen a S3, persiste metadatos y devuelve la URL pública.
+     * Sube una imagen a Supabase Storage, persiste metadatos y devuelve la URL pública.
      *
      * @param file     archivo de imagen (jpg, png, webp — máx 5 MB)
      * @param folder   carpeta lógica en el bucket (opcional, default "general")

@@ -45,11 +45,6 @@ public class PropertyImageController {
             @RequestParam(value = "isPrimary", defaultValue = "false") boolean isPrimary,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails user
     ) {
-        if (user == null) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("No autorizado"));
-        }
-
         log.info("Upload de {} imagen(es) para propiedad {} por {}",
                 files.size(), propertyId, user.getUsername());
 
@@ -100,11 +95,6 @@ public class PropertyImageController {
             @PathVariable Long mediaId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails user
     ) {
-        if (user == null) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("No autorizado"));
-        }
-
         log.info("Set primary image: propertyId={}, mediaId={}, by={}",
                 propertyId, mediaId, user.getUsername());
 
@@ -120,18 +110,13 @@ public class PropertyImageController {
     @DeleteMapping("/{mediaId}")
     @Operation(
             summary = "Eliminar una imagen de una propiedad",
-            description = "Elimina el registro de media. El objeto en S3 se mantiene (por auditoría)."
+            description = "Elimina el registro de media. El objeto en Supabase Storage se mantiene (por auditoría)."
     )
     public ResponseEntity<ApiResponse<Void>> deleteImage(
             @PathVariable Long propertyId,
             @PathVariable Long mediaId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails user
     ) {
-        if (user == null) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("No autorizado"));
-        }
-
         log.info("Delete image: propertyId={}, mediaId={}, by={}",
                 propertyId, mediaId, user.getUsername());
 
