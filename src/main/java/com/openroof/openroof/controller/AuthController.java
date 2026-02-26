@@ -28,12 +28,12 @@ public class AuthController {
     private final AuthService authService;
 
     @Operation(summary = "Iniciar sesión", description = "Autentica credenciales y retorna tokens de acceso y refresco")
-   @PostMapping("/login")
-public ResponseEntity<ApiResponse<AuthResponse>> login(
-        @Valid @RequestBody LoginRequest loginRequest, 
-        HttpServletRequest request) { // Inyectamos el request
-    return ResponseEntity.ok(ApiResponse.ok(authService.login(loginRequest, request), "Login exitoso"));
-}
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest loginRequest,
+            HttpServletRequest request) { // Inyectamos el request
+        return ResponseEntity.ok(ApiResponse.ok(authService.login(loginRequest, request), "Login exitoso"));
+    }
 
     /*
      * * Auth: Enrique Rios
@@ -41,19 +41,25 @@ public ResponseEntity<ApiResponse<AuthResponse>> login(
      */
     @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta y retorna tokens de acceso")
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(authService.register(request), "Usuario registrado exitosamente"));
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest registerRequest,
+            HttpServletRequest request) { // Inyectamos el request
+        return ResponseEntity.ok(ApiResponse.ok(authService.register(registerRequest, request), "Registro exitoso"));
     }
 
     /*
      * * Auth: Enrique Rios
      * Desc: Renueva el Access Token usando el Refresh Token.
      */
-    @Operation(summary = "Refrescar token", description = "Genera un nuevo Access Token válido")
+    @Operation(summary = "Refrescar token", description = "Genera un nuevo Access Token y rota el Refresh Token")
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        return ResponseEntity.ok(ApiResponse.ok(authService.refreshToken(refreshToken), "Token renovado"));
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            @RequestBody Map<String, String> requestBody,
+            HttpServletRequest request) { 
+
+        String refreshToken = requestBody.get("refreshToken");
+        return ResponseEntity.ok(
+                ApiResponse.ok(authService.refreshToken(refreshToken, request), "Token renovado exitosamente"));
     }
 
     /*

@@ -40,28 +40,18 @@ public class AuthService {
          */
         @Transactional
         public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+                // Autenticar.
                 var auth = authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
                 var user = (User) auth.getPrincipal();
 
-                String accessToken = jwtService.generateToken(user);
-                String refreshToken = jwtService.generateRefreshToken(user);
-
-                // Pasamos el httpRequest para extraer metadatos
-                saveUserSession(user, refreshToken, httpRequest);
-
-                return AuthResponse.builder()
-                                .accessToken(accessToken)
-                                .refreshToken(refreshToken)
-                                .email(user.getEmail())
-                                .role(user.getRole().name())
-                                .build();
+                return generateFullAuthResponse(user, httpRequest);
         }
 
         /* * Desc: Registra un nuevo usuario y crea su sesión inicial. */
         @Transactional
-        public AuthResponse register(RegisterRequest request) {
+        public AuthResponse register(RegisterRequest request, HttpServletRequest httpRequest) {
                 if (userRepository.existsByEmail(request.getEmail())) {
                         throw new BadRequestException("El email ya está registrado");
                 }
@@ -75,7 +65,9 @@ public class AuthService {
                                 .build();
 
                 userRepository.save(user);
-                return generateFullAuthResponse(user);
+
+                // Le pasamos el request a la función que genera la respuesta
+                return generateFullAuthResponse(user, httpRequest);
         }
 
         /*
@@ -85,32 +77,35 @@ public class AuthService {
          * user_sessions.
          */
         @Transactional
-        public AuthResponse refreshToken(String authHeader) {
-                String oldRefreshToken = authHeader;
+        public AuthResponse refreshToken(String oldRefreshToken, HttpServletRequest httpRequest) {
+         
                 String userEmail = jwtService.extractUsername(oldRefreshToken);
 
                 var user = userRepository.findByEmail(userEmail)
                                 .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
 
-                // Validar que la sesión exista y borrar la antigua (Rotación)
+                // 2. BUSCAR LA SESIÓN: Validar que el token existe en nuestra DB
                 var session = userSessionRepository.findByTokenHash(oldRefreshToken)
-                                .orElseThrow(() -> new BadRequestException("Sesión inválida o expirada"));
+                                .orElseThrow(() -> new BadRequestException("Sesión inválida o ya utilizada"));
 
+                // 3. VALIDAR EL JWT: Verificar expiración y firma
                 if (!jwtService.isTokenValid(oldRefreshToken, user)) {
-                        userSessionRepository.delete(session);
-                        throw new BadRequestException("Token expirado");
+                        userSessionRepository.delete(session); // Limpiamos la DB si expiró
+                        throw new BadRequestException("El token de refresco ha expirado");
                 }
 
-                // Borramos la sesión vieja y creamos una nueva con tokens nuevos
                 userSessionRepository.delete(session);
-                return generateFullAuthResponse(user);
+
+        
+                return generateFullAuthResponse(user, httpRequest);
         }
 
-        private AuthResponse generateFullAuthResponse(User user) {
+        private AuthResponse generateFullAuthResponse(User user, HttpServletRequest httpRequest) {
                 String accessToken = jwtService.generateToken(user);
                 String refreshToken = jwtService.generateRefreshToken(user);
 
-                saveUserSession(user, refreshToken);
+                // Aquí es donde realmente ocurre la magia de guardar la sesión
+                saveUserSession(user, refreshToken, httpRequest);
 
                 return AuthResponse.builder()
                                 .accessToken(accessToken)
@@ -158,10 +153,10 @@ public class AuthService {
          * Implementa la lógica de "vincular" el token físico con el usuario en la DB.
          */
         private void saveUserSession(User user, String refreshToken, HttpServletRequest request) {
-                //  Extraer IP
+                // Extraer IP
                 String ipAddress = request.getRemoteAddr();
 
-                // Proxy  la IP 
+                // Proxy la IP
                 String xForwardedFor = request.getHeader("X-Forwarded-For");
                 if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
                         ipAddress = xForwardedFor.split(",")[0];
@@ -170,7 +165,6 @@ public class AuthService {
                 // Extraer User-Agent
                 String userAgent = request.getHeader("User-Agent");
 
-                
                 RequestMetadata metadata = RequestMetadata.builder()
                                 .ipAddress(ipAddress)
                                 .userAgent(userAgent)
@@ -181,7 +175,7 @@ public class AuthService {
                                 .user(user)
                                 .tokenHash(refreshToken)
                                 .expiresAt(LocalDateTime.now().plusDays(7))
-                                .requestMetadata(metadata) 
+                                .requestMetadata(metadata)
                                 .build();
 
                 userSessionRepository.save(session);
