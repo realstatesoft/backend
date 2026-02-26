@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: OpenRoof
+
+  # ==================== DATASOURCE ====================
+  # Supabase PostgreSQL via Connection Pooler
+  # Use environment variables in your local environment or CI.
+  # Examples: SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  datasource:
+    url: ${SUPABASE_DB_URL:jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0}
+    username: ${SUPABASE_DB_USER:postgres}
+    password: ${SUPABASE_DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # ==================== JPA / HIBERNATE ====================
+  jpa:
+    hibernate:
+      ddl-auto: none  # Liquibase maneja el schema
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  # ==================== LIQUIBASE ====================
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+
+  # ==================== JACKSON ====================
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+# ==================== SERVER ====================
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# ==================== OPENAPI / SPRINGDOC ====================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+
+# ==================== JWT ====================
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET:REPLACE_WITH_SECURE_SECRET_KEY}
+      expiration: 86400000       # 24 horas en ms
+      refresh-expiration: 604800000  # 7 dias en ms
+
+# ==================== LOGGING ====================
+logging:
+  level:
+    root: INFO
+    com.openroof: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ==================== SUPABASE STORAGE ====================
+# Bucket compartido por todo el equipo. No incluir claves en este archivo.
+# Setear la variable de entorno `SUPABASE_SERVICE_ROLE_KEY` en tu máquina.
+supabase:
+  url: ${SUPABASE_URL:https://YOUR-PROJECT-REF.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  storage:
+    bucket: openroof-images
+
+# ==================== UPLOAD ====================
+upload:
+  max-file-size: 5MB
+  allowed-types: image/jpeg,image/png,image/webp
+
+# ==================== MULTIPART ====================
+spring.servlet.multipart:
+  max-file-size: 5MB
+  max-request-size: 10MB
