@@ -60,7 +60,7 @@ springdoc:
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
+      secret-key: ${JWT_SECRET:REPLACE_WITH_SECURE_SECRET_KEY}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -73,12 +73,12 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-## ==================== SUPABASE STORAGE ====================
+# ==================== SUPABASE STORAGE ====================
 # Bucket compartido por todo el equipo. No incluir claves en este archivo.
 # Setear la variable de entorno `SUPABASE_SERVICE_ROLE_KEY` en tu máquina.
 supabase:
-  url: ${SUPABASE_URL:https://etpxedhtursffyoeapqr.supabase.co}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:REPLACE_WITH_SERVICE_ROLE_KEY}
+  url: ${SUPABASE_URL:https://YOUR-PROJECT-REF.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
     bucket: openroof-images
 

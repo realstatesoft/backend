@@ -1,11 +1,13 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.StorageException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,16 +32,21 @@ public class SupabaseStorageService implements StorageService {
     private final String supabaseUrl;
     private final String bucket;
     private final List<String> allowedTypes;
+    private final long maxFileSizeBytes;
+    private final String maxFileSizeLabel;
 
     public SupabaseStorageService(
             @Value("${supabase.url}") String supabaseUrl,
             @Value("${supabase.service-role-key}") String serviceRoleKey,
             @Value("${supabase.storage.bucket}") String bucket,
-            @Value("#{'${upload.allowed-types}'.split(',')}") List<String> allowedTypes
+            @Value("#{'${upload.allowed-types}'.split(',')}") List<String> allowedTypes,
+            @Value("${upload.max-file-size:5MB}") String maxFileSize
     ) {
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
         this.allowedTypes = allowedTypes;
+        this.maxFileSizeBytes = DataSize.parse(maxFileSize).toBytes();
+        this.maxFileSizeLabel = maxFileSize;
 
         this.restClient = RestClient.builder()
                 .baseUrl(supabaseUrl + "/storage/v1")
@@ -77,7 +84,7 @@ public class SupabaseStorageService implements StorageService {
             throw new BadRequestException("No se pudo leer el archivo: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error al subir archivo a Supabase Storage: {}", e.getMessage(), e);
-            throw new RuntimeException("Error al subir archivo a Supabase Storage: " + e.getMessage(), e);
+            throw new StorageException("Error al subir archivo a Supabase Storage: " + e.getMessage(), e);
         }
     }
 
@@ -86,6 +93,11 @@ public class SupabaseStorageService implements StorageService {
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
+        }
+
+        if (file.getSize() > maxFileSizeBytes) {
+            throw new BadRequestException(
+                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
         }
 
         String contentType = file.getContentType();

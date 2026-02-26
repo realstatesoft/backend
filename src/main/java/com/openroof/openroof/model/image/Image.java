@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import lombok.*;
 
 /**
- * Entidad que persiste los metadatos de una imagen subida a S3.
+ * Entidad que persiste los metadatos de una imagen subida a Supabase Storage.
  */
 @Entity
 @Table(name = "images")

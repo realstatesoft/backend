@@ -18,6 +18,4 @@ public interface PropertyMediaRepository extends JpaRepository<PropertyMedia, Lo
     Optional<PropertyMedia> findByPropertyIdAndIsPrimaryTrue(Long propertyId);
 
     long countByPropertyId(Long propertyId);
-
-    void deleteByPropertyIdAndId(Long propertyId, Long mediaId);
 }
