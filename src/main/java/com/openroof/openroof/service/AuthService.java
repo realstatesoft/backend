@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 
 /* * Auth: Enrique Rios
- * Desc: Servicio central de autenticación que gestiona el ciclo de vida de usuarios y sus sesiones.
+ * Desc: Servicio central de autenticación que gestiona el ciclo de vida de usuarios y sus sesiones. sss
  */
 @Service
 @RequiredArgsConstructor
