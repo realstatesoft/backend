@@ -1,0 +1,54 @@
+# ============================================================
+# application-prod.yml — Perfil PRODUCCIÓN
+# Activar con: SPRING_PROFILES_ACTIVE=prod
+# Todos los valores sensibles vienen de variables de entorno.
+# ============================================================
+
+# Render inyecta PORT; Spring Boot la lee aquí como server.port
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Liquibase igual habilitado — migraciones automáticas al arrancar
+  liquibase:
+    enabled: true
+
+# ── JWT ──
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: 86400000        # 24 horas
+      refresh-expiration: 604800000 # 7 días
+
+# ── Supabase ──
+supabase:
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+
+# ── Logging reducido en producción ──
+logging:
+  level:
+    root: WARN
+    com.openroof: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+
+# ── Swagger deshabilitado en producción (opcional, comentar para dejarlo activo) ──
+# springdoc:
+#   swagger-ui:
+#     enabled: false
+#   api-docs:
+#     enabled: false
