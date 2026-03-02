@@ -1,0 +1,32 @@
+# Build output
+target/
+
+# IDE / editores
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# Maven wrapper (solo se excluye el script, no la config)
+mvnw.cmd
+
+# Logs y archivos temporales
+*.log
+*.tmp
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docs y scripts (no van en producción)
+docs/
+scripts/
+
+# Archivos de desarrollo local
+*.env
+.env
+application.yml.example
+
+# Clases compiladas intermedias
+**/*.class

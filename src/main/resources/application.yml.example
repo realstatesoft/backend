@@ -3,12 +3,13 @@ spring:
     name: OpenRoof
 
   # ==================== DATASOURCE ====================
-  # Para Supabase activar perfil: --spring.profiles.active=supabase
-  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  # Supabase PostgreSQL via Connection Pooler
+  # Use environment variables in your local environment or CI.
+  # Examples: SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.etpxedhtursffyoeapqr
-    password: OpenRoof$!*Supabase#Platform2026
+    url: ${SUPABASE_DB_URL:jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0}
+    username: ${SUPABASE_DB_USER:postgres}
+    password: ${SUPABASE_DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -59,7 +60,7 @@ springdoc:
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
+      secret-key: ${JWT_SECRET:REPLACE_WITH_SECURE_SECRET_KEY}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -73,10 +74,11 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 # ==================== SUPABASE STORAGE ====================
-# Obtener de: Supabase Dashboard → Project Settings → API
+# Bucket compartido por todo el equipo. No incluir claves en este archivo.
+# Setear la variable de entorno `SUPABASE_SERVICE_ROLE_KEY` en tu máquina.
 supabase:
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL:https://YOUR-PROJECT-REF.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
     bucket: openroof-images
 

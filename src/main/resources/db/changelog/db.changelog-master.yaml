@@ -5,3 +5,6 @@ databaseChangeLog:
   - include:
       file: changelogs/002-seed-catalog-data.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/003-create-images-table.yaml
+      relativeToChangelogFile: true
