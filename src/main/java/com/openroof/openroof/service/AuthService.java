@@ -57,7 +57,12 @@ public class AuthService {
                 }
 
                 // Convertimos el String que viene del frontend al Enum de Java
-                UserRole selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+                UserRole selectedRole;
+                try {
+                        selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+                } catch (IllegalArgumentException | NullPointerException e) {
+                        throw new BadRequestException("Rol inválido: " + request.getRole());
+                }
 
                 var user = User.builder()
                                 .email(request.getEmail())

@@ -30,5 +30,5 @@ public class RegisterRequest {
     private String phone;
 
     @NotBlank(message = "El rol es obligatorio")
-    private String role; 
+    private String role;
 }
