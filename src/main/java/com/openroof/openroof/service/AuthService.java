@@ -56,17 +56,18 @@ public class AuthService {
                         throw new BadRequestException("El email ya está registrado");
                 }
 
+                // Convertimos el String que viene del frontend al Enum de Java
+                UserRole selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(UserRole.BUYER)
+                                .role(selectedRole)
                                 .build();
 
                 userRepository.save(user);
-
-                // Le pasamos el request a la función que genera la respuesta
                 return generateFullAuthResponse(user, httpRequest);
         }
 
@@ -78,7 +79,7 @@ public class AuthService {
          */
         @Transactional
         public AuthResponse refreshToken(String oldRefreshToken, HttpServletRequest httpRequest) {
-         
+
                 String userEmail = jwtService.extractUsername(oldRefreshToken);
 
                 var user = userRepository.findByEmail(userEmail)
@@ -96,7 +97,6 @@ public class AuthService {
 
                 userSessionRepository.delete(session);
 
-        
                 return generateFullAuthResponse(user, httpRequest);
         }
 

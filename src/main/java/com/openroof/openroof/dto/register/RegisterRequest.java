@@ -17,7 +17,6 @@ import jakarta.validation.constraints.Size;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegisterRequest {
-
     @NotBlank(message = "El nombre es obligatorio")
     private String name;
 
@@ -26,8 +25,10 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
 
     private String phone;
+
+    @NotBlank(message = "El rol es obligatorio")
+    private String role; 
 }

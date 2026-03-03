@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints para registro, login y gestión de sesiones")
+@CrossOrigin(origins = "http://localhost:5173") // Hay que modificar este para que apunte al puerto correcto del frontend
 public class AuthController {
 
     private final AuthService authService;
