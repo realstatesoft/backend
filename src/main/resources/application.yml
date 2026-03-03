@@ -55,6 +55,10 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
+# ==================== CORS ====================
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
+
 # ==================== JWT ====================
 application:
   security:
