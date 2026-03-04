@@ -49,11 +49,13 @@ public class PropertyController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas las propiedades (paginado)")
+    @Operation(summary = "Listar todas las propiedades (paginado, con filtros opcionales)")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAll(
+            @Parameter(description = "Filtrar por tipo de propiedad") @RequestParam(required = false) String propertyType,
+            @Parameter(description = "Filtrar por estado") @RequestParam(required = false) String status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(pageable);
+        Page<PropertySummaryResponse> page = propertyService.getAll(propertyType, status, pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
