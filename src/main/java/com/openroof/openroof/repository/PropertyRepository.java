@@ -27,8 +27,11 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     Page<Property> findByLocation_Id(Long locationId, Pageable pageable);
 
-    @Query("SELECT p FROM Property p WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    @Query("SELECT p FROM Property p LEFT JOIN p.location loc WHERE " +
+            "LOWER(p.address) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(loc.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(loc.city) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(loc.department) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Property> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     long countByStatus(PropertyStatus status);

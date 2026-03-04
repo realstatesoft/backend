@@ -6,6 +6,7 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.PropertyStatus;
+import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.*;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
@@ -98,9 +99,23 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> getAll(Pageable pageable) {
-        return propertyRepository.findAll(pageable)
-                .map(propertyMapper::toSummaryResponse);
+    public Page<PropertySummaryResponse> getAll(String propertyType, String status, Pageable pageable) {
+        PropertyType type = propertyType != null ? PropertyType.valueOf(propertyType) : null;
+        PropertyStatus st = status != null ? PropertyStatus.valueOf(status) : null;
+
+        if (type == null && st == null) {
+            return propertyRepository.findAll(pageable)
+                    .map(propertyMapper::toSummaryResponse);
+        }
+
+        return propertyRepository.findAll((root, query, cb) -> {
+            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
+            if (type != null)
+                predicates.add(cb.equal(root.get("propertyType"), type));
+            if (st != null)
+                predicates.add(cb.equal(root.get("status"), st));
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        }, pageable).map(propertyMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
