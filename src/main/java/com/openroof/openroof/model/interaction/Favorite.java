@@ -6,6 +6,8 @@ import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "favorites", indexes = {
         @Index(name = "idx_favorites_user", columnList = "user_id"),
@@ -13,6 +15,7 @@ import lombok.*;
 }, uniqueConstraints = {
         @UniqueConstraint(name = "idx_favorites_unique", columnNames = {"user_id", "property_id"})
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -9,6 +9,8 @@ import org.hibernate.type.SqlTypes;
 
 import java.util.Map;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "audit_logs", indexes = {
         @Index(name = "idx_audit_logs_user", columnList = "user_id"),
@@ -16,6 +18,7 @@ import java.util.Map;
         @Index(name = "idx_audit_logs_action", columnList = "action"),
         @Index(name = "idx_audit_logs_date", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

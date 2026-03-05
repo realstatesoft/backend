@@ -1,7 +1,6 @@
 package com.openroof.openroof.model.property;
 
 import com.openroof.openroof.common.BaseEntity;
-import com.openroof.openroof.common.SoftDeletable;
 import com.openroof.openroof.common.embeddable.ConstructionDetails;
 import com.openroof.openroof.common.embeddable.GeoLocation;
 import com.openroof.openroof.common.embeddable.UtilityInfo;
@@ -34,7 +33,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Property extends BaseEntity implements SoftDeletable {
+public class Property extends BaseEntity {
 
     // ─── Relaciones ───────────────────────────────────────────────
 
@@ -155,10 +154,7 @@ public class Property extends BaseEntity implements SoftDeletable {
     @Builder.Default
     private Integer favoriteCount = 0;
 
-    // ─── Soft delete y publicación ────────────────────────────────
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    // ─── Publicación ─────────────────────────────────────────────
 
     @Column(name = "published_at")
     private LocalDateTime publishedAt;

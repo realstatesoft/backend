@@ -4,11 +4,14 @@ import com.openroof.openroof.model.enums.PropertyStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_status_history", indexes = {
         @Index(name = "idx_property_status_history_property", columnList = "property_id"),
         @Index(name = "idx_property_status_history_date", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

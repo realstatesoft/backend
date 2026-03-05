@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "leads", indexes = {
         @Index(name = "idx_leads_agent", columnList = "agent_id"),
@@ -21,6 +23,7 @@ import java.util.Map;
         @Index(name = "idx_leads_status", columnList = "status_id"),
         @Index(name = "idx_leads_source", columnList = "source")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

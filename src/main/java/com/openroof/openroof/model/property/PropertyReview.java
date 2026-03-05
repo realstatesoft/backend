@@ -4,11 +4,14 @@ import com.openroof.openroof.common.AbstractReview;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_reviews", indexes = {
         @Index(name = "idx_property_reviews_property", columnList = "property_id"),
         @Index(name = "idx_property_reviews_rating", columnList = "rating")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

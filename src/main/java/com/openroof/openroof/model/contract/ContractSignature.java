@@ -9,12 +9,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "contract_signatures", indexes = {
         @Index(name = "idx_signatures_contract", columnList = "contract_id"),
         @Index(name = "idx_signatures_signer", columnList = "signer_id"),
         @Index(name = "idx_signatures_signed", columnList = "signed_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

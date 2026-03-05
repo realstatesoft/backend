@@ -9,11 +9,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "agent_profiles", indexes = {
         @Index(name = "idx_agent_profiles_user", columnList = "user_id", unique = true),
         @Index(name = "idx_agent_profiles_rating", columnList = "avg_rating")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

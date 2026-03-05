@@ -13,6 +13,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "contracts", indexes = {
         @Index(name = "idx_contracts_property", columnList = "property_id"),
@@ -21,6 +23,7 @@ import java.util.List;
         @Index(name = "idx_contracts_status", columnList = "status"),
         @Index(name = "idx_contracts_type", columnList = "contract_type")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

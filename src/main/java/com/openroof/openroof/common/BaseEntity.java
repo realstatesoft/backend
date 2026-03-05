@@ -9,12 +9,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * Entidad base: ID incremental + created_at + updated_at + optimistic locking.
+ * Entidad base: ID incremental + created_at + updated_at + optimistic locking + soft delete.
+ * Todas las entidades heredan borrado lógico a través de {@link SoftDeletable}.
  */
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class BaseEntity {
+public abstract class BaseEntity implements SoftDeletable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +33,10 @@ public abstract class BaseEntity {
     @Version
     @Column(name = "version")
     private Long version;
+
+    // ─── Soft Delete ──────────────────────────────────────────────
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Override
     public boolean equals(Object o) {
