@@ -6,6 +6,8 @@ import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_views", indexes = {
         @Index(name = "idx_property_views_property", columnList = "property_id"),
@@ -13,6 +15,7 @@ import lombok.*;
         @Index(name = "idx_property_views_date", columnList = "created_at"),
         @Index(name = "idx_property_views_property_date", columnList = "property_id, created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -5,6 +5,8 @@ import com.openroof.openroof.model.enums.InteractionType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "client_interactions", indexes = {
         @Index(name = "idx_interactions_agent", columnList = "agent_id"),
@@ -13,6 +15,7 @@ import lombok.*;
         @Index(name = "idx_interactions_type", columnList = "type"),
         @Index(name = "idx_interactions_date", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

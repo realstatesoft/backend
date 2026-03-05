@@ -10,6 +10,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "visits", indexes = {
         @Index(name = "idx_visits_property", columnList = "property_id"),
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_visits_scheduled", columnList = "scheduled_at"),
         @Index(name = "idx_visits_status", columnList = "status")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

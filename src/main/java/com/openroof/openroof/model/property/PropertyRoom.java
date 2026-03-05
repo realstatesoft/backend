@@ -8,10 +8,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_rooms", indexes = {
         @Index(name = "idx_property_rooms_property", columnList = "property_id")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
