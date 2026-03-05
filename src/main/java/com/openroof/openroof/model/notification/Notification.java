@@ -11,6 +11,8 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "notifications", indexes = {
         @Index(name = "idx_notifications_user", columnList = "user_id"),
@@ -18,6 +20,7 @@ import java.util.Map;
         @Index(name = "idx_notifications_read", columnList = "read_at"),
         @Index(name = "idx_notifications_created", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

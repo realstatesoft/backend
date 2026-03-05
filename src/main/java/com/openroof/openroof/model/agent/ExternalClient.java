@@ -9,11 +9,14 @@ import org.hibernate.type.SqlTypes;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "external_clients", indexes = {
         @Index(name = "idx_external_clients_agent", columnList = "agent_id"),
         @Index(name = "idx_external_clients_origin", columnList = "origin")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -16,6 +16,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "agent_clients", indexes = {
         @Index(name = "idx_agent_clients_agent", columnList = "agent_id"),
@@ -23,6 +25,7 @@ import java.util.List;
         @Index(name = "idx_agent_clients_status", columnList = "status"),
         @Index(name = "idx_agent_clients_priority", columnList = "priority")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

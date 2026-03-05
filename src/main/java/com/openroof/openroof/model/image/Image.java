@@ -9,8 +9,11 @@ import lombok.*;
 /**
  * Entidad que persiste los metadatos de una imagen subida a Supabase Storage.
  */
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "images")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
