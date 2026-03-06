@@ -92,8 +92,6 @@ public class AgentProfileController {
             @Parameter(description = "ID del agente") @PathVariable Long id) {
 
         agentProfileService.delete(id);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.<ApiResponse<Void>>status(HttpStatus.NO_CONTENT).build();
     }
 }

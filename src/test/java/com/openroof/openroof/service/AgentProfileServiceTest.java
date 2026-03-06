@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -129,12 +130,10 @@ class AgentProfileServiceTest {
         }
 
         @Test
-        @DisplayName("Crear agente sin licencia → lanza excepción de validación (cubierto por @Valid)")
-        void createAgentWithoutLicense_coveredByValidation() {
-            // La validación @NotBlank en el DTO la maneja Spring MVC,
-            // aquí validamos que el servicio delega correctamente
+        @DisplayName("Crear agente sin número de licencia → el servicio lo acepta (campo opcional)")
+        void createAgentWithoutLicense_serviceAcceptsNullLicense() {
             var request = new CreateAgentProfileRequest(
-                    1L, "Test Realty", "Bio", 5, "LIC-001", null, null
+                    1L, "Test Realty", "Bio", 5, null, null, null
             );
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
@@ -185,7 +184,7 @@ class AgentProfileServiceTest {
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
             when(agentProfileRepository.existsByUser_Id(1L)).thenReturn(false);
-            when(agentSpecialtyRepository.findAllById(List.of(1L, 2L, 999L)))
+            when(agentSpecialtyRepository.findAllById(new LinkedHashSet<>(List.of(1L, 2L, 999L))))
                     .thenReturn(List.of(new AgentSpecialty(), new AgentSpecialty())); // only 2 found
 
             assertThatThrownBy(() -> agentProfileService.create(request))
@@ -257,7 +256,7 @@ class AgentProfileServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<AgentProfile> page = new PageImpl<>(List.of(testAgent), pageable, 1);
 
-            when(agentProfileRepository.findAll(pageable)).thenReturn(page);
+            when(agentProfileRepository.findAllWithUser(pageable)).thenReturn(page);
             when(agentProfileMapper.toSummaryResponse(testAgent)).thenReturn(testSummary);
 
             Page<AgentProfileSummaryResponse> result = agentProfileService.getAll(pageable);
@@ -274,7 +273,7 @@ class AgentProfileServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<AgentProfile> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
 
-            when(agentProfileRepository.findAll(pageable)).thenReturn(page);
+            when(agentProfileRepository.findAllWithUser(pageable)).thenReturn(page);
 
             Page<AgentProfileSummaryResponse> result = agentProfileService.getAll(pageable);
 
@@ -308,13 +307,13 @@ class AgentProfileServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<AgentProfile> page = new PageImpl<>(List.of(testAgent), pageable, 1);
 
-            when(agentProfileRepository.findAll(pageable)).thenReturn(page);
+            when(agentProfileRepository.findAllWithUser(pageable)).thenReturn(page);
             when(agentProfileMapper.toSummaryResponse(testAgent)).thenReturn(testSummary);
 
             Page<AgentProfileSummaryResponse> result = agentProfileService.search("", pageable);
 
             assertThat(result.getTotalElements()).isEqualTo(1);
-            verify(agentProfileRepository).findAll(pageable);
+            verify(agentProfileRepository).findAllWithUser(pageable);
             verify(agentProfileRepository, never()).searchByKeyword(anyString(), any());
         }
     }
@@ -379,7 +378,7 @@ class AgentProfileServiceTest {
             );
 
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
-            when(agentSpecialtyRepository.findAllById(List.of(1L))).thenReturn(List.of(spec));
+            when(agentSpecialtyRepository.findAllById(new LinkedHashSet<>(List.of(1L)))).thenReturn(List.of(spec));
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
             when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
 

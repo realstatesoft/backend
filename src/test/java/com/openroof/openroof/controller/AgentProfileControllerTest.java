@@ -5,8 +5,13 @@ import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentProfileService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,12 +53,27 @@ class AgentProfileControllerTest {
     private AgentProfileService agentProfileService;
 
     @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
     private JwtService jwtService;
 
     @MockitoBean
     private UserDetailsService userDetailsService;
 
     private static final String API_BASE = "/agents";
+
+    @BeforeEach
+    void setupJwtFilterPassThrough() throws Exception {
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(jwtAuthenticationFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+    }
 
     private AgentProfileResponse sampleResponse() {
         return new AgentProfileResponse(
