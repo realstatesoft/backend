@@ -62,11 +62,10 @@ public class PropertyController {
     @GetMapping("/owner/{ownerId}")
     @Operation(summary = "Listar propiedades de un propietario")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getByOwner(
-            @Parameter(description = "ID del propietario") @PathVariable Long ownerId,
+            @PathVariable Long ownerId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<PropertySummaryResponse> page = propertyService.getByOwner(ownerId, pageable);
-        return ResponseEntity.ok(ApiResponse.ok(page));
+        return ResponseEntity.ok(ApiResponse.ok(propertyService.getByOwner(ownerId, pageable)));
     }
 
     @GetMapping("/search")
