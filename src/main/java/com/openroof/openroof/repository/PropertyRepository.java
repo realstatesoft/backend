@@ -4,15 +4,18 @@ import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.Visibility;
 import com.openroof.openroof.model.property.Property;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Repository
 public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSpecificationExecutor<Property> {
@@ -35,4 +38,33 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     Page<Property> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     long countByStatus(PropertyStatus status);
+
+
+    // TRASHCAN ─────────────────────────────────────────
+
+    // get properties in trashcan of a given user
+    Page<Property> findByOwnerIdAndTrashedAtIsNotNull(Long ownerId, Pageable pageable);
+
+    // executed as a scheduled job
+    // sets properties as 'deleted' (definitive)
+    @Modifying
+    @Query("""
+    UPDATE Property p
+    SET p.deletedAt = :now,
+        p.trashedAt = null
+    WHERE p.trashedAt IS NOT NULL
+    AND p.trashedAt < :threshold
+    """)
+    void deleteExpiredTrash(@Param("threshold") LocalDateTime threshold, @Param("now") LocalDateTime now);
+
+    // clear trashcan of a given user, returns deleted count
+    @Modifying
+    @Query("""
+    UPDATE Property p
+    SET p.deletedAt = :now,
+        p.trashedAt = null
+    WHERE p.owner.id = :ownerId
+    AND p.trashedAt IS NOT NULL
+    """)
+    int clearTrashcanByOwner(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
 }
