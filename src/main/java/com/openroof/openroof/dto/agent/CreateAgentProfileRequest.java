@@ -18,7 +18,6 @@ public record CreateAgentProfileRequest(
         @Min(value = 0, message = "Los años de experiencia no pueden ser negativos")
         Integer experienceYears,
 
-        @NotBlank(message = "El número de licencia es obligatorio")
         @Size(max = 100, message = "El número de licencia no puede exceder 100 caracteres")
         String licenseNumber,
 

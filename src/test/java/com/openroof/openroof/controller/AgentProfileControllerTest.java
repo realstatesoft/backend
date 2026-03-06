@@ -103,9 +103,8 @@ class AgentProfileControllerTest {
         }
 
         @Test
-        @DisplayName("Crear agente sin licencia → 400 validación")
-        void createAgentWithoutLicense_returns400() throws Exception {
-            // licenseNumber es @NotBlank, enviamos null
+        @DisplayName("Crear agente sin licencia → 201 (licencia opcional)")
+        void createAgentWithoutLicense_returns201() throws Exception {
             String json = """
                     {
                         "userId": 1,
@@ -115,12 +114,15 @@ class AgentProfileControllerTest {
                     }
                     """;
 
+            when(agentProfileService.create(any(CreateAgentProfileRequest.class)))
+                    .thenReturn(sampleResponse());
+
             mockMvc.perform(post(API_BASE)
                             .with(user("admin").roles("ADMIN"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.success").value(false));
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.success").value(true));
         }
 
         @Test
