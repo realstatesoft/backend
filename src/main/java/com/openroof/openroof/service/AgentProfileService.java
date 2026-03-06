@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -71,14 +73,14 @@ public class AgentProfileService {
 
     @Transactional(readOnly = true)
     public Page<AgentProfileSummaryResponse> getAll(Pageable pageable) {
-        return agentProfileRepository.findAll(pageable)
+        return agentProfileRepository.findAllWithUser(pageable)
                 .map(agentProfileMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
     public Page<AgentProfileSummaryResponse> search(String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
-            return agentProfileRepository.findAll(pageable)
+            return agentProfileRepository.findAllWithUser(pageable)
                     .map(agentProfileMapper::toSummaryResponse);
         }
         return agentProfileRepository.searchByKeyword(keyword.trim(), pageable)
@@ -128,8 +130,9 @@ public class AgentProfileService {
         if (specialtyIds == null || specialtyIds.isEmpty()) {
             return new ArrayList<>();
         }
-        List<AgentSpecialty> specialties = agentSpecialtyRepository.findAllById(specialtyIds);
-        if (specialties.size() != specialtyIds.size()) {
+        Set<Long> uniqueIds = new LinkedHashSet<>(specialtyIds);
+        List<AgentSpecialty> specialties = agentSpecialtyRepository.findAllById(uniqueIds);
+        if (specialties.size() != uniqueIds.size()) {
             throw new BadRequestException("Algunas especialidades no fueron encontradas");
         }
         return specialties;
