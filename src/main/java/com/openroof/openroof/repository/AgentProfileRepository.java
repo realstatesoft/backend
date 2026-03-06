@@ -17,7 +17,15 @@ public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long
 
     boolean existsByUser_Id(Long userId);
 
-    @Query("SELECT a FROM AgentProfile a JOIN a.user u " +
+    @Query(value = "SELECT a FROM AgentProfile a JOIN FETCH a.user",
+           countQuery = "SELECT COUNT(a) FROM AgentProfile a")
+    Page<AgentProfile> findAllWithUser(Pageable pageable);
+
+    @Query(value = "SELECT a FROM AgentProfile a JOIN FETCH a.user u " +
+           "WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(a.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(a.licenseNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))",
+           countQuery = "SELECT COUNT(a) FROM AgentProfile a JOIN a.user u " +
            "WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(a.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(a.licenseNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))")
