@@ -6,6 +6,8 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentProfileMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.agent.AgentSpecialty;
+import com.openroof.openroof.model.enums.PropertyCategory;
+import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -13,6 +15,7 @@ import com.openroof.openroof.repository.AgentSpecialtyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -116,6 +120,105 @@ public class AgentProfileService {
         AgentProfile agent = findAgentOrThrow(id);
         agent.softDelete();
         agentProfileRepository.save(agent);
+    }
+
+    // ─── SUGGESTED AGENTS ─────────────────────────────────────────
+
+    /**
+     * Obtiene agentes sugeridos basados en el tipo de propiedad y categoría.
+     * La lógica busca agentes cuyas especialidades coincidan con el tipo de propiedad.
+     */
+    @Transactional(readOnly = true)
+    public List<AgentProfileSummaryResponse> getSuggestedAgents(SuggestedAgentsRequest request) {
+        int limit = request.limit() != null ? request.limit() : 5;
+
+        // 1. Construir lista de especialidades relevantes basadas en el tipo de propiedad
+        List<String> relevantSpecialties = buildRelevantSpecialties(
+                request.propertyType(),
+                request.category()
+        );
+
+        List<AgentProfile> agents;
+
+        if (!relevantSpecialties.isEmpty()) {
+            // 2. Buscar agentes con especialidades coincidentes
+            agents = agentProfileRepository.findBySpecialtyNamesOrderByRating(relevantSpecialties);
+        } else {
+            // 3. Si no hay especialidades específicas, obtener los mejor calificados
+            agents = agentProfileRepository.findTopAgentsOrderByRating(PageRequest.of(0, limit));
+        }
+
+        // 4. Limitar resultados y mapear a DTO
+        return agents.stream()
+                .limit(limit)
+                .map(agentProfileMapper::toSummaryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Construye una lista de nombres de especialidades relevantes basados en el tipo de propiedad.
+     */
+    private List<String> buildRelevantSpecialties(PropertyType propertyType, PropertyCategory category) {
+        List<String> specialties = new ArrayList<>();
+
+        // Mapeo de PropertyType a especialidades comunes
+        if (propertyType != null) {
+            switch (propertyType) {
+                case HOUSE -> {
+                    specialties.add("residencial");
+                    specialties.add("casas");
+                    specialties.add("residential");
+                }
+                case APARTMENT -> {
+                    specialties.add("residencial");
+                    specialties.add("departamentos");
+                    specialties.add("apartamentos");
+                    specialties.add("residential");
+                }
+                case LAND -> {
+                    specialties.add("terrenos");
+                    specialties.add("lotes");
+                    specialties.add("land");
+                }
+                case OFFICE -> {
+                    specialties.add("comercial");
+                    specialties.add("oficinas");
+                    specialties.add("commercial");
+                }
+                case WAREHOUSE -> {
+                    specialties.add("industrial");
+                    specialties.add("depósitos");
+                    specialties.add("bodegas");
+                    specialties.add("commercial");
+                }
+                case FARM -> {
+                    specialties.add("rural");
+                    specialties.add("campos");
+                    specialties.add("estancias");
+                    specialties.add("agrícola");
+                }
+            }
+        }
+
+        // Agregar especialidades por categoría
+        if (category != null) {
+            switch (category) {
+                case SALE -> {
+                    specialties.add("ventas");
+                    specialties.add("sales");
+                }
+                case RENT -> {
+                    specialties.add("alquileres");
+                    specialties.add("rentals");
+                }
+                case SALE_OR_RENT -> {
+                    specialties.add("ventas");
+                    specialties.add("alquileres");
+                }
+            }
+        }
+
+        return specialties;
     }
 
     // ─── Helpers privados ─────────────────────────────────────────
