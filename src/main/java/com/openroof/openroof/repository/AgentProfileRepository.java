@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,4 +31,24 @@ public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long
            "OR LOWER(a.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(a.licenseNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<AgentProfile> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Busca agentes que tengan especialidades cuyos nombres coincidan con alguno de los valores dados.
+     * Ordena por rating descendente, luego por experiencia descendente.
+     */
+    @Query("SELECT DISTINCT a FROM AgentProfile a " +
+           "JOIN FETCH a.user u " +
+           "LEFT JOIN a.specialties s " +
+           "WHERE LOWER(s.name) IN :specialtyNames " +
+           "ORDER BY a.avgRating DESC, a.experienceYears DESC NULLS LAST")
+    List<AgentProfile> findBySpecialtyNamesOrderByRating(
+            @Param("specialtyNames") List<String> specialtyNames);
+
+    /**
+     * Obtiene los agentes mejor calificados (top N por rating y experiencia).
+     */
+    @Query("SELECT a FROM AgentProfile a " +
+           "JOIN FETCH a.user u " +
+           "ORDER BY a.avgRating DESC, a.experienceYears DESC NULLS LAST")
+    List<AgentProfile> findTopAgentsOrderByRating(Pageable pageable);
 }
