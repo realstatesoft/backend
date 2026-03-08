@@ -27,7 +27,7 @@ import java.util.List;
         @Index(name = "idx_properties_highlighted", columnList = "highlighted"),
         @Index(name = "idx_properties_created", columnList = "created_at")
 })
-@SQLRestriction("deleted_at IS NULL AND trashed_at IS NULL")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

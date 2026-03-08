@@ -105,7 +105,7 @@ public class PropertyService {
         PropertyStatus st = status != null ? PropertyStatus.valueOf(status) : null;
 
         if (type == null && st == null) {
-            return propertyRepository.findAll(pageable)
+            return propertyRepository.findAllByTrashedAtIsNull(pageable)
                     .map(propertyMapper::toSummaryResponse);
         }
 
@@ -121,7 +121,7 @@ public class PropertyService {
 
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> getByOwner(Long ownerId, Pageable pageable) {
-        return propertyRepository.findByOwner_Id(ownerId, pageable)
+        return propertyRepository.findByOwner_IdAndTrashedAtIsNull(ownerId, pageable)
                 .map(propertyMapper::toSummaryResponse);
     }
 

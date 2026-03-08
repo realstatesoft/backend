@@ -145,9 +145,14 @@ public class PropertyController {
 
         int deletedCount = propertyService.clearTrashcanForUser(user.getId());
 
+        String message = deletedCount > 0
+                ? "Se vació la papelera. Propiedades eliminadas: " + deletedCount
+                : "La papelera ya estaba vacía.";
+
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
-                        .message("Se vació la papelera. Propiedades eliminadas: " + deletedCount)
+                        .success(deletedCount > 0)
+                        .message(message)
                         .build()
         );
     }

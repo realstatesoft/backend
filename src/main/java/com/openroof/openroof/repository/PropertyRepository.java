@@ -22,6 +22,11 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     Page<Property> findByOwner_Id(Long ownerId, Pageable pageable);
 
+    // filter properties in trashcan
+    Page<Property> findAllByTrashedAtIsNull(Pageable pageable);
+
+    Page<Property> findByOwner_IdAndTrashedAtIsNull(Long ownerId, Pageable pageable);
+
     Page<Property> findByStatusAndVisibility(PropertyStatus status, Visibility visibility, Pageable pageable);
 
     Page<Property> findByPropertyType(PropertyType propertyType, Pageable pageable);
@@ -30,11 +35,11 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     Page<Property> findByLocation_Id(Long locationId, Pageable pageable);
 
-    @Query("SELECT p FROM Property p LEFT JOIN p.location loc WHERE " +
+    @Query("SELECT p FROM Property p LEFT JOIN p.location loc WHERE p.trashedAt IS NULL AND (" +
             "LOWER(p.address) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(loc.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(loc.city) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(loc.department) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+            "OR LOWER(loc.department) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Property> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     long countByStatus(PropertyStatus status);
@@ -61,10 +66,10 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Modifying
     @Query("""
     UPDATE Property p
-    SET p.deletedAt = :now,
-        p.trashedAt = null
+    SET p.deletedAt = :now
     WHERE p.owner.id = :ownerId
-    AND p.trashedAt IS NOT NULL
+        AND p.trashedAt IS NOT NULL
+        AND p.deletedAt IS NULL
     """)
     int clearTrashcanByOwner(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
 }
