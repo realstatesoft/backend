@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-trashed-at-to-properties
+      author: tania
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: trashed_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  remarks: Timestamp when the property was moved to trash
+                  constraints:
+                    nullable: true
+        - createIndex:
+            indexName: idx_properties_owner_trash
+            tableName: properties
+            columns:
+              - column:
+                  name: owner_id
+              - column:
+                  name: trashed_at
+        - createIndex:
+            indexName: idx_properties_trashed_at
+            tableName: properties
+            columns:
+              - column:
+                  name: trashed_at

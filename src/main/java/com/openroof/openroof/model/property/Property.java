@@ -159,6 +159,10 @@ public class Property extends BaseEntity {
     @Column(name = "published_at")
     private LocalDateTime publishedAt;
 
+    // ─── Papelera de Reciclaje ────────────────────────────────────
+    @Column(name = "trashed_at")
+    private LocalDateTime trashedAt;
+
     // ─── Colecciones ──────────────────────────────────────────────
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)

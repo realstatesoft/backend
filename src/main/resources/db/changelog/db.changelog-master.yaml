@@ -11,3 +11,8 @@ databaseChangeLog:
   - include:
       file: changelogs/004-add-soft-delete-to-all-tables.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/005-add-trashed-at-to-property.yaml
+      relativeToChangelogFile: true
+
+    
