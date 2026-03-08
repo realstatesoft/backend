@@ -47,6 +47,15 @@ public class PropertyAssignmentService {
         // Block duplicate active assignments
         assignmentRepository.findActiveByPropertyAndAgent(
                 propertyId, request.agentProfileId(),
+=======
+        AgentProfile agent = agentProfileRepository.findById(request.agentId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Perfil de agente no encontrado con ID: " + request.agentId()));
+
+        // Block duplicate active assignments
+        assignmentRepository.findActiveByPropertyAndAgent(
+                propertyId, request.agentId(),
+>>>>>>> 57ec808 (Implementación de  PropertyAssignment (Rodrigo Ibarra))
                 List.of(AssignmentStatus.PENDING, AssignmentStatus.ACCEPTED))
                 .ifPresent(existing -> {
                     throw new BadRequestException(
