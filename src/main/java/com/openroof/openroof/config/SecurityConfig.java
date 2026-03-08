@@ -41,6 +41,7 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final UserDetailsService userDetailsService;
+        private final com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
         /** Rutas que NO requieren autenticación */
         private static final String[] PUBLIC_URLS = {
@@ -63,6 +64,8 @@ public class SecurityConfig {
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
