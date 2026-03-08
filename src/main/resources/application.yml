@@ -6,9 +6,9 @@ spring:
   # Para Supabase activar perfil: --spring.profiles.active=supabase
   # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.etpxedhtursffyoeapqr
-    password: OpenRoof$!*Supabase#Platform2026
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}
+    username: ${DB_USERNAME:openroof}
+    password: ${DB_PASSWORD:openroof123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -31,6 +31,7 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    default-schema: public
 
   # ==================== JACKSON ====================
   jackson:
