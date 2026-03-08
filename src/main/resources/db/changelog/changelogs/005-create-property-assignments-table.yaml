@@ -1,0 +1,100 @@
+databaseChangeLog:
+
+  # ──────────────────────────────────────────────────────────────────
+  # 005 – Crear tabla property_assignments
+  #        Permite que un owner delegue la gestión de una propiedad
+  #        a un agente sin transferir la titularidad.
+  # ──────────────────────────────────────────────────────────────────
+
+  - changeSet:
+      id: 005-create-property-assignments
+      author: openroof-team
+      comment: "Crea la tabla property_assignments para asignación de agentes por propietarios"
+      changes:
+        - createTable:
+            tableName: property_assignments
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: property_assignments_pkey
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+              - column:
+                  name: version
+                  type: BIGINT
+
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+              - column:
+                  name: property_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pa_property
+                    references: properties(id)
+
+              - column:
+                  name: agent_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pa_agent
+                    references: agent_profiles(id)
+
+              - column:
+                  name: assigned_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pa_assigned_by
+                    references: users(id)
+
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: PENDING
+
+              - column:
+                  name: assigned_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+
+        - createIndex:
+            indexName: idx_pa_property
+            tableName: property_assignments
+            columns:
+              - column:
+                  name: property_id
+
+        - createIndex:
+            indexName: idx_pa_agent
+            tableName: property_assignments
+            columns:
+              - column:
+                  name: agent_id
+
+        - createIndex:
+            indexName: idx_pa_status
+            tableName: property_assignments
+            columns:
+              - column:
+                  name: status
