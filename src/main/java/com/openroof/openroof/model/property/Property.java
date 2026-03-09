@@ -167,8 +167,11 @@ public class Property extends BaseEntity {
 
         // ─── Publicación ─────────────────────────────────────────────
 
-        @Column(name = "published_at")
-        private LocalDateTime publishedAt;
+    // ─── Papelera de Reciclaje ────────────────────────────────────
+    @Column(name = "trashed_at")
+    private LocalDateTime trashedAt;
+
+    // ─── Colecciones ──────────────────────────────────────────────
 
         // ─── Colecciones ──────────────────────────────────────────────
 
