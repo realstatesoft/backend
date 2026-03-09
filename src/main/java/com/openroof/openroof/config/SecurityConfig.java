@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -63,6 +64,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/logout-all")
                                                 .authenticated()
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -77,8 +77,6 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# ==================== SUPABASE STORAGE ====================
-# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: https://etpxedhtursffyoeapqr.supabase.co
   service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
@@ -94,3 +92,7 @@ upload:
 spring.servlet.multipart:
   max-file-size: 5MB
   max-request-size: 10MB
+
+# =================== TRASHCAN ======================
+trashcan: 
+  retention-days: 10
