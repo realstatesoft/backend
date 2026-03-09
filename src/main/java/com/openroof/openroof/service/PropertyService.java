@@ -6,24 +6,35 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.PropertyStatus;
-import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.*;
+import com.openroof.openroof.model.search.PropertySpecification;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class PropertyService {
+
+    /**
+     * Campos permitidos para ordenar. Cualquier otro valor se reemplaza por
+     * 'createdAt'.
+     */
+    private static final Set<String> VALID_SORT_FIELDS = Set.of(
+            "createdAt", "price", "bedrooms", "bathrooms", "surfaceArea", "title");
 
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
@@ -99,23 +110,10 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> getAll(String propertyType, String status, Pageable pageable) {
-        PropertyType type = propertyType != null ? PropertyType.valueOf(propertyType) : null;
-        PropertyStatus st = status != null ? PropertyStatus.valueOf(status) : null;
-
-        if (type == null && st == null) {
-            return propertyRepository.findAll(pageable)
-                    .map(propertyMapper::toSummaryResponse);
-        }
-
-        return propertyRepository.findAll((root, query, cb) -> {
-            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
-            if (type != null)
-                predicates.add(cb.equal(root.get("propertyType"), type));
-            if (st != null)
-                predicates.add(cb.equal(root.get("status"), st));
-            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
-        }, pageable).map(propertyMapper::toSummaryResponse);
+    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable) {
+        Specification<Property> spec = PropertySpecification.buildFilter(filter);
+        return propertyRepository.findAll(spec, sanitizePageable(pageable))
+                .map(propertyMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
@@ -216,6 +214,24 @@ public class PropertyService {
     }
 
     // ─── Helpers privados ─────────────────────────────────────────
+
+    /**
+     * Filtra los campos de sort del Pageable dejando solo los que están en
+     * VALID_SORT_FIELDS. Si ninguno es válido (p.ej. Swagger envía "string"),
+     * usa el default: createdAt DESC.
+     */
+    private Pageable sanitizePageable(Pageable pageable) {
+        List<Sort.Order> safeOrders = new ArrayList<>();
+        for (Sort.Order order : pageable.getSort()) {
+            if (VALID_SORT_FIELDS.contains(order.getProperty())) {
+                safeOrders.add(order);
+            }
+        }
+        Sort safeSort = safeOrders.isEmpty()
+                ? Sort.by(Sort.Direction.DESC, "createdAt")
+                : Sort.by(safeOrders);
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), safeSort);
+    }
 
     private Property findPropertyOrThrow(Long id) {
         return propertyRepository.findById(id)
