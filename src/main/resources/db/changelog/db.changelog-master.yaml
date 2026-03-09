@@ -15,6 +15,9 @@ databaseChangeLog:
       file: changelogs/005-create-property-assignments-table.yaml
       relativeToChangelogFile: true
   - include:
+      file: changelogs/005-create-visit-requests-table.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changelogs/005-add-buyer-tenant-to-properties.yaml
       relativeToChangelogFile: true
   - include:
