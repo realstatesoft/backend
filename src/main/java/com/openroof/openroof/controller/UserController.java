@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -23,6 +24,7 @@ public class UserController {
 
     @Operation(summary = "Obtener perfil", description = "Retorna los datos personales del usuario autenticado")
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(Principal principal) {
         UserProfileResponse profile = userService.getProfile(principal.getName());
         return ResponseEntity.ok(ApiResponse.ok(profile));
@@ -30,6 +32,7 @@ public class UserController {
 
     @Operation(summary = "Editar datos personales", description = "Actualiza nombre, teléfono y/o avatar del usuario autenticado")
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             @Valid @RequestBody UpdateUserRequest request,
             Principal principal) {
