@@ -116,6 +116,7 @@ FROM users u
 WHERE u.email = 'agente2@openroof.com'
   AND NOT EXISTS (SELECT 1 FROM agent_profiles WHERE license_number = 'PY-AG-2021-042');
 
+
 -- ============================================================
 -- 7. PROPIEDADES (10 propiedades variadas)
 -- Incluye adaptaciones para buyer_id y tenant_id mapeados a users(id)
