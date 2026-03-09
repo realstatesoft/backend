@@ -75,7 +75,7 @@ public class PropertyMapper {
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
                 p.getTrashedAt(),
-                p.getPublishedAt());
+                p.getTrashedAt());
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p) {

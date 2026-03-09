@@ -64,7 +64,7 @@ class AgentProfileServiceTest {
                 .passwordHash("hashed")
                 .name("Test Agent")
                 .phone("+1234567890")
-                .role(UserRole.BUYER)
+                .role(UserRole.USER)
                 .build();
         testUser.setId(1L);
 

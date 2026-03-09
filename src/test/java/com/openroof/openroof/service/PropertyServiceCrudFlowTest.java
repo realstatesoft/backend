@@ -241,7 +241,7 @@ class PropertyServiceCrudFlowTest {
                 List.of(),
                 LocalDateTime.now(),
                 LocalDateTime.now(),
-                null
+                null, null
         );
     }
 }
