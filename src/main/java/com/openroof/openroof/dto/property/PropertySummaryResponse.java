@@ -1,6 +1,7 @@
 package com.openroof.openroof.dto.property;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record PropertySummaryResponse(
         Long id,
@@ -14,5 +15,6 @@ public record PropertySummaryResponse(
         BigDecimal bathrooms,
         BigDecimal surfaceArea,
         String status,
-        String locationName) {
+        String locationName,
+        LocalDateTime trashedAt) {
 }

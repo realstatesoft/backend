@@ -42,6 +42,9 @@ public final class PropertySpecification {
                 query.distinct(true);
             }
 
+            // ── Excluir propiedades en papelera ──────────────────────────
+            predicates.add(cb.isNull(root.get("trashedAt")));
+
             // ── Disponibilidad ────────────────────────────────────────────
             if (filter.availability() != null && !filter.availability().isBlank()) {
                 try {

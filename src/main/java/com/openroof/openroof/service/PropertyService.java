@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -118,7 +119,7 @@ public class PropertyService {
 
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> getByOwner(Long ownerId, Pageable pageable) {
-        return propertyRepository.findByOwner_Id(ownerId, pageable)
+        return propertyRepository.findByOwner_IdAndTrashedAtIsNull(ownerId, pageable)
                 .map(propertyMapper::toSummaryResponse);
     }
 
@@ -192,6 +193,53 @@ public class PropertyService {
         Property property = findPropertyOrThrow(id);
         property.softDelete();
         propertyRepository.save(property);
+    }
+
+    public PropertyResponse trash(Long id) {
+        Property property = findPropertyOrThrow(id);
+
+        // check if property is already deleted or in trashcan
+        if (property.isDeleted())
+            throw new BadRequestException("La propiedad ya ha sido eliminada definitivamente");
+        if (property.getTrashedAt() != null)
+            throw new BadRequestException("La propiedad ya está en la papelera");
+
+        // else set trashed at date
+        property.setTrashedAt(LocalDateTime.now());
+        propertyRepository.save(property);
+        return propertyMapper.toResponse(property);
+    }
+
+    public PropertyResponse restoreFromTrashcan(Long id) {
+        Property property = findPropertyOrThrow(id);
+
+        // check if property is already deleted or in trashcan
+        if (property.isDeleted())
+            throw new BadRequestException("La propiedad ya ha sido eliminada definitivamente");
+        if (property.getTrashedAt() == null)
+            throw new BadRequestException("La propiedad no se encuentra en la papelera");
+
+        // else set trashedAt == null
+        property.setTrashedAt(null);
+        propertyRepository.save(property);
+        return propertyMapper.toResponse(property);
+    }
+
+    @Scheduled(cron = "0 0 3 * * *") // every day at 3 am
+    public void cleanExpiredTrash() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(10);
+        propertyRepository.deleteExpiredTrash(threshold, LocalDateTime.now());
+    }
+
+    // clear trashcan of a given user, returns deleted count
+    public int clearTrashcanForUser(Long ownerId) {
+        return propertyRepository.clearTrashcanByOwner(ownerId, LocalDateTime.now());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PropertySummaryResponse> getTrashcan(Long ownerId, Pageable pageable) {
+        return propertyRepository.findByOwnerIdAndTrashedAtIsNotNull(ownerId, pageable)
+                .map(propertyMapper::toSummaryResponse);
     }
 
     // ─── CHANGE STATUS ────────────────────────────────────────────
