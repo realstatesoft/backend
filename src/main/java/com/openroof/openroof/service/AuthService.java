@@ -113,6 +113,7 @@ public class AuthService {
                 saveUserSession(user, refreshToken, httpRequest);
 
                 return AuthResponse.builder()
+                                .id(user.getId())
                                 .accessToken(accessToken)
                                 .refreshToken(refreshToken)
                                 .email(user.getEmail())
