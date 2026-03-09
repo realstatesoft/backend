@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSpecificationExecutor<Property> {
@@ -72,4 +73,66 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
         AND p.deletedAt IS NULL
     """)
     int clearTrashcanByOwner(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
+
+    // RECOMMENDATION ALGORITHM ---------------
+
+    // search by coordinates
+    @Query(value = """
+        SELECT * FROM (
+            SELECT p.*,
+                   (6371 * acos(cos(radians(:baseLat)) * cos(radians(p.lat)) * 
+                    cos(radians(p.lng) - radians(:baseLng)) + sin(radians(:baseLat)) * 
+                    sin(radians(p.lat)))) AS distance_km
+            FROM properties p
+            WHERE p.id != :propertyId
+            AND p.status = 'PUBLISHED'
+            AND p.visibility = 'PUBLIC'
+            AND p.deleted_at IS NULL
+            AND p.trashed_at IS NULL
+            AND p.property_type = :propertyType
+            AND p.price BETWEEN :minPrice AND :maxPrice
+            AND p.lat IS NOT NULL
+            AND p.lng IS NOT NULL
+        ) AS subquery
+        WHERE distance_km < :maxDistanceKm
+        ORDER BY distance_km ASC, ABS(price - :basePrice) ASC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Property> findNearbyProperties(
+            @Param("propertyId") Long propertyId,
+            @Param("baseLat") Double baseLat,
+            @Param("baseLng") Double baseLng,
+            @Param("propertyType") String propertyType,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("basePrice") BigDecimal basePrice,
+            @Param("maxDistanceKm") Double maxDistanceKm,
+            @Param("limit") int limit
+    );
+
+    // fallback when no coordinates
+    @Query(value = """
+        SELECT p.* FROM properties p
+        JOIN locations l ON p.location_id = l.id
+        WHERE p.id != :propertyId
+        AND p.status = 'PUBLISHED'
+        AND p.visibility = 'PUBLIC'
+        AND p.deleted_at IS NULL
+        AND p.trashed_at IS NULL      
+        AND p.property_type = :propertyType
+        AND p.price BETWEEN :minPrice AND :maxPrice
+        AND l.city = :city
+        ORDER BY ABS(p.price - :basePrice) ASC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Property> findByCity(
+            @Param("propertyId") Long propertyId,
+            @Param("city") String city,
+            @Param("propertyType") String propertyType,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("basePrice") BigDecimal basePrice,
+            @Param("limit") int limit
+    );
+
 }

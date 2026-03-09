@@ -25,7 +25,11 @@ import java.util.List;
         @Index(name = "idx_properties_listing", columnList = "status, visibility, deleted_at"),
         @Index(name = "idx_properties_price", columnList = "price"),
         @Index(name = "idx_properties_highlighted", columnList = "highlighted"),
-        @Index(name = "idx_properties_created", columnList = "created_at")
+        @Index(name = "idx_properties_created", columnList = "created_at"),
+        @Index(name = "idx_properties_coords_filters", columnList = "lat, lng, status, visibility, property_type"),
+        @Index(name = "idx_properties_coords_price", columnList = "lat, lng, price"),
+        @Index(name = "idx_properties_city_search", columnList = "property_type, price, status, visibility"),
+        @Index(name = "idx_properties_highlighted_active", columnList = "highlighted, highlighted_until, status")
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
