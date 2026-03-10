@@ -10,10 +10,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.nio.file.attribute.UserPrincipal;
-import java.time.LocalDateTime;
 import java.util.List;
+
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +35,7 @@ public class PropertyController {
 
     @PostMapping
     @Operation(summary = "Crear una nueva propiedad")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<PropertyResponse>> create(
             @Valid @RequestBody CreatePropertyRequest request) {
 
@@ -101,7 +101,9 @@ public class PropertyController {
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     @Operation(summary = "Actualizar una propiedad (parcial)")
+    
     public ResponseEntity<ApiResponse<PropertyResponse>> update(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody UpdatePropertyRequest request) {
@@ -114,6 +116,7 @@ public class PropertyController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     public ResponseEntity<ApiResponse<Void>> delete(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
 
@@ -174,6 +177,7 @@ public class PropertyController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Cambiar el estado de una propiedad")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request) {

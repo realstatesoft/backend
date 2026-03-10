@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +48,7 @@ public class ImageUploadController {
             description = "Sube una imagen (jpg, png, webp) al storage configurado. "
                     + "Requiere autenticación JWT. Devuelve URL pública, nombre, tamaño y tipo."
     )
+    @PreAuthorize("isAuthenticated()")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",

@@ -1,9 +1,7 @@
 package com.openroof.openroof.model.enums;
 
 public enum UserRole {
-    BUYER,
-    TENANT,
-    OWNER,
-    AGENT,
-    ADMIN
+    USER,  // El usuario estándar
+    AGENT, // El agente inmobiliario
+    ADMIN  // El superusuario
 }
