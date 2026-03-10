@@ -270,14 +270,18 @@ public class PropertyService {
     }
 
     // ─── RECOMMENDATION ALGORITHM ─────────────────────────────────
+    // Uses weighted score system
+    // 1. find nearby properties of the same type, to apply similarity criteria to them
+    // 2. Each criterion is scored and normalized in a value from 1.0 (completely equal) to 0.0 (unequal)
+    // 3. each criterion is weighted to get the final similarity score
 
-    public List<Property> findSimilarProperties(Long propertyId, int limit) {
+    public List<PropertyResponse> findSimilarProperties(Long propertyId, int limit) {
         Property property = propertyRepository.findById(propertyId).orElseThrow();
 
         // check if property has coordinates
-        if (!hasValidCoordinates(property)) {
+        if (!property.getLocation().hasCoordinates()) {
             log.warn("Property with id: {} has no coordinates, using fallback search method", propertyId);
-            return fallbackSearch(property, limit);
+            return fallbackSearch(property, limit).stream().map(propertyMapper::toResponse).toList();
         }
 
         // price range
@@ -287,7 +291,7 @@ public class PropertyService {
 
         List<Property> allSuggestions = new ArrayList<>();
 
-        // search with increasing radius
+        // search nearby properties with increasing radius
         // get limit * 2 to rank by similarity score
         for (double radius : SEARCH_RADIUS) {
             List<Property> suggestions = propertyRepository.findNearbyProperties(
@@ -302,16 +306,17 @@ public class PropertyService {
                     limit * 2
             );
 
+            // rank nearby properties according to  similarity criteria
             if (suggestions.size() >= limit) {
                 log.debug("Found {} suggestions within {}km", suggestions.size(), radius);
-                return rankAndLimit(suggestions, property, limit);
+                return rankAndLimit(suggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
             }
 
             allSuggestions.addAll(suggestions);
 
             if (allSuggestions.size() >= limit) {
                 log.debug("Accumulated {} suggestions", allSuggestions.size());
-                return rankAndLimit(allSuggestions, property, limit);
+                return rankAndLimit(allSuggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
             }
         }
 
@@ -322,35 +327,41 @@ public class PropertyService {
             allSuggestions.addAll(citySuggestions);
         }
 
-        return rankAndLimit(allSuggestions, property, limit);
+        return rankAndLimit(allSuggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
     }
 
+    // rank candidates according to their score
     private List<Property> rankAndLimit(List<Property> candidates, Property base, int limit) {
         return candidates.stream()
                 .map(candidate -> new ScoredProperty(candidate, calculateRelevanceScore(base, candidate)))
                 .sorted((s1, s2) -> Double.compare(s2.getScore(), s1.getScore()))
                 .limit(limit)
                 .map(ScoredProperty::getProperty)
-                .distinct() // Por si hay duplicados
+                .distinct()
                 .toList();
     }
 
+    // Weighted similarity scoring
     private double calculateRelevanceScore(Property base, Property candidate) {
+        // calculate scores for all criteria
         double distanceScore = calculateDistanceScore(base, candidate);
         double priceScore = calculatePriceScore(base, candidate);
         double bedroomsScore = calculateBedroomsScore(base, candidate);
         double bathroomsScore = calculateBathroomsScore(base, candidate);
 
-        // Pesos: 50% distancia, 30% precio, 10% habitaciones, 10% baños
-        return (distanceScore * 0.5) +
-                (priceScore * 0.3) +
-                (bedroomsScore * 0.1) +
-                (bathroomsScore * 0.1);
+        // calculate final weighted score
+        return (distanceScore * 0.5) + // 50%
+                (priceScore * 0.3) + // 30%
+                (bedroomsScore * 0.1) + // 10%
+                (bathroomsScore * 0.1); // 10%
     }
 
+    // helpers for calculating all criteria
+    // each one returns a double between 0.0 or 1.0
     private double calculateDistanceScore(Property base, Property candidate) {
-        if (!hasValidCoordinates(base) || !hasValidCoordinates(candidate)) {
-            return 0.5; // Puntuación neutral si no hay coordenadas
+        // if no coordinates, neutral score
+        if (!base.getLocation().hasCoordinates() || !candidate.getLocation().hasCoordinates()) {
+            return 0.5;
         }
 
         double distance = haversineDistance(
@@ -360,9 +371,10 @@ public class PropertyService {
                 candidate.getLocation().getLng()
         );
 
-        // Score: 1.0 para 0km, 0.5 para 5km, 0.0 para 10km+
+        // 1.0 for 0km, 0.5 for 5km, 0.0 for 10km+
         return Math.max(0, 1.0 - (distance / 10.0));
     }
+
 
     private double calculatePriceScore(Property base, Property candidate) {
         double priceDiff = Math.abs(
@@ -374,6 +386,8 @@ public class PropertyService {
 
     private double calculateBedroomsScore(Property base, Property candidate) {
         int diff = Math.abs(base.getBedrooms() - candidate.getBedrooms());
+
+        // assign score according to difference in rooms
         return diff == 0 ? 1.0 : diff == 1 ? 0.7 : diff == 2 ? 0.4 : 0.1;
     }
 
@@ -381,11 +395,13 @@ public class PropertyService {
         double diff = Math.abs(
                 base.getBathrooms().doubleValue() - candidate.getBathrooms().doubleValue()
         );
+        // assign score according to difference in bathrooms
         return diff <= 0.5 ? 1.0 : diff <= 1.0 ? 0.7 : diff <= 2.0 ? 0.4 : 0.1;
     }
 
+    // haversine distance: used to find distance between two points in a sphere
     private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // Radio de la Tierra en km
+        final int R = 6371; // earth radius
 
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
@@ -399,12 +415,7 @@ public class PropertyService {
         return R * c;
     }
 
-    private boolean hasValidCoordinates(Property property) {
-        return property.getGeoLocation() != null
-                && property.getGeoLocation().getLat() != null
-                && property.getGeoLocation().getLng() != null;
-    }
-
+    // search for property without coordinates
     private List<Property> fallbackSearch(Property property, int limit) {
         if (limit <= 0) return List.of();
 
