@@ -77,31 +77,40 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     // RECOMMENDATION ALGORITHM ---------------
 
     // search by coordinates
+    // optimization: first select properties inside the bounding box to prevent
+    // performing heavy calculations trigonometric on all properties
     @Query(value = """
-        SELECT * FROM (
-            SELECT p.*,
-                   (6371 * acos(cos(radians(:baseLat)) * cos(radians(p.lat)) * 
-                    cos(radians(p.lng) - radians(:baseLng)) + sin(radians(:baseLat)) * 
-                    sin(radians(p.lat)))) AS distance_km
-            FROM properties p
-            WHERE p.id != :propertyId
-            AND p.status = 'PUBLISHED'
-            AND p.visibility = 'PUBLIC'
-            AND p.deleted_at IS NULL
-            AND p.trashed_at IS NULL
-            AND p.property_type = :propertyType
-            AND p.price BETWEEN :minPrice AND :maxPrice
-            AND p.lat IS NOT NULL
-            AND p.lng IS NOT NULL
-        ) AS subquery
-        WHERE distance_km < :maxDistanceKm
-        ORDER BY distance_km ASC, ABS(price - :basePrice) ASC
-        LIMIT :limit
-        """, nativeQuery = true)
+    SELECT * FROM (
+        SELECT p.*,
+               (6371 * acos(cos(radians(:baseLat)) * cos(radians(p.lat)) * 
+                cos(radians(p.lng) - radians(:baseLng)) + sin(radians(:baseLat)) * 
+                sin(radians(p.lat)))) AS distance_km
+        FROM properties p
+        WHERE p.id != :propertyId
+        AND p.status = 'PUBLISHED'
+        AND p.visibility = 'PUBLIC'
+        AND p.deleted_at IS NULL
+        AND p.trashed_at IS NULL
+        AND p.property_type = :propertyType
+        AND p.price BETWEEN :minPrice AND :maxPrice
+        AND p.lat IS NOT NULL
+        AND p.lng IS NOT NULL
+        -- filtering by lat and long (bounding box)
+        AND p.lat BETWEEN :minLat AND :maxLat
+        AND p.lng BETWEEN :minLng AND :maxLng
+    ) AS subquery
+    WHERE distance_km < :maxDistanceKm
+    ORDER BY distance_km ASC, ABS(price - :basePrice) ASC
+    LIMIT :limit
+    """, nativeQuery = true)
     List<Property> findNearbyProperties(
             @Param("propertyId") Long propertyId,
             @Param("baseLat") Double baseLat,
             @Param("baseLng") Double baseLng,
+            @Param("minLat") Double minLat,
+            @Param("maxLat") Double maxLat,
+            @Param("minLng") Double minLng,
+            @Param("maxLng") Double maxLng,
             @Param("propertyType") String propertyType,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,

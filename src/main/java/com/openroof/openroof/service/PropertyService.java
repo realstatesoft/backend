@@ -10,6 +10,8 @@ import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.*;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,8 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -37,11 +38,19 @@ public class PropertyService {
     private final InteriorFeatureRepository interiorFeatureRepository;
     private final PropertyMapper propertyMapper;
 
+    private static final double EARTH_RADIUS = 6371;
+
     // progressive radius for searching similar properties
     private static final double[] SEARCH_RADIUS = {1.0, 2.0, 3.0, 5.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0};
 
     // price variation percentage for searching similar properties
     private static final double PRICE_VARIATION = 0.30;
+
+    private static final double DISTANCE_WEIGHT = 0.5;
+    private static final double PRICE_WEIGHT = 0.3;
+    private static final double BEDROOMS_WEIGHT = 0.1;
+    private static final double BATHROOMS_WEIGHT = 0.1;
+    private static final double MAX_DISTANCE_KM = 10.0;
 
     // ─── CREATE ───────────────────────────────────────────────────
 
@@ -276,92 +285,141 @@ public class PropertyService {
     // 3. each criterion is weighted to get the final similarity score
 
     public List<PropertyResponse> findSimilarProperties(Long propertyId, int limit) {
-        Property property = propertyRepository.findById(propertyId).orElseThrow();
-
-        // check if property has coordinates
-        if (!property.getLocation().hasCoordinates()) {
-            log.warn("Property with id: {} has no coordinates, using fallback search method", propertyId);
-            return fallbackSearch(property, limit).stream().map(propertyMapper::toResponse).toList();
+        if (limit <= 0 || limit > 20) {
+            throw new IllegalArgumentException("El limite debe estar entre 1 y 20");
         }
 
-        // price range
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
+
+        Location location = property.getLocation();
+        if (location == null) {
+            log.warn("Property with id: {} has no location, using fallback search", propertyId);
+            return fallbackSearch(property, limit).stream()
+                    .map(propertyMapper::toResponse)
+                    .toList();
+        }
+
+        // PRICE RANGE
         BigDecimal basePrice = property.getPrice();
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
         BigDecimal maxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION));
 
+        String propertyType = property.getPropertyType().name();
+
+        // COORDINATES CHECK
+        if (!location.hasCoordinates()) {
+            log.warn("Property with id: {} has no coordinates, using fallback search method", propertyId);
+            return fallbackSearch(property, limit).stream()
+                    .map(propertyMapper::toResponse)
+                    .toList();
+        }
+
+        Double baseLat = location.getLat();
+        Double baseLng = location.getLng();
+
+        Set<Long> seenPropertyIds = new HashSet<>();
+        seenPropertyIds.add(propertyId); // exclude base property
+
         List<Property> allSuggestions = new ArrayList<>();
 
-        // search nearby properties with increasing radius
-        // get limit * 2 to rank by similarity score
+        // SEARCH WITH INCREASING RADIUS
         for (double radius : SEARCH_RADIUS) {
+            // Calculate bounding box for current radius
+            BoundingBox bbox = calculateBoundingBox(baseLat, baseLng, radius);
+
             List<Property> suggestions = propertyRepository.findNearbyProperties(
                     propertyId,
-                    property.getLocation().getLat(),
-                    property.getLocation().getLng(),
-                    property.getPropertyType().name(),
+                    baseLat,
+                    baseLng,
+                    bbox.getMinLat(),
+                    bbox.getMaxLat(),
+                    bbox.getMinLng(),
+                    bbox.getMaxLng(),
+                    propertyType,
                     minPrice,
                     maxPrice,
                     basePrice,
                     radius,
-                    limit * 2
+                    limit * 3
             );
 
-            // rank nearby properties according to  similarity criteria
-            if (suggestions.size() >= limit) {
-                log.debug("Found {} suggestions within {}km", suggestions.size(), radius);
-                return rankAndLimit(suggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
-            }
+            // filter duplicates before adding to suggestions
+            List<Property> newSuggestions = suggestions.stream()
+                    .filter(p -> !seenPropertyIds.contains(p.getId()))
+                    .peek(p -> seenPropertyIds.add(p.getId()))
+                    .toList();
 
-            allSuggestions.addAll(suggestions);
+            allSuggestions.addAll(newSuggestions);
 
+            // when we have enough properties, rank them
             if (allSuggestions.size() >= limit) {
-                log.debug("Accumulated {} suggestions", allSuggestions.size());
-                return rankAndLimit(allSuggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
+                log.debug("Accumulated {} unique suggestions within {}km", allSuggestions.size(), radius);
+                return rankAndLimit(allSuggestions, property, limit).stream()
+                        .map(propertyMapper::toResponse)
+                        .toList();
             }
         }
 
-        // if not enough properties are found searching by radius, search by city
+        // FALLBACK TO CITY SEARCH
         if (allSuggestions.size() < limit) {
-            log.debug("Not enough nearby properties, expanding to city search");
-            List<Property> citySuggestions = fallbackSearch(property, limit - allSuggestions.size());
+            log.debug("Not enough nearby properties ({}), expanding to city search", allSuggestions.size());
+            int remainingNeeded = limit - allSuggestions.size();
+
+            // add more properties if needed
+            List<Property> citySuggestions = fallbackSearch(property, remainingNeeded * 2)
+                    .stream()
+                    .filter(p -> !seenPropertyIds.contains(p.getId()))
+                    .peek(p -> seenPropertyIds.add(p.getId()))
+                    .limit(remainingNeeded)
+                    .toList();
+
             allSuggestions.addAll(citySuggestions);
         }
 
-        return rankAndLimit(allSuggestions, property, limit).stream().map(propertyMapper::toResponse).toList();
+        return rankAndLimit(allSuggestions, property, limit).stream()
+                .map(propertyMapper::toResponse)
+                .toList();
     }
 
     // rank candidates according to their score
     private List<Property> rankAndLimit(List<Property> candidates, Property base, int limit) {
+        // distinct, rank and limit
         return candidates.stream()
+                .filter(Objects::nonNull)
+                .distinct()
                 .map(candidate -> new ScoredProperty(candidate, calculateRelevanceScore(base, candidate)))
                 .sorted((s1, s2) -> Double.compare(s2.getScore(), s1.getScore()))
                 .limit(limit)
                 .map(ScoredProperty::getProperty)
-                .distinct()
                 .toList();
     }
 
     // Weighted similarity scoring
     private double calculateRelevanceScore(Property base, Property candidate) {
-        // calculate scores for all criteria
+        if (candidate == null) return 0.0;
+
         double distanceScore = calculateDistanceScore(base, candidate);
         double priceScore = calculatePriceScore(base, candidate);
         double bedroomsScore = calculateBedroomsScore(base, candidate);
         double bathroomsScore = calculateBathroomsScore(base, candidate);
 
         // calculate final weighted score
-        return (distanceScore * 0.5) + // 50%
-                (priceScore * 0.3) + // 30%
-                (bedroomsScore * 0.1) + // 10%
-                (bathroomsScore * 0.1); // 10%
+        return (distanceScore * DISTANCE_WEIGHT) +
+                (priceScore * PRICE_WEIGHT) +
+                (bedroomsScore * BEDROOMS_WEIGHT) +
+                (bathroomsScore * BATHROOMS_WEIGHT);
     }
 
     // helpers for calculating all criteria
-    // each one returns a double between 0.0 or 1.0
     private double calculateDistanceScore(Property base, Property candidate) {
-        // if no coordinates, neutral score
+        // check if properties have location and coordinates
+        if (base.getLocation() == null || candidate.getLocation() == null) {
+            return 0.5; // Neutral score
+        }
+
         if (!base.getLocation().hasCoordinates() || !candidate.getLocation().hasCoordinates()) {
-            return 0.5;
+            return 0.5; // Neutral score
         }
 
         double distance = haversineDistance(
@@ -372,11 +430,18 @@ public class PropertyService {
         );
 
         // 1.0 for 0km, 0.5 for 5km, 0.0 for 10km+
-        return Math.max(0, 1.0 - (distance / 10.0));
+        return Math.max(0, 1.0 - (distance / MAX_DISTANCE_KM));
     }
 
-
     private double calculatePriceScore(Property base, Property candidate) {
+        if (base.getPrice() == null || base.getPrice().signum() <= 0) {
+            return candidate.getPrice() != null && candidate.getPrice().signum() > 0 ? 1.0 : 0.0;
+        }
+
+        if (candidate.getPrice() == null || candidate.getPrice().signum() <= 0) {
+            return 0.0;
+        }
+
         double priceDiff = Math.abs(
                 base.getPrice().doubleValue() - candidate.getPrice().doubleValue()
         );
@@ -387,21 +452,28 @@ public class PropertyService {
     private double calculateBedroomsScore(Property base, Property candidate) {
         int diff = Math.abs(base.getBedrooms() - candidate.getBedrooms());
 
-        // assign score according to difference in rooms
-        return diff == 0 ? 1.0 : diff == 1 ? 0.7 : diff == 2 ? 0.4 : 0.1;
+        // assign scores according to difference
+        return switch (diff) {
+            case 0 -> 1.0;
+            case 1 -> 0.7;
+            case 2 -> 0.4;
+            default -> 0.1;
+        };
     }
 
     private double calculateBathroomsScore(Property base, Property candidate) {
         double diff = Math.abs(
                 base.getBathrooms().doubleValue() - candidate.getBathrooms().doubleValue()
         );
-        // assign score according to difference in bathrooms
-        return diff <= 0.5 ? 1.0 : diff <= 1.0 ? 0.7 : diff <= 2.0 ? 0.4 : 0.1;
+
+        if (diff <= 0.5) return 1.0;
+        if (diff <= 1.0) return 0.7;
+        if (diff <= 2.0) return 0.4;
+        return 0.1;
     }
 
     // haversine distance: used to find distance between two points in a sphere
     private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // earth radius
 
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
@@ -412,12 +484,17 @@ public class PropertyService {
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        return R * c;
+        return EARTH_RADIUS * c;
     }
 
     // search for property without coordinates
     private List<Property> fallbackSearch(Property property, int limit) {
         if (limit <= 0) return List.of();
+
+        if (property.getLocation() == null) {
+            log.warn("Property {} has no location, cannot perform city search", property.getId());
+            return List.of();
+        }
 
         BigDecimal basePrice = property.getPrice();
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
@@ -433,7 +510,6 @@ public class PropertyService {
                 limit
         );
     }
-
     
     // ─── Helpers privados ─────────────────────────────────────────
 
@@ -480,4 +556,35 @@ public class PropertyService {
         Property property;
         double score;
     }
+
+
+    // calculate a 'bounding box' around given location using spherical aproximation
+    private BoundingBox calculateBoundingBox(double lat, double lng, double radiusKm) {
+        double latDelta = Math.toDegrees(radiusKm / EARTH_RADIUS);
+        double lngDelta = Math.toDegrees(radiusKm / (EARTH_RADIUS * Math.cos(Math.toRadians(lat))));
+
+        return BoundingBox.builder()
+                .minLat(lat - latDelta)
+                .maxLat(lat + latDelta)
+                .minLng(lng - lngDelta)
+                .maxLng(lng + lngDelta)
+                .build();
+    }
+
+    @Builder
+    @Getter
+    private static class BoundingBox {
+        private double minLat;
+        private double maxLat;
+        private double minLng;
+        private double maxLng;
+
+        // latitude and longitude limits (with wrap-around for 90 / 180 degrees)
+        public double getMinLat() { return Math.max(-90, minLat); }
+        public double getMaxLat() { return Math.min(90, maxLat); }
+
+        public double getMinLng() { return Math.max(-180, minLng); }
+        public double getMaxLng() { return Math.min(180, maxLng); }
+    }
 }
+
