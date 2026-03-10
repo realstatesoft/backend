@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-buyer-tenant-to-properties
+      author: openroof
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: buyer_id
+                  type: BIGINT
+              - column:
+                  name: tenant_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: properties
+            baseColumnNames: buyer_id
+            constraintName: fk_properties_buyer
+            referencedTableName: users
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: properties
+            baseColumnNames: tenant_id
+            constraintName: fk_properties_tenant
+            referencedTableName: users
+            referencedColumnNames: id

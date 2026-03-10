@@ -270,8 +270,8 @@ public class PropertyService {
         property.setStatus(validated);
 
         // Si se publica, registrar fecha de publicación
-        if (validated == PropertyStatus.PUBLISHED && property.getPublishedAt() == null) {
-            property.setPublishedAt(LocalDateTime.now());
+        if (validated == PropertyStatus.PUBLISHED && property.getTrashedAt() == null) {
+            property.setTrashedAt(LocalDateTime.now());
         }
 
         property = propertyRepository.save(property);
