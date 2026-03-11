@@ -93,7 +93,7 @@ class AgentProfileServiceTest {
 
         testSummary = new AgentProfileSummaryResponse(
                 10L, "Test Agent", null, "Test Realty", 5, "LIC-001",
-                BigDecimal.ZERO, 0
+                BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
 

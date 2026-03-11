@@ -131,6 +131,59 @@ WHERE u.email = 'agente2@openroof.com'
   AND NOT EXISTS (SELECT 1 FROM agent_profiles WHERE license_number = 'PY-AG-2021-042');
 
 -- ============================================================
+-- 6b. AGENT SPECIALTIES (catálogo de especialidades)
+-- ============================================================
+INSERT INTO agent_specialties (name, created_at, updated_at, version)
+SELECT name, NOW(), NOW(), 0
+FROM (VALUES
+    ('residencial'),
+    ('casas'),
+    ('departamentos'),
+    ('apartamentos'),
+    ('terrenos'),
+    ('lotes'),
+    ('comercial'),
+    ('oficinas'),
+    ('industrial'),
+    ('depósitos'),
+    ('bodegas'),
+    ('rural'),
+    ('campos'),
+    ('estancias'),
+    ('agrícola'),
+    ('lujo'),
+    ('inversiones')
+) AS t(name)
+WHERE NOT EXISTS (SELECT 1 FROM agent_specialties LIMIT 1);
+
+-- ============================================================
+-- 6c. AGENT TO SPECIALTIES (relación agentes-especialidades)
+-- ============================================================
+-- Agente 1 (Carlos Mendoza): residencial, casas, departamentos, lujo
+INSERT INTO agent_to_specialties (agent_id, specialty_id)
+SELECT ap.id, s.id
+FROM agent_profiles ap
+CROSS JOIN agent_specialties s
+WHERE ap.license_number = 'PY-AG-2018-001'
+  AND s.name IN ('residencial', 'casas', 'departamentos', 'lujo')
+  AND NOT EXISTS (
+      SELECT 1 FROM agent_to_specialties ats 
+      WHERE ats.agent_id = ap.id AND ats.specialty_id = s.id
+  );
+
+-- Agente 2 (María González): comercial, terrenos, oficinas, inversiones, lotes
+INSERT INTO agent_to_specialties (agent_id, specialty_id)
+SELECT ap.id, s.id
+FROM agent_profiles ap
+CROSS JOIN agent_specialties s
+WHERE ap.license_number = 'PY-AG-2021-042'
+  AND s.name IN ('comercial', 'terrenos', 'oficinas', 'inversiones', 'lotes', 'industrial')
+  AND NOT EXISTS (
+      SELECT 1 FROM agent_to_specialties ats 
+      WHERE ats.agent_id = ap.id AND ats.specialty_id = s.id
+  );
+
+-- ============================================================
 -- 7. PROPIEDADES (10 propiedades variadas)
 -- JOINs directos para resolver FKs — evita subqueries en VALUES
 -- ============================================================
@@ -348,6 +401,8 @@ UNION ALL SELECT 'locations',         COUNT(*) FROM locations
 UNION ALL SELECT 'lead_statuses',     COUNT(*) FROM lead_statuses
 UNION ALL SELECT 'users',             COUNT(*) FROM users
 UNION ALL SELECT 'agent_profiles',    COUNT(*) FROM agent_profiles
+UNION ALL SELECT 'agent_specialties', COUNT(*) FROM agent_specialties
+UNION ALL SELECT 'agent_to_specialties', COUNT(*) FROM agent_to_specialties
 UNION ALL SELECT 'properties',        COUNT(*) FROM properties
 UNION ALL SELECT 'favorites',         COUNT(*) FROM favorites
 UNION ALL SELECT 'agent_reviews',     COUNT(*) FROM agent_reviews
