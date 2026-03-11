@@ -141,7 +141,9 @@ FROM (VALUES
     ('lujo'),
     ('inversiones')
 ) AS t(name)
-WHERE NOT EXISTS (SELECT 1 FROM agent_specialties LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM agent_specialties s2 WHERE s2.name = t.name
+);
 
 -- ============================================================
 -- 6c. AGENT TO SPECIALTIES (relación agentes-especialidades)

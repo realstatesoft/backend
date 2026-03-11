@@ -23,4 +23,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     long countByAgentId(Long agentId);
 
     long countByAgentIdAndStatusName(Long agentId, String statusName);
+
+    /**
+     * Verifica si un lead pertenece al agente cuyo usuario tiene el ID dado.
+     * Usado para validación de autorización sin cargar la entidad completa.
+     */
+    boolean existsByIdAndAgent_User_Id(Long leadId, Long userId);
 }

@@ -83,17 +83,10 @@ public class AgentProfileController {
             @Parameter(description = "Categoría (SALE, RENT, SALE_OR_RENT)")
             @RequestParam(required = false) PropertyCategory category,
 
-            @Parameter(description = "Ciudad o zona")
-            @RequestParam(required = false) String city,
-
-            @Parameter(description = "ID de ubicación")
-            @RequestParam(required = false) Long locationId,
-
             @Parameter(description = "Cantidad máxima de agentes (default: 5, max: 20)")
             @RequestParam(required = false, defaultValue = "5") Integer limit) {
 
-        SuggestedAgentsRequest request = new SuggestedAgentsRequest(
-                propertyType, category, city, locationId, limit);
+        SuggestedAgentsRequest request = new SuggestedAgentsRequest(propertyType, category, limit);
 
         List<AgentProfileSummaryResponse> agents = agentProfileService.getSuggestedAgents(request);
         return ResponseEntity.ok(ApiResponse.ok(agents));
