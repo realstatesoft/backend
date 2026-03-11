@@ -41,11 +41,6 @@ public class LeadSecurity {
      */
     public boolean isLeadOwner(User currentUser, Long leadId) {
         if (currentUser.getRole() == UserRole.ADMIN) return true;
-        return agentProfileRepository.findByUser_Id(currentUser.getId())
-                .map(profile -> leadRepository.findById(leadId)
-                        .map(lead -> lead.getAgent() != null
-                                && lead.getAgent().getId().equals(profile.getId()))
-                        .orElse(false))
-                .orElse(false);
+        return leadRepository.existsByIdAndAgent_User_Id(leadId, currentUser.getId());
     }
 }
