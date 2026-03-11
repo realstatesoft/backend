@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,9 +36,10 @@ public class LeadController {
 
     /**
      * Obtiene los leads de un agente específico.
-     * Debería estar protegido para que solo el agente pueda ver sus leads.
+     * Solo el propio agente o un ADMIN puede ver los leads.
      */
     @GetMapping("/agent/{agentId}")
+    @PreAuthorize("isAuthenticated() and (hasRole('ADMIN') or @leadSecurity.isAgentOwner(principal, #agentId))")
     public ResponseEntity<ApiResponse<Page<LeadResponse>>> getLeadsByAgent(
             @PathVariable Long agentId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
@@ -47,8 +49,10 @@ public class LeadController {
 
     /**
      * Obtiene un lead por ID.
+     * Solo el agente propietario del lead o un ADMIN puede acceder.
      */
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and (hasRole('ADMIN') or @leadSecurity.isLeadOwner(principal, #id))")
     public ResponseEntity<ApiResponse<LeadResponse>> getById(@PathVariable Long id) {
         LeadResponse response = leadService.getById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -56,8 +60,10 @@ public class LeadController {
 
     /**
      * Cuenta los leads de un agente.
+     * Solo el propio agente o un ADMIN puede contar sus leads.
      */
     @GetMapping("/agent/{agentId}/count")
+    @PreAuthorize("isAuthenticated() and (hasRole('ADMIN') or @leadSecurity.isAgentOwner(principal, #agentId))")
     public ResponseEntity<ApiResponse<Long>> countByAgent(@PathVariable Long agentId) {
         long count = leadService.countByAgent(agentId);
         return ResponseEntity.ok(ApiResponse.ok(count));

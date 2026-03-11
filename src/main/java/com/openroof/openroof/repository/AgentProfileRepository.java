@@ -34,21 +34,23 @@ public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long
 
     /**
      * Busca agentes que tengan especialidades cuyos nombres coincidan con alguno de los valores dados.
-     * Ordena por rating descendente, luego por experiencia descendente.
+     * Ordena por rating descendente, luego por experiencia descendente (nulls al final).
+     * Acepta {@link Pageable} para aplicar el límite en base de datos.
      */
     @Query("SELECT DISTINCT a FROM AgentProfile a " +
            "JOIN FETCH a.user u " +
            "LEFT JOIN a.specialties s " +
            "WHERE LOWER(s.name) IN :specialtyNames " +
-           "ORDER BY a.avgRating DESC, a.experienceYears DESC NULLS LAST")
+           "ORDER BY a.avgRating DESC, CASE WHEN a.experienceYears IS NULL THEN 1 ELSE 0 END ASC, a.experienceYears DESC")
     List<AgentProfile> findBySpecialtyNamesOrderByRating(
-            @Param("specialtyNames") List<String> specialtyNames);
+            @Param("specialtyNames") List<String> specialtyNames,
+            Pageable pageable);
 
     /**
-     * Obtiene los agentes mejor calificados (top N por rating y experiencia).
+     * Obtiene los agentes mejor calificados (top N por rating y experiencia, nulls al final).
      */
     @Query("SELECT a FROM AgentProfile a " +
            "JOIN FETCH a.user u " +
-           "ORDER BY a.avgRating DESC, a.experienceYears DESC NULLS LAST")
+           "ORDER BY a.avgRating DESC, CASE WHEN a.experienceYears IS NULL THEN 1 ELSE 0 END ASC, a.experienceYears DESC")
     List<AgentProfile> findTopAgentsOrderByRating(Pageable pageable);
 }

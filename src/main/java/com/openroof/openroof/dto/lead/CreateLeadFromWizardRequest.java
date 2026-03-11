@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.lead;
 
+import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -45,8 +46,8 @@ public record CreateLeadFromWizardRequest(
         @NotNull(message = "El tipo de propiedad es requerido")
         PropertyType propertyType,
 
-        @NotBlank(message = "La categoría es requerida")
-        String category, // SALE o RENT
+        @NotNull(message = "La categoría es requerida")
+        PropertyCategory category,
 
         // Detalles de la propiedad
         String surfaceArea,

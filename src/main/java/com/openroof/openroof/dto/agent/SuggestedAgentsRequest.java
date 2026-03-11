@@ -16,12 +16,6 @@ public record SuggestedAgentsRequest(
         @Schema(description = "Categoría (venta/alquiler)", example = "SALE")
         PropertyCategory category,
 
-        @Schema(description = "Ciudad o zona de la propiedad", example = "Asunción")
-        String city,
-
-        @Schema(description = "ID de la ubicación (opcional)", example = "1")
-        Long locationId,
-
         @Schema(description = "Cantidad máxima de agentes a retornar", example = "5")
         Integer limit
 ) {

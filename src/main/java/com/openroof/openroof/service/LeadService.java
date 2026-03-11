@@ -4,6 +4,7 @@ import com.openroof.openroof.dto.lead.CreateLeadFromWizardRequest;
 import com.openroof.openroof.dto.lead.LeadResponse;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.lead.Lead;
 import com.openroof.openroof.model.lead.LeadStatus;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -11,6 +12,7 @@ import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,9 +42,8 @@ public class LeadService {
         AgentProfile agent = agentProfileRepository.findById(request.agentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Agente no encontrado con ID: " + request.agentId()));
 
-        // Buscar o crear status por defecto
-        LeadStatus status = leadStatusRepository.findByName(DEFAULT_STATUS)
-                .orElseGet(() -> createDefaultStatus());
+        // Buscar o crear status por defecto (maneja concurrencia y soft-delete)
+        LeadStatus status = getOrCreateDefaultStatus();
 
         // Construir metadata con toda la info del wizard
         Map<String, Object> metadata = buildMetadata(request);
@@ -97,14 +98,35 @@ public class LeadService {
 
     // ─── HELPERS ──────────────────────────────────────────────────
 
-    private LeadStatus createDefaultStatus() {
-        LeadStatus status = LeadStatus.builder()
-                .name(DEFAULT_STATUS)
-                .color("#3b82f6")
-                .displayOrder(0)
-                .active(true)
-                .build();
-        return leadStatusRepository.save(status);
+    private LeadStatus getOrCreateDefaultStatus() {
+        // 1. Try to find an active (non-deleted) status
+        return leadStatusRepository.findByName(DEFAULT_STATUS)
+                .orElseGet(() -> {
+                    // 2. Check if a soft-deleted status exists (unique constraint still applies)
+                    return leadStatusRepository.findByNameIncludingDeleted(DEFAULT_STATUS)
+                            .map(existing -> {
+                                existing.restore();
+                                existing.setActive(true);
+                                return leadStatusRepository.save(existing);
+                            })
+                            .orElseGet(this::tryCreateDefaultStatus);
+                });
+    }
+
+    private LeadStatus tryCreateDefaultStatus() {
+        try {
+            return leadStatusRepository.saveAndFlush(LeadStatus.builder()
+                    .name(DEFAULT_STATUS)
+                    .color("#3b82f6")
+                    .displayOrder(0)
+                    .active(true)
+                    .build());
+        } catch (DataIntegrityViolationException e) {
+            // Another thread already created it — re-fetch
+            return leadStatusRepository.findByNameIncludingDeleted(DEFAULT_STATUS)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "No se pudo obtener o crear el estado por defecto: " + DEFAULT_STATUS, e));
+        }
     }
 
     private Map<String, Object> buildMetadata(CreateLeadFromWizardRequest request) {
@@ -117,7 +139,7 @@ public class LeadService {
         
         // Tipo y categoría
         metadata.put("propertyType", request.propertyType() != null ? request.propertyType().name() : null);
-        metadata.put("category", request.category());
+        metadata.put("category", request.category() != null ? request.category().name() : null);
         
         // Detalles de la propiedad
         metadata.put("surfaceArea", request.surfaceArea());
@@ -164,7 +186,7 @@ public class LeadService {
         sb.append("───────────────────────────\n");
         sb.append("Dirección: ").append(request.address()).append("\n");
         sb.append("Tipo: ").append(request.propertyType()).append("\n");
-        sb.append("Operación: ").append("SALE".equals(request.category()) ? "Venta" : "Alquiler").append("\n");
+        sb.append("Operación: ").append(PropertyCategory.SALE.equals(request.category()) ? "Venta" : "Alquiler").append("\n");
         
         if (request.surfaceArea() != null && !request.surfaceArea().isEmpty()) {
             sb.append("Superficie: ").append(request.surfaceArea()).append(" m²\n");

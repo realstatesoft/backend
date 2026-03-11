@@ -141,16 +141,18 @@ public class AgentProfileService {
         List<AgentProfile> agents;
 
         if (!relevantSpecialties.isEmpty()) {
-            // 2. Buscar agentes con especialidades coincidentes
-            agents = agentProfileRepository.findBySpecialtyNamesOrderByRating(relevantSpecialties);
+            // 2. Buscar agentes con especialidades coincidentes (limitando en DB)
+            agents = agentProfileRepository.findBySpecialtyNamesOrderByRating(
+                    relevantSpecialties,
+                    PageRequest.of(0, limit)
+            );
         } else {
             // 3. Si no hay especialidades específicas, obtener los mejor calificados
             agents = agentProfileRepository.findTopAgentsOrderByRating(PageRequest.of(0, limit));
         }
 
-        // 4. Limitar resultados y mapear a DTO
+        // 4. Mapear a DTO (el límite ya fue aplicado en la consulta a DB)
         return agents.stream()
-                .limit(limit)
                 .map(agentProfileMapper::toSummaryResponse)
                 .collect(Collectors.toList());
     }
