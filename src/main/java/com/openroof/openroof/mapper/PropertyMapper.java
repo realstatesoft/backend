@@ -74,7 +74,8 @@ public class PropertyMapper {
                 // Audit
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
-                p.getPublishedAt());
+                p.getTrashedAt(),
+                p.getTrashedAt());
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p) {
@@ -98,7 +99,8 @@ public class PropertyMapper {
                 p.getBathrooms(),
                 p.getSurfaceArea(),
                 enumName(p.getStatus()),
-                p.getLocation() != null ? p.getLocation().getName() : null);
+                p.getLocation() != null ? p.getLocation().getName() : null,
+                p.getTrashedAt());
     }
 
     // ─── Request → Entity ─────────────────────────────────────────

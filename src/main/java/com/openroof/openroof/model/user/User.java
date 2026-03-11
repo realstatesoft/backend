@@ -47,7 +47,7 @@ public class User extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private UserRole role = UserRole.BUYER;
+    private UserRole role = UserRole.USER;
 
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;

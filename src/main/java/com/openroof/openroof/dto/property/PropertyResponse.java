@@ -60,5 +60,6 @@ public record PropertyResponse(
         // Audit
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
+        LocalDateTime trashedAt,
         LocalDateTime publishedAt) {
 }
