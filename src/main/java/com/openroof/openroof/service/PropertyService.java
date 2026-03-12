@@ -27,7 +27,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -288,7 +290,7 @@ public class PropertyService {
 
     public List<PropertyResponse> findSimilarProperties(Long propertyId, int limit) {
         if (limit <= 0 || limit > 20) {
-            throw new IllegalArgumentException("El limite debe estar entre 1 y 20");
+            throw new BadRequestException("El limite debe estar entre 1 y 20");
         }
 
         Property property = propertyRepository.findById(propertyId)
