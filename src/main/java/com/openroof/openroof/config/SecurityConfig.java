@@ -38,7 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://*.vercel.app}")
+        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:5174,https://*.vercel.app}")
         private String allowedOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
@@ -60,11 +60,13 @@ public class SecurityConfig {
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                         //Bloque el cerra sesion solo a usuairos autenticados.
                                                 .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/logout-all")
                                                 .authenticated()
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/leads/wizard").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

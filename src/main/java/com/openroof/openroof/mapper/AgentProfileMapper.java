@@ -50,8 +50,16 @@ public class AgentProfileMapper {
                 agent.getExperienceYears(),
                 agent.getLicenseNumber(),
                 agent.getAvgRating(),
-                agent.getTotalReviews()
+                agent.getTotalReviews(),
+                mapSpecialtyNames(agent.getSpecialties())
         );
+    }
+
+    private List<String> mapSpecialtyNames(List<AgentSpecialty> specialties) {
+        if (specialties == null) return List.of();
+        return specialties.stream()
+                .map(AgentSpecialty::getName)
+                .toList();
     }
 
     // ─── Request → Entity ─────────────────────────────────────────

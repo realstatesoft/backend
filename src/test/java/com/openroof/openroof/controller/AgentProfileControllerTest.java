@@ -88,7 +88,7 @@ class AgentProfileControllerTest {
     private AgentProfileSummaryResponse sampleSummary() {
         return new AgentProfileSummaryResponse(
                 10L, "Test Agent", null, "Test Realty", 5, "LIC-001",
-                BigDecimal.ZERO, 0
+                BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
 
@@ -384,6 +384,67 @@ class AgentProfileControllerTest {
             mockMvc.perform(delete(API_BASE + "/10")
                             .with(user("buyer").roles("BUYER")))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SUGGESTED AGENTS
+    // ═══════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("GET /agents/suggested")
+    class SuggestedAgentsTests {
+
+        @Test
+        @DisplayName("Obtener agentes sugeridos sin filtros → 200 con lista")
+        void getSuggestedAgents_returns200() throws Exception {
+            when(agentProfileService.getSuggestedAgents(any(SuggestedAgentsRequest.class)))
+                    .thenReturn(List.of(sampleSummary()));
+
+            mockMvc.perform(get(API_BASE + "/suggested"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data", hasSize(1)))
+                    .andExpect(jsonPath("$.data[0].userName").value("Test Agent"));
+        }
+
+        @Test
+        @DisplayName("Obtener agentes sugeridos con propertyType → 200")
+        void getSuggestedAgentsWithPropertyType_returns200() throws Exception {
+            when(agentProfileService.getSuggestedAgents(any(SuggestedAgentsRequest.class)))
+                    .thenReturn(List.of(sampleSummary()));
+
+            mockMvc.perform(get(API_BASE + "/suggested")
+                            .param("propertyType", "HOUSE")
+                            .param("category", "SALE"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
+
+        @Test
+        @DisplayName("Obtener agentes sugeridos con límite personalizado → 200")
+        void getSuggestedAgentsWithLimit_returns200() throws Exception {
+            when(agentProfileService.getSuggestedAgents(any(SuggestedAgentsRequest.class)))
+                    .thenReturn(List.of(sampleSummary(), sampleSummary(), sampleSummary()));
+
+            mockMvc.perform(get(API_BASE + "/suggested")
+                            .param("limit", "3"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data", hasSize(3)));
+        }
+
+        @Test
+        @DisplayName("Obtener agentes sugeridos vacío → 200 con lista vacía")
+        void getSuggestedAgentsEmpty_returns200() throws Exception {
+            when(agentProfileService.getSuggestedAgents(any(SuggestedAgentsRequest.class)))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(get(API_BASE + "/suggested"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data", hasSize(0)));
         }
     }
 }
