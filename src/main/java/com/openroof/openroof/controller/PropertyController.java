@@ -191,8 +191,8 @@ public class PropertyController {
     @Operation(summary = "Obtener propiedades similares")
     public ResponseEntity<ApiResponse<List<PropertyResponse>>> findSimilar(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
-            @RequestParam int n) {
-        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, n);
+            @RequestParam int size) {
+        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
         return ResponseEntity.ok(ApiResponse.ok(properties));
     }
 }
