@@ -39,4 +39,20 @@ public class Location extends BaseEntity {
             @AttributeOverride(name = "lng", column = @Column(name = "lng", precision = 11, scale = 8))
     })
     private GeoLocation geoLocation;
+
+    // === Métodos de conveniencia para acceso a coordenadas ===
+
+    public Double getLat() {
+        return geoLocation != null ? geoLocation.getLatAsDouble() : null;
+    }
+
+    public Double getLng() {
+        return geoLocation != null ? geoLocation.getLngAsDouble() : null;
+    }
+
+    public boolean hasCoordinates() {
+        return geoLocation != null
+                && geoLocation.getLat() != null
+                && geoLocation.getLng() != null;
+    }
 }

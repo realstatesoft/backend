@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 
 import org.springframework.data.domain.Page;
@@ -114,6 +116,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
@@ -200,5 +203,15 @@ public class PropertyController {
 
         PropertyResponse response = propertyService.changeStatus(id, request.newStatus());
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
+    }
+
+    // ─── SIMILAR ────────────────────────────────────────────
+    @GetMapping("/{id}/similar")
+    @Operation(summary = "Obtener propiedades similares")
+    public ResponseEntity<ApiResponse<List<PropertyResponse>>> findSimilar(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @RequestParam int size) {
+        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
+        return ResponseEntity.ok(ApiResponse.ok(properties));
     }
 }
