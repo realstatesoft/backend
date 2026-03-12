@@ -57,13 +57,32 @@ public class PropertyController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas las propiedades (paginado, con filtros opcionales)")
+    @Operation(summary = "Listar todas las propiedades (paginado, con filtros avanzados opcionales)")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAll(
-            @Parameter(description = "Filtrar por tipo de propiedad") @RequestParam(required = false) String propertyType,
-            @Parameter(description = "Filtrar por estado") @RequestParam(required = false) String status,
+            @Parameter(description = "Disponibilidad (IMMEDIATE, IN_30_DAYS, IN_60_DAYS, TO_NEGOTIATE)") @RequestParam(required = false) String availability,
+
+            @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
+
+            @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
+
+            @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+
+            @Parameter(description = "Precio máximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+
+            @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
+
+            @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+
+            @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(propertyType, status, pageable);
+        PropertyFilterRequest filter = new PropertyFilterRequest(
+                availability, propertyType, status,
+                minPrice, maxPrice, locationId,
+                minBathrooms, minBedrooms);
+
+        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
