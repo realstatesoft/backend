@@ -80,6 +80,9 @@ class AgentProfileMapperTest {
     @Test
     @DisplayName("toSummaryResponse() mapea campos resumen")
     void toSummaryResponse_mapsSummaryFields() {
+        AgentSpecialty spec = AgentSpecialty.builder().name("residencial").build();
+        spec.setId(1L);
+        
         AgentProfile agent = AgentProfile.builder()
                 .user(testUser)
                 .companyName("Test Realty")
@@ -87,7 +90,7 @@ class AgentProfileMapperTest {
                 .licenseNumber("LIC-001")
                 .avgRating(BigDecimal.ZERO)
                 .totalReviews(0)
-                .specialties(new ArrayList<>())
+                .specialties(List.of(spec))
                 .socialMedia(new ArrayList<>())
                 .build();
         agent.setId(10L);
@@ -98,6 +101,8 @@ class AgentProfileMapperTest {
         assertThat(summary.userName()).isEqualTo("Test Agent");
         assertThat(summary.companyName()).isEqualTo("Test Realty");
         assertThat(summary.licenseNumber()).isEqualTo("LIC-001");
+        assertThat(summary.specialties()).hasSize(1);
+        assertThat(summary.specialties().get(0)).isEqualTo("residencial");
     }
 
     @Test

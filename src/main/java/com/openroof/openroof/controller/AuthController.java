@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.openroof.openroof.common.ApiResponse;
@@ -23,7 +24,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints para registro, login y gestión de sesiones")
-@CrossOrigin(origins = "http://localhost:5173") // Hay que modificar este para que apunte al puerto correcto del frontend
+@CrossOrigin(origins = "http://localhost:5173") // Hay que modificar este para que apunte al puerto correcto del
+                                                // frontend
 public class AuthController {
 
     private final AuthService authService;
@@ -56,7 +58,7 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
             @RequestBody Map<String, String> requestBody,
-            HttpServletRequest request) { 
+            HttpServletRequest request) {
 
         String refreshToken = requestBody.get("refreshToken");
         return ResponseEntity.ok(
@@ -69,6 +71,7 @@ public class AuthController {
      */
     @Operation(summary = "Cerrar sesión", description = "Invalida el token actual del usuario en el servidor")
     @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         authService.logout(authHeader);
@@ -81,6 +84,7 @@ public class AuthController {
      */
     @Operation(summary = "Cerrar todas las sesiones", description = "Expulsa al usuario de todos sus dispositivos")
     @PostMapping("/logout-all")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> logoutAll(Principal principal) {
         // principal.getName() devuelve el email/username del token
         authService.logoutAllSessions(principal.getName());

@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240310-add-proximity-search-indexes
+      author: tania
+      comment: Indices para busqueda de propiedades por proximidad y sugerencias
+      changes:
+        - createIndex:
+            indexName: idx_properties_coords_filters
+            tableName: properties
+            columns:
+              - column:
+                  name: lat
+              - column:
+                  name: lng
+              - column:
+                  name: status
+              - column:
+                  name: visibility
+              - column:
+                  name: property_type
+
+        - createIndex:
+            indexName: idx_properties_coords_price
+            tableName: properties
+            columns:
+              - column:
+                  name: lat
+              - column:
+                  name: lng
+              - column:
+                  name: price
+
+        - createIndex:
+            indexName: idx_properties_city_search
+            tableName: properties
+            columns:
+              - column:
+                  name: property_type
+              - column:
+                  name: price
+              - column:
+                  name: status
+              - column:
+                  name: visibility
+
+        - createIndex:
+            indexName: idx_properties_highlighted_active
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted
+              - column:
+                  name: highlighted_until
+              - column:
+                  name: status
+
+      rollback:
+        - dropIndex:
+            indexName: idx_properties_coords_filters
+            tableName: properties
+        - dropIndex:
+            indexName: idx_properties_coords_price
+            tableName: properties
+        - dropIndex:
+            indexName: idx_properties_city_search
+            tableName: properties
+        - dropIndex:
+            indexName: idx_properties_highlighted_active
+            tableName: properties

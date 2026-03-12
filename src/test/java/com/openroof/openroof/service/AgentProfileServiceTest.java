@@ -64,7 +64,7 @@ class AgentProfileServiceTest {
                 .passwordHash("hashed")
                 .name("Test Agent")
                 .phone("+1234567890")
-                .role(UserRole.BUYER)
+                .role(UserRole.USER)
                 .build();
         testUser.setId(1L);
 
@@ -93,7 +93,7 @@ class AgentProfileServiceTest {
 
         testSummary = new AgentProfileSummaryResponse(
                 10L, "Test Agent", null, "Test Realty", 5, "LIC-001",
-                BigDecimal.ZERO, 0
+                BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
 

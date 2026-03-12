@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,7 @@ public class PropertyImageController {
             description = "Sube una o varias imágenes (jpg, png, webp) y las asocia a la propiedad. "
                     + "Máximo 20 imágenes por propiedad. Requiere JWT."
     )
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#propertyId, principal)")
     public ResponseEntity<ApiResponse<List<PropertyMediaResponse>>> uploadImages(
             @PathVariable Long propertyId,
             @RequestParam("files") List<MultipartFile> files,
@@ -90,6 +92,7 @@ public class PropertyImageController {
             summary = "Marcar una imagen como principal",
             description = "Desmarca la imagen principal actual y marca la indicada."
     )
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#propertyId, principal)")
     public ResponseEntity<ApiResponse<PropertyMediaResponse>> setPrimary(
             @PathVariable Long propertyId,
             @PathVariable Long mediaId,
@@ -108,6 +111,7 @@ public class PropertyImageController {
     // ─── DELETE ──────────────────────────────────────────────────
 
     @DeleteMapping("/{mediaId}")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#propertyId, principal)")
     @Operation(
             summary = "Eliminar una imagen de una propiedad",
             description = "Elimina el registro de media. El objeto en Supabase Storage se mantiene (por auditoría)."

@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,9 +10,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 
-import java.nio.file.attribute.UserPrincipal;
-import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,7 @@ public class PropertyController {
 
     @PostMapping
     @Operation(summary = "Crear una nueva propiedad")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<PropertyResponse>> create(
             @Valid @RequestBody CreatePropertyRequest request) {
 
@@ -55,13 +57,32 @@ public class PropertyController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas las propiedades (paginado, con filtros opcionales)")
+    @Operation(summary = "Listar todas las propiedades (paginado, con filtros avanzados opcionales)")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAll(
-            @Parameter(description = "Filtrar por tipo de propiedad") @RequestParam(required = false) String propertyType,
-            @Parameter(description = "Filtrar por estado") @RequestParam(required = false) String status,
+            @Parameter(description = "Disponibilidad (IMMEDIATE, IN_30_DAYS, IN_60_DAYS, TO_NEGOTIATE)") @RequestParam(required = false) String availability,
+
+            @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
+
+            @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
+
+            @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+
+            @Parameter(description = "Precio máximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+
+            @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
+
+            @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+
+            @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(propertyType, status, pageable);
+        PropertyFilterRequest filter = new PropertyFilterRequest(
+                availability, propertyType, status,
+                minPrice, maxPrice, locationId,
+                minBathrooms, minBedrooms);
+
+        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
@@ -95,10 +116,13 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     @Operation(summary = "Actualizar una propiedad (parcial)")
+    
     public ResponseEntity<ApiResponse<PropertyResponse>> update(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody UpdatePropertyRequest request) {
@@ -111,6 +135,7 @@ public class PropertyController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     public ResponseEntity<ApiResponse<Void>> delete(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
 
@@ -171,11 +196,22 @@ public class PropertyController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Cambiar el estado de una propiedad")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request) {
 
         PropertyResponse response = propertyService.changeStatus(id, request.newStatus());
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
+    }
+
+    // ─── SIMILAR ────────────────────────────────────────────
+    @GetMapping("/{id}/similar")
+    @Operation(summary = "Obtener propiedades similares")
+    public ResponseEntity<ApiResponse<List<PropertyResponse>>> findSimilar(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @RequestParam int size) {
+        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
+        return ResponseEntity.ok(ApiResponse.ok(properties));
     }
 }

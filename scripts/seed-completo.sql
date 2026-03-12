@@ -1,21 +1,6 @@
 -- ============================================================
--- OpenRoof — SEED COMPLETO
+-- OpenRoof — SEED COMPLETO (Adaptado a Modelos Java)
 -- Ejecutar en: Supabase Dashboard → SQL Editor
---
--- Incluye:
---   1. Catálogo: exterior_features, interior_features, locations
---   2. Lead statuses
---   3. Usuarios (Admin, 2 Agentes, 2 Owners, 2 Buyers, 1 Tenant)
---   4. Agent profiles
---   5. Propiedades (10 variadas en Paraguay)
---   6. Favoritos
---   7. Reviews de agentes
---   8. Mensajes
---   9. Visitas
---  10. Ofertas
---
--- Contraseña de todos los usuarios de prueba: Test1234!
--- BCrypt hash: $2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq
 -- ============================================================
 
 BEGIN;
@@ -62,7 +47,7 @@ WHERE NOT EXISTS (SELECT 1 FROM interior_features LIMIT 1);
 INSERT INTO locations (name, city, department, country, created_at, updated_at, version)
 SELECT name, city, department, country, NOW(), NOW(), 0
 FROM (VALUES
-    ('Barrio Herrera',        'Asunción',               'Capital',     'Paraguay'),
+    ('Barrio Herrera',         'Asunción',               'Capital',     'Paraguay'),
     ('Villa Morra',            'Asunción',               'Capital',     'Paraguay'),
     ('Carmelitas',             'Asunción',               'Capital',     'Paraguay'),
     ('Manorá',                 'Asunción',               'Capital',     'Paraguay'),
@@ -94,6 +79,7 @@ WHERE NOT EXISTS (SELECT 1 FROM lead_statuses LIMIT 1);
 
 -- ============================================================
 -- 5. USUARIOS (contraseña: Test1234!)
+-- Adaptado al enum UserRole: USER, AGENT, ADMIN
 -- ============================================================
 INSERT INTO users (email, password_hash, name, phone, role, email_verified_at, created_at, updated_at, version)
 SELECT email, password_hash, name, phone, role, NOW(), NOW(), NOW(), 0
@@ -101,11 +87,11 @@ FROM (VALUES
     ('admin@openroof.com',          '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Admin OpenRoof',    '+595981000001', 'ADMIN'),
     ('agente1@openroof.com',        '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Carlos Mendoza',    '+595981000002', 'AGENT'),
     ('agente2@openroof.com',        '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'María González',    '+595981000003', 'AGENT'),
-    ('propietario1@openroof.com',   '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Roberto Fernández', '+595981000004', 'OWNER'),
-    ('propietario2@openroof.com',   '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Ana Benítez',       '+595981000005', 'OWNER'),
-    ('comprador1@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Luis Ramírez',      '+595981000006', 'BUYER'),
-    ('comprador2@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Sofía Villalba',    '+595981000007', 'BUYER'),
-    ('inquilino1@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Diego Acosta',      '+595981000008', 'TENANT')
+    ('propietario1@openroof.com',   '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Roberto Fernández', '+595981000004', 'USER'),
+    ('propietario2@openroof.com',   '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Ana Benítez',       '+595981000005', 'USER'),
+    ('comprador1@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Luis Ramírez',      '+595981000006', 'USER'),
+    ('comprador2@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Sofía Villalba',    '+595981000007', 'USER'),
+    ('inquilino1@openroof.com',     '$2b$10$8V/4wzSa89/M00VwiQVP7.Fb1K83rR601duFtfxCg5Zo6gZ3rSiOq', 'Diego Acosta',      '+595981000008', 'USER')
 ) AS t(email, password_hash, name, phone, role)
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@openroof.com');
 
@@ -130,114 +116,145 @@ FROM users u
 WHERE u.email = 'agente2@openroof.com'
   AND NOT EXISTS (SELECT 1 FROM agent_profiles WHERE license_number = 'PY-AG-2021-042');
 
+
+-- ============================================================
+-- 6b. AGENT SPECIALTIES (catálogo de especialidades)
+-- ============================================================
+INSERT INTO agent_specialties (name, created_at, updated_at, version)
+SELECT name, NOW(), NOW(), 0
+FROM (VALUES
+    ('residencial'),
+    ('casas'),
+    ('departamentos'),
+    ('apartamentos'),
+    ('terrenos'),
+    ('lotes'),
+    ('comercial'),
+    ('oficinas'),
+    ('industrial'),
+    ('depósitos'),
+    ('bodegas'),
+    ('rural'),
+    ('campos'),
+    ('estancias'),
+    ('agrícola'),
+    ('lujo'),
+    ('inversiones')
+) AS t(name)
+WHERE NOT EXISTS (
+    SELECT 1 FROM agent_specialties s2 WHERE s2.name = t.name
+);
+
+-- ============================================================
+-- 6c. AGENT TO SPECIALTIES (relación agentes-especialidades)
+-- ============================================================
+-- Agente 1 (Carlos Mendoza): residencial, casas, departamentos, lujo
+INSERT INTO agent_to_specialties (agent_id, specialty_id)
+SELECT ap.id, s.id
+FROM agent_profiles ap
+CROSS JOIN agent_specialties s
+WHERE ap.license_number = 'PY-AG-2018-001'
+  AND s.name IN ('residencial', 'casas', 'departamentos', 'lujo')
+  AND NOT EXISTS (
+      SELECT 1 FROM agent_to_specialties ats 
+      WHERE ats.agent_id = ap.id AND ats.specialty_id = s.id
+  );
+
+-- Agente 2 (María González): comercial, terrenos, oficinas, inversiones, lotes
+INSERT INTO agent_to_specialties (agent_id, specialty_id)
+SELECT ap.id, s.id
+FROM agent_profiles ap
+CROSS JOIN agent_specialties s
+WHERE ap.license_number = 'PY-AG-2021-042'
+  AND s.name IN ('comercial', 'terrenos', 'oficinas', 'inversiones', 'lotes', 'industrial')
+  AND NOT EXISTS (
+      SELECT 1 FROM agent_to_specialties ats 
+      WHERE ats.agent_id = ap.id AND ats.specialty_id = s.id
+  );
+
 -- ============================================================
 -- 7. PROPIEDADES (10 propiedades variadas)
--- JOINs directos para resolver FKs — evita subqueries en VALUES
+-- Incluye adaptaciones para buyer_id y tenant_id mapeados a users(id)
 -- ============================================================
 INSERT INTO properties (
     title, description, address, price, property_type, status, visibility, category,
     availability, bedrooms, bathrooms, built_area, surface_area, parking_spaces,
     floors_count, construction_year, lat, lng, highlighted,
-    owner_id, agent_id, location_id, created_at, updated_at, version
+    owner_id, agent_id, buyer_id, tenant_id, location_id, created_at, updated_at, version
 )
 SELECT
     p.title, p.description, p.address, p.price, p.property_type, p.status, p.visibility, p.category,
     p.availability, p.bedrooms, p.bathrooms, p.built_area, p.surface_area, p.parking_spaces,
     p.floors_count, p.construction_year, p.lat, p.lng, p.highlighted,
-    u.id AS owner_id, ap.id AS agent_id, l.id AS location_id,
+    u.id AS owner_id, ap.id AS agent_id, b.id AS buyer_id, t.id AS tenant_id, l.id AS location_id,
     NOW(), NOW(), 0
 FROM (VALUES
+    -- 1. Propiedad con COMPRADOR asignado (Venta cerrada)
     ('Casa moderna en Villa Morra',
-     'Hermosa casa de 3 plantas con acabados de lujo, amplio jardín y piscina.',
+     'Hermosa casa de 3 plantas con acabados de lujo. Venta concretada recientemente.',
      'Av. Mariscal López 1234, Villa Morra',
-     285000.00::numeric, 'HOUSE', 'PUBLISHED', 'PUBLIC', 'SALE', 'IMMEDIATE',
+     285000.00::numeric, 'HOUSE', 'SOLD', 'PUBLIC', 'SALE', 'IMMEDIATE',
      4, 3, 320.00::numeric, 450.00::numeric, 2, 3, 2020,
-     -25.2867::double precision, -57.5800::double precision, true,
-     'propietario1@openroof.com', 'PY-AG-2018-001', 'Villa Morra'),
+     -25.2867, -57.5800, true,
+     'propietario1@openroof.com', 'PY-AG-2018-001', 'comprador1@openroof.com', NULL, 'Villa Morra'),
 
+    -- 2. Propiedad con INQUILINO asignado (Alquiler activo)
     ('Departamento amoblado en Carmelitas',
-     'Moderno departamento de 2 dormitorios, completamente amoblado. Edificio con seguridad 24hs, gimnasio y área social.',
+     'Moderno departamento de 2 dormitorios. Actualmente rentado.',
      'Calle Senador Long 456, Carmelitas',
-     1200.00::numeric, 'APARTMENT', 'PUBLISHED', 'PUBLIC', 'RENT', 'IMMEDIATE',
+     1200.00::numeric, 'APARTMENT', 'RENTED', 'PUBLIC', 'RENT', 'IMMEDIATE',
      2, 1, 85.00::numeric, 85.00::numeric, 1, 1, 2022,
-     -25.2810::double precision, -57.5750::double precision, false,
-     'propietario1@openroof.com', 'PY-AG-2018-001', 'Carmelitas'),
+     -25.2810, -57.5750, false,
+     'propietario1@openroof.com', 'PY-AG-2018-001', NULL, 'inquilino1@openroof.com', 'Carmelitas'),
 
+    -- 3. Propiedad disponible (Sin buyer ni tenant)
     ('Terreno amplio en Luque',
-     'Excelente terreno de 1200 m² ideal para proyecto habitacional. Zona en crecimiento, acceso asfaltado.',
+     'Excelente terreno de 1200 m² ideal para proyecto habitacional.',
      'Ruta Luque - San Bernardino Km 5',
      65000.00::numeric, 'LAND', 'PUBLISHED', 'PUBLIC', 'SALE', 'IMMEDIATE',
      0, 0, 0.00::numeric, 1200.00::numeric, 0, 0, NULL,
-     -25.2700::double precision, -57.4800::double precision, false,
-     'propietario2@openroof.com', 'PY-AG-2021-042', 'Luque'),
+     -25.2700, -57.4800, false,
+     'propietario2@openroof.com', 'PY-AG-2021-042', NULL, NULL, 'Luque'),
 
+    -- 4. Oficina con nuevo INQUILINO asignado
     ('Oficina corporativa en el Centro',
-     'Oficina de 150 m² en edificio corporativo con recepción, sala de reuniones y estacionamiento.',
+     'Oficina de 150 m² en edificio corporativo. Contrato de alquiler iniciado.',
      'Calle Palma 789, Centro',
-     2500.00::numeric, 'OFFICE', 'PUBLISHED', 'PUBLIC', 'RENT', 'IN_30_DAYS',
+     2500.00::numeric, 'OFFICE', 'RENTED', 'PUBLIC', 'RENT', 'IMMEDIATE',
      0, 2, 150.00::numeric, 150.00::numeric, 3, 1, 2019,
-     -25.2820::double precision, -57.6350::double precision, false,
-     'propietario1@openroof.com', 'PY-AG-2018-001', 'Centro'),
+     -25.2820, -57.6350, false,
+     'propietario1@openroof.com', 'PY-AG-2018-001', NULL, 'inquilino1@openroof.com', 'Centro'),
 
+    -- 5. Propiedad con COMPRADOR (En proceso de cierre)
+    ('Penthouse en Manorá',
+     'Espectacular penthouse de 200 m². Oferta aceptada por el comprador.',
+     'Av. Santa Teresa 321, Manorá',
+     350000.00::numeric, 'APARTMENT', 'SOLD', 'PUBLIC', 'SALE', 'IN_30_DAYS',
+     3, 3, 200.00::numeric, 220.00::numeric, 2, 1, 2023,
+     -25.2900, -57.5850, true,
+     'propietario1@openroof.com', 'PY-AG-2018-001', 'comprador2@openroof.com', NULL, 'Manorá'),
+
+    -- 6. Propiedad libre
     ('Casa familiar en Lambaré',
-     'Acogedora casa de 3 dormitorios con patio grande, ideal para familia. Barrio tranquilo y seguro.',
+     'Acogedora casa de 3 dormitorios con patio grande.',
      'Barrio San Isidro, Lambaré',
      95000.00::numeric, 'HOUSE', 'PUBLISHED', 'PUBLIC', 'SALE', 'IMMEDIATE',
      3, 2, 180.00::numeric, 350.00::numeric, 1, 1, 2015,
-     -25.3400::double precision, -57.6200::double precision, false,
-     'propietario2@openroof.com', 'PY-AG-2021-042', 'Lambaré'),
-
-    ('Penthouse en Manorá',
-     'Espectacular penthouse de 200 m² con vista panorámica. 3 suites, jacuzzi, terraza privada.',
-     'Av. Santa Teresa 321, Manorá',
-     350000.00::numeric, 'APARTMENT', 'PUBLISHED', 'PUBLIC', 'SALE', 'IN_30_DAYS',
-     3, 3, 200.00::numeric, 220.00::numeric, 2, 1, 2023,
-     -25.2900::double precision, -57.5850::double precision, true,
-     'propietario1@openroof.com', 'PY-AG-2018-001', 'Manorá'),
-
-    ('Depósito industrial - Fernando de la Mora',
-     'Depósito de 500 m² con portón para camiones, oficina administrativa y baño. Ideal para logística.',
-     'Ruta 2 Mcal. Estigarribia Km 12',
-     3500.00::numeric, 'WAREHOUSE', 'PUBLISHED', 'PUBLIC', 'RENT', 'IMMEDIATE',
-     0, 1, 500.00::numeric, 600.00::numeric, 5, 1, 2010,
-     -25.3350::double precision, -57.5500::double precision, false,
-     'propietario2@openroof.com', 'PY-AG-2021-042', 'Fernando de la Mora'),
-
-    ('Casa con local comercial - San Lorenzo',
-     'Propiedad mixta: casa de 3 dormitorios arriba y local comercial abajo. Sobre avenida principal.',
-     'Av. Libertad 567, San Lorenzo',
-     120000.00::numeric, 'HOUSE', 'PUBLISHED', 'PUBLIC', 'SALE_OR_RENT', 'TO_NEGOTIATE',
-     3, 2, 250.00::numeric, 300.00::numeric, 1, 2, 2012,
-     -25.3370::double precision, -57.5090::double precision, false,
-     'propietario1@openroof.com', 'PY-AG-2018-001', 'San Lorenzo'),
-
-    ('Casa nueva en Barrio Herrera',
-     'Casa a estrenar de 4 dormitorios en suite, living comedor amplio, cocina con isla. Piscina y quincho.',
-     'Calle Dr. Morra 890, Barrio Herrera',
-     195000.00::numeric, 'HOUSE', 'PENDING', 'PRIVATE', 'SALE', 'IN_60_DAYS',
-     4, 4, 280.00::numeric, 400.00::numeric, 2, 2, 2025,
-     -25.2750::double precision, -57.5900::double precision, false,
-     'propietario2@openroof.com', 'PY-AG-2021-042', 'Barrio Herrera'),
-
-    ('Estancia ganadera - 50 hectáreas',
-     'Campo ganadero con casa patronal, corral, aguada natural. 50 hectáreas de pasturas. Título perfecto.',
-     'Compañía Isla Hugua, Encarnación',
-     180000.00::numeric, 'FARM', 'PUBLISHED', 'PUBLIC', 'SALE', 'IMMEDIATE',
-     3, 1, 200.00::numeric, 500000.00::numeric, 0, 1, 1995,
-     -27.3300::double precision, -55.8660::double precision, false,
-     'propietario2@openroof.com', 'PY-AG-2021-042', 'Encarnación')
+     -25.3400, -57.6200, false,
+     'propietario2@openroof.com', 'PY-AG-2021-042', NULL, NULL, 'Lambaré')
 
 ) AS p(
     title, description, address, price, property_type, status, visibility, category,
     availability, bedrooms, bathrooms, built_area, surface_area, parking_spaces,
     floors_count, construction_year, lat, lng, highlighted,
-    owner_email, license_number, location_name
+    owner_email, license_number, buyer_email, tenant_email, location_name
 )
-JOIN users           u  ON u.email          = p.owner_email
+JOIN users           u  ON u.email           = p.owner_email
 JOIN agent_profiles  ap ON ap.license_number = p.license_number
+LEFT JOIN users      b  ON b.email           = p.buyer_email
+LEFT JOIN users      t  ON t.email           = p.tenant_email
 JOIN locations       l  ON l.name            = p.location_name
-WHERE NOT EXISTS (SELECT 1 FROM properties WHERE title = 'Casa moderna en Villa Morra');
-
+WHERE NOT EXISTS (SELECT 1 FROM properties WHERE title = p.title);
 -- ============================================================
 -- 8. FAVORITOS
 -- ============================================================
@@ -348,6 +365,8 @@ UNION ALL SELECT 'locations',         COUNT(*) FROM locations
 UNION ALL SELECT 'lead_statuses',     COUNT(*) FROM lead_statuses
 UNION ALL SELECT 'users',             COUNT(*) FROM users
 UNION ALL SELECT 'agent_profiles',    COUNT(*) FROM agent_profiles
+UNION ALL SELECT 'agent_specialties', COUNT(*) FROM agent_specialties
+UNION ALL SELECT 'agent_to_specialties', COUNT(*) FROM agent_to_specialties
 UNION ALL SELECT 'properties',        COUNT(*) FROM properties
 UNION ALL SELECT 'favorites',         COUNT(*) FROM favorites
 UNION ALL SELECT 'agent_reviews',     COUNT(*) FROM agent_reviews

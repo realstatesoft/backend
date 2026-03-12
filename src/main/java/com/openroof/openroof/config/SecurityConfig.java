@@ -1,6 +1,7 @@
 package com.openroof.openroof.config;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +38,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://*.vercel.app}")
+        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:5174,https://*.vercel.app}")
         private String allowedOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
@@ -58,13 +60,19 @@ public class SecurityConfig {
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                        //Bloque el cerra sesion solo a usuairos autenticados.
+                                                .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/logout-all")
+                                                .authenticated()
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/leads/wizard").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authenticationProvider(authenticationProvider())
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                                
 
                 return http.build();
         }

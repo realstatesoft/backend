@@ -25,7 +25,11 @@ import java.util.List;
         @Index(name = "idx_properties_listing", columnList = "status, visibility, deleted_at"),
         @Index(name = "idx_properties_price", columnList = "price"),
         @Index(name = "idx_properties_highlighted", columnList = "highlighted"),
-        @Index(name = "idx_properties_created", columnList = "created_at")
+        @Index(name = "idx_properties_created", columnList = "created_at"),
+        @Index(name = "idx_properties_coords_filters", columnList = "lat, lng, status, visibility, property_type"),
+        @Index(name = "idx_properties_coords_price", columnList = "lat, lng, price"),
+        @Index(name = "idx_properties_city_search", columnList = "property_type, price, status, visibility"),
+        @Index(name = "idx_properties_highlighted_active", columnList = "highlighted, highlighted_until, status")
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -35,129 +39,137 @@ import java.util.List;
 @Builder
 public class Property extends BaseEntity {
 
-    // ─── Relaciones ───────────────────────────────────────────────
+        // ─── Relaciones ───────────────────────────────────────────────
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+        
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "owner_id", nullable = false)
+        private User owner;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agent_id")
-    private AgentProfile agent;
+        // El Agente responsable (AGENT asignado)
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "agent_id")
+        private AgentProfile agent;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
-    private Location location;
+        // El que compró (permisos de lectura)
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "buyer_id")
+        private User buyer;
 
-    // ─── Información básica ───────────────────────────────────────
+        // El que alquila (permisos de lectura)
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "tenant_id")
+        private User tenant;
 
-    @Column(nullable = false, length = 255)
-    private String title;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "location_id")
+        private Location location;
+        // ─── Información básica ───────────────────────────────────────
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+        @Column(nullable = false, length = 255)
+        private String title;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    private PropertyCategory category;
+        @Column(columnDefinition = "TEXT")
+        private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "property_type", nullable = false, length = 50)
-    private PropertyType propertyType;
+        @Enumerated(EnumType.STRING)
+        @Column(length = 50)
+        private PropertyCategory category;
 
-    // ─── Ubicación ────────────────────────────────────────────────
+        @Enumerated(EnumType.STRING)
+        @Column(name = "property_type", nullable = false, length = 50)
+        private PropertyType propertyType;
 
-    @Column(nullable = false, length = 500)
-    private String address;
+        // ─── Ubicación ────────────────────────────────────────────────
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "lat", column = @Column(name = "lat", precision = 10, scale = 8)),
-            @AttributeOverride(name = "lng", column = @Column(name = "lng", precision = 11, scale = 8))
-    })
-    private GeoLocation geoLocation;
+        @Column(nullable = false, length = 500)
+        private String address;
 
-    // ─── Precio y características ─────────────────────────────────
+        @Embedded
+        @AttributeOverrides({
+                        @AttributeOverride(name = "lat", column = @Column(name = "lat", precision = 10, scale = 8)),
+                        @AttributeOverride(name = "lng", column = @Column(name = "lng", precision = 11, scale = 8))
+        })
+        private GeoLocation geoLocation;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
+        // ─── Precio y características ─────────────────────────────────
 
-    @Builder.Default
-    private Integer bedrooms = 0;
+        @Column(nullable = false, precision = 12, scale = 2)
+        private BigDecimal price;
 
-    @Column(precision = 3, scale = 1)
-    @Builder.Default
-    private BigDecimal bathrooms = BigDecimal.ZERO;
+        @Builder.Default
+        private Integer bedrooms = 0;
 
-    @Column(name = "half_bathrooms")
-    @Builder.Default
-    private Integer halfBathrooms = 0;
+        @Column(precision = 3, scale = 1)
+        @Builder.Default
+        private BigDecimal bathrooms = BigDecimal.ZERO;
 
-    @Column(name = "full_bathrooms")
-    @Builder.Default
-    private Integer fullBathrooms = 0;
+        @Column(name = "half_bathrooms")
+        @Builder.Default
+        private Integer halfBathrooms = 0;
 
-    @Column(name = "surface_area", precision = 10, scale = 2)
-    private BigDecimal surfaceArea;
+        @Column(name = "full_bathrooms")
+        @Builder.Default
+        private Integer fullBathrooms = 0;
 
-    @Column(name = "built_area", precision = 10, scale = 2)
-    private BigDecimal builtArea;
+        @Column(name = "surface_area", precision = 10, scale = 2)
+        private BigDecimal surfaceArea;
 
-    @Column(name = "parking_spaces")
-    @Builder.Default
-    private Integer parkingSpaces = 0;
+        @Column(name = "built_area", precision = 10, scale = 2)
+        private BigDecimal builtArea;
 
-    @Column(name = "floors_count")
-    @Builder.Default
-    private Integer floorsCount = 1;
+        @Column(name = "parking_spaces")
+        @Builder.Default
+        private Integer parkingSpaces = 0;
 
-    // ─── Detalles de construcción (Value Object) ──────────────────
+        @Column(name = "floors_count")
+        @Builder.Default
+        private Integer floorsCount = 1;
 
-    @Embedded
-    private ConstructionDetails construction;
+        // ─── Detalles de construcción (Value Object) ──────────────────
 
-    // ─── Servicios (Value Object) ─────────────────────────────────
+        @Embedded
+        private ConstructionDetails construction;
 
-    @Embedded
-    private UtilityInfo utilities;
+        // ─── Servicios (Value Object) ─────────────────────────────────
 
-    // ─── Estado y visibilidad ─────────────────────────────────────
+        @Embedded
+        private UtilityInfo utilities;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    @Builder.Default
-    private PropertyStatus status = PropertyStatus.PENDING;
+        // ─── Estado y visibilidad ─────────────────────────────────────
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private Visibility visibility = Visibility.PRIVATE;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 50)
+        @Builder.Default
+        private PropertyStatus status = PropertyStatus.PENDING;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    @Builder.Default
-    private Availability availability = Availability.IMMEDIATE;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 20)
+        @Builder.Default
+        private Visibility visibility = Visibility.PRIVATE;
 
-    // ─── Destacados y métricas ────────────────────────────────────
+        @Enumerated(EnumType.STRING)
+        @Column(length = 50)
+        @Builder.Default
+        private Availability availability = Availability.IMMEDIATE;
 
-    @Builder.Default
-    private Boolean highlighted = false;
+        // ─── Destacados y métricas ────────────────────────────────────
 
-    @Column(name = "highlighted_until")
-    private LocalDateTime highlightedUntil;
+        @Builder.Default
+        private Boolean highlighted = false;
 
-    @Column(name = "view_count")
-    @Builder.Default
-    private Integer viewCount = 0;
+        @Column(name = "highlighted_until")
+        private LocalDateTime highlightedUntil;
 
-    @Column(name = "favorite_count")
-    @Builder.Default
-    private Integer favoriteCount = 0;
+        @Column(name = "view_count")
+        @Builder.Default
+        private Integer viewCount = 0;
 
-    // ─── Publicación ─────────────────────────────────────────────
+        @Column(name = "favorite_count")
+        @Builder.Default
+        private Integer favoriteCount = 0;
 
-    @Column(name = "published_at")
-    private LocalDateTime publishedAt;
+        // ─── Publicación ─────────────────────────────────────────────
 
     // ─── Papelera de Reciclaje ────────────────────────────────────
     @Column(name = "trashed_at")
@@ -165,20 +177,18 @@ public class Property extends BaseEntity {
 
     // ─── Colecciones ──────────────────────────────────────────────
 
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<PropertyRoom> rooms = new ArrayList<>();
+        // ─── Colecciones ──────────────────────────────────────────────
 
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<PropertyMedia> media = new ArrayList<>();
+        @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<PropertyRoom> rooms = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "property_exterior_features",
-            joinColumns = @JoinColumn(name = "property_id"),
-            inverseJoinColumns = @JoinColumn(name = "feature_id")
-    )
-    @Builder.Default
-    private List<ExteriorFeature> exteriorFeatures = new ArrayList<>();
+        @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<PropertyMedia> media = new ArrayList<>();
+
+        @ManyToMany(fetch = FetchType.LAZY)
+        @JoinTable(name = "property_exterior_features", joinColumns = @JoinColumn(name = "property_id"), inverseJoinColumns = @JoinColumn(name = "feature_id"))
+        @Builder.Default
+        private List<ExteriorFeature> exteriorFeatures = new ArrayList<>();
 }
