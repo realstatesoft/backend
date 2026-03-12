@@ -65,7 +65,7 @@ public class SecurityConfig {
                                                 .authenticated()
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/leads/wizard").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
