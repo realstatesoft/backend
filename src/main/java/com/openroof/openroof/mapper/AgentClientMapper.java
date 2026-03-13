@@ -124,48 +124,38 @@ public class AgentClientMapper {
             ac.setNotes(req.notes());
 
         // Budget range
-        if (req.minBudget() != null || req.maxBudget() != null) {
-            MoneyRange existing = ac.getBudgetRange();
-            if (existing == null) {
-                existing = new MoneyRange();
-            }
-            if (req.minBudget() != null)
-                existing.setMin(req.minBudget());
-            if (req.maxBudget() != null)
-                existing.setMax(req.maxBudget());
-            ac.setBudgetRange(existing);
-        }
+        ac.setBudgetRange(mergeMoneyRange(ac.getBudgetRange(), req.minBudget(), req.maxBudget()));
 
         // Bedroom range
-        if (req.minBedrooms() != null || req.maxBedrooms() != null) {
-            IntegerRange existing = ac.getBedroomRange();
-            if (existing == null) {
-                existing = new IntegerRange();
-            }
-            if (req.minBedrooms() != null)
-                existing.setMin(req.minBedrooms());
-            if (req.maxBedrooms() != null)
-                existing.setMax(req.maxBedrooms());
-            ac.setBedroomRange(existing);
-        }
+        ac.setBedroomRange(mergeIntegerRange(ac.getBedroomRange(), req.minBedrooms(), req.maxBedrooms()));
 
         // Bathroom range
-        if (req.minBathrooms() != null || req.maxBathrooms() != null) {
-            IntegerRange existing = ac.getBathroomRange();
-            if (existing == null) {
-                existing = new IntegerRange();
-            }
-            if (req.minBathrooms() != null)
-                existing.setMin(req.minBathrooms());
-            if (req.maxBathrooms() != null)
-                existing.setMax(req.maxBathrooms());
-            ac.setBathroomRange(existing);
-        }
+        ac.setBathroomRange(mergeIntegerRange(ac.getBathroomRange(), req.minBathrooms(), req.maxBathrooms()));
     }
 
     // ─── Helpers ─────────────────────────────────────────────────
 
     private String enumName(Enum<?> e) {
         return e != null ? e.name() : null;
+    }
+
+    private MoneyRange mergeMoneyRange(MoneyRange current, java.math.BigDecimal min, java.math.BigDecimal max) {
+        if (min == null && max == null) {
+            return current;
+        }
+        MoneyRange target = (current != null) ? current : new MoneyRange();
+        if (min != null) target.setMin(min);
+        if (max != null) target.setMax(max);
+        return target;
+    }
+
+    private IntegerRange mergeIntegerRange(IntegerRange current, Integer min, Integer max) {
+        if (min == null && max == null) {
+            return current;
+        }
+        IntegerRange target = (current != null) ? current : new IntegerRange();
+        if (min != null) target.setMin(min);
+        if (max != null) target.setMax(max);
+        return target;
     }
 }

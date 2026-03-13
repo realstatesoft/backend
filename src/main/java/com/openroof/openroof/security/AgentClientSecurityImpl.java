@@ -35,11 +35,10 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
         // 2. AGENT solo si es el agente asignado a este cliente
         if (currentUser.getRole() == UserRole.AGENT) {
-            AgentClient client = agentClientRepository.findById(agentClientId)
-                    .orElseThrow(() -> new EntityNotFoundException("Cliente de agente no encontrado"));
-
-            return client.getAgent() != null &&
-                   client.getAgent().getUser().getId().equals(currentUser.getId());
+            return agentClientRepository.findById(agentClientId)
+                    .map(client -> client.getAgent() != null &&
+                                   client.getAgent().getUser().getId().equals(currentUser.getId()))
+                    .orElse(false);
         }
 
         // USER no tiene acceso a esta entidad
@@ -59,10 +58,9 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
         // 2. AGENT solo si está operando sobre su propio agentId
         if (currentUser.getRole() == UserRole.AGENT) {
-            AgentProfile agentProfile = agentProfileRepository.findById(agentId)
-                    .orElseThrow(() -> new EntityNotFoundException("Agente no encontrado con ID: " + agentId));
-                    
-            return agentProfile.getUser().getId().equals(currentUser.getId());
+            return agentProfileRepository.findById(agentId)
+                    .map(agentProfile -> agentProfile.getUser().getId().equals(currentUser.getId()))
+                    .orElse(false);
         }
 
         return false;

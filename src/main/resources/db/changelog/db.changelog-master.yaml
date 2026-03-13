@@ -17,5 +17,11 @@ databaseChangeLog:
   - include:
       file: changelogs/005-add-trashed-at-to-property.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/006-add-property-indexes.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/007-add-agent-client-unique-constraint.yaml
+      relativeToChangelogFile: true
 
     

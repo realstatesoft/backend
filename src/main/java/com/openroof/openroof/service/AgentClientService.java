@@ -29,11 +29,6 @@ public class AgentClientService {
     // ─── CREATE ───────────────────────────────────────────────────
 
     public AgentClientResponse create(CreateAgentClientRequest request) {
-        // Validar que no exista ya la relación agent-user
-        if (agentClientRepository.existsByAgent_IdAndUser_Id(request.agentId(), request.userId())) {
-            throw new BadRequestException("Ya existe un registro de cliente para este agente y usuario");
-        }
-
         // Resolver agente
         AgentProfile agent = agentProfileRepository.findById(request.agentId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -45,7 +40,13 @@ public class AgentClientService {
                         "Usuario no encontrado con ID: " + request.userId()));
 
         AgentClient agentClient = agentClientMapper.toEntity(request, agent, user);
-        agentClient = agentClientRepository.save(agentClient);
+        
+        try {
+            agentClient = agentClientRepository.save(agentClient);
+            // Si hay flush inmediato o al terminar la tx se lanzará la excepción si el (agent, user) ya existe
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new BadRequestException("Ya existe un registro de cliente para este agente y usuario");
+        }
 
         return agentClientMapper.toResponse(agentClient);
     }

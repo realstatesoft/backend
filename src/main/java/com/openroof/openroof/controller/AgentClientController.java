@@ -55,14 +55,20 @@ public class AgentClientController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @GetMapping("/agent/{agentId}")
     @PreAuthorize("isAuthenticated() and @agentClientSecurity.canManageAgent(#agentId, principal)")
     @Operation(summary = "Listar los clientes de un agente (paginado)")
     public ResponseEntity<ApiResponse<Page<AgentClientSummaryResponse>>> getByAgent(
             @P("agentId") @Parameter(description = "ID del agente") @PathVariable Long agentId,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable) {
 
-        Page<AgentClientSummaryResponse> page = agentClientService.getByAgent(agentId, pageable);
+        int size = Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
+        org.springframework.data.domain.PageRequest clampedPageable = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(), size, pageable.getSort());
+
+        Page<AgentClientSummaryResponse> page = agentClientService.getByAgent(agentId, clampedPageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

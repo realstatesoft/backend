@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-unique-constraint-agent-client
+      author: otto
+      changes:
+        - addUniqueConstraint:
+            columnNames: agent_id, user_id
+            constraintName: uk_agent_client_agent_user
+            tableName: agent_clients
