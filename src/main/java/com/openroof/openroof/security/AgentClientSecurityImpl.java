@@ -9,7 +9,6 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentClientRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

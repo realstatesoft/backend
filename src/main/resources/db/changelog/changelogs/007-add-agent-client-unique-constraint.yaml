@@ -7,3 +7,7 @@ databaseChangeLog:
             columnNames: agent_id, user_id
             constraintName: uk_agent_client_agent_user
             tableName: agent_clients
+      rollback:
+        - dropUniqueConstraint:
+            constraintName: uk_agent_client_agent_user
+            tableName: agent_clients

@@ -9,17 +9,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.parameters.P;
-
-import com.openroof.openroof.model.user.User;
 
 @RestController
 @RequestMapping("/agent-clients")
@@ -62,10 +60,10 @@ public class AgentClientController {
     @Operation(summary = "Listar los clientes de un agente (paginado)")
     public ResponseEntity<ApiResponse<Page<AgentClientSummaryResponse>>> getByAgent(
             @P("agentId") @Parameter(description = "ID del agente") @PathVariable Long agentId,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         int size = Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
-        org.springframework.data.domain.PageRequest clampedPageable = org.springframework.data.domain.PageRequest.of(
+        PageRequest clampedPageable = PageRequest.of(
                 pageable.getPageNumber(), size, pageable.getSort());
 
         Page<AgentClientSummaryResponse> page = agentClientService.getByAgent(agentId, clampedPageable);

@@ -1,5 +1,8 @@
 package com.openroof.openroof.dto.agent;
 
+import com.openroof.openroof.model.enums.ClientStatus;
+import com.openroof.openroof.model.enums.ContactMethod;
+import com.openroof.openroof.model.enums.Priority;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
