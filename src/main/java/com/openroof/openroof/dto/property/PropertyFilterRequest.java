@@ -36,5 +36,8 @@ public record PropertyFilterRequest(
         BigDecimal minBathrooms,
 
         /** Cantidad mínima de dormitorios */
-        Integer minBedrooms) {
+        Integer minBedrooms,
+        
+        /** Keyword search for title, description, address, location name */
+        String q) {
 }

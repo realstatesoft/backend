@@ -50,7 +50,8 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
-                        "/properties/**" // TODO: Restringir POST/PUT/DELETE a usuarios autenticados
+                        "/properties/**", // TODO: Restringir POST/PUT/DELETE a usuarios autenticados
+                        "/locations/**"
         };
 
         @Bean

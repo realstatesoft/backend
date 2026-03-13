@@ -45,6 +45,34 @@ public final class PropertySpecification {
             // ── Excluir propiedades en papelera ──────────────────────────
             predicates.add(cb.isNull(root.get("trashedAt")));
 
+            // ── Búsqueda Textual (keyword) ────────────────────────────────
+            if (filter.q() != null && !filter.q().isBlank()) {
+                String pattern = "%" + filter.q().trim().toLowerCase() + "%";
+                List<Predicate> orPredicates = new ArrayList<>();
+
+                orPredicates.add(cb.like(cb.lower(root.get("title")), pattern));
+                orPredicates.add(cb.like(cb.lower(root.get("description")), pattern));
+                orPredicates.add(cb.like(cb.lower(root.get("address")), pattern));
+
+                // Búsqueda en nombre de location
+                if (isCountQuery) {
+                    // En count query usamos subquery para el name
+                    Subquery<Long> subquery = query.subquery(Long.class);
+                    Root<Property> subRoot = subquery.from(Property.class);
+                    subquery.select(cb.literal(1L))
+                        .where(
+                            cb.equal(subRoot.get("id"), root.get("id")),
+                            cb.like(cb.lower(subRoot.get("location").get("name")), pattern)
+                        );
+                    orPredicates.add(cb.exists(subquery));
+                } else {
+                    Join<Object, Object> locationJoinForSearch = root.join("location", JoinType.LEFT);
+                    orPredicates.add(cb.like(cb.lower(locationJoinForSearch.get("name")), pattern));
+                }
+
+                predicates.add(cb.or(orPredicates.toArray(new Predicate[0])));
+            }
+
             // ── Disponibilidad ────────────────────────────────────────────
             if (filter.availability() != null && !filter.availability().isBlank()) {
                 try {
