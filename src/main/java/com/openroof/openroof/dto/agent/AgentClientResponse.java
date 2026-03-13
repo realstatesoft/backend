@@ -1,0 +1,48 @@
+package com.openroof.openroof.dto.agent;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record AgentClientResponse(
+        Long id,
+
+        // Agent
+        Long agentId,
+        String agentName,
+
+        // User/Client
+        Long userId,
+        String userName,
+        String userEmail,
+
+        // Estado
+        String status,
+        String priority,
+
+        // Tags
+        List<String> tags,
+
+        // Contadores
+        Integer visitedPropertiesCount,
+        Integer offersCount,
+
+        // Rangos de preferencia
+        BigDecimal minBudget,
+        BigDecimal maxBudget,
+        Integer minBedrooms,
+        Integer maxBedrooms,
+        Integer minBathrooms,
+        Integer maxBathrooms,
+
+        // Contacto
+        String preferredContactMethod,
+        LocalDateTime lastContactDate,
+
+        // Notas
+        String notes,
+
+        // Audit
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt) {
+}
