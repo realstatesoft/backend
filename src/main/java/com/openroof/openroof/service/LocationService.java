@@ -1,14 +1,16 @@
 package com.openroof.openroof.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.openroof.openroof.dto.location.LocationDto;
 import com.openroof.openroof.mapper.LocationMapper;
 import com.openroof.openroof.model.property.Location;
 import com.openroof.openroof.repository.LocationRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +44,12 @@ public class LocationService {
         // Check if there is already a matching city
         List<Location> existing = locationRepository.findByCityIgnoreCase(city.trim());
         if (!existing.isEmpty()) {
-            Location loc = existing.get(0);
+            // Prefer match with same department if available
+            Location loc = existing.stream()
+                    .filter(l -> department == null || department.isBlank() 
+                            || department.trim().equalsIgnoreCase(l.getDepartment()))
+                    .findFirst()
+                    .orElse(existing.get(0));
             
             // Si la location existe pero no tiene coordenadas, las seteamos
             if ((loc.getGeoLocation() == null || loc.getGeoLocation().getLat() == null) && lat != null && lng != null) {

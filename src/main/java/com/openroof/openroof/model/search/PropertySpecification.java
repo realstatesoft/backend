@@ -1,15 +1,23 @@
 package com.openroof.openroof.model.search;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.data.jpa.domain.Specification;
+
 import com.openroof.openroof.dto.property.PropertyFilterRequest;
 import com.openroof.openroof.model.enums.Availability;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.Property;
-import jakarta.persistence.criteria.*;
-import org.springframework.data.jpa.domain.Specification;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 /**
  * Construye un {@link Specification} de JPA dinámicamente a partir de
@@ -62,12 +70,18 @@ public final class PropertySpecification {
                     subquery.select(cb.literal(1L))
                         .where(
                             cb.equal(subRoot.get("id"), root.get("id")),
-                            cb.like(cb.lower(subRoot.get("location").get("name")), pattern)
+                            cb.or(
+                                cb.like(cb.lower(subRoot.get("location").get("name")), pattern),
+                                cb.like(cb.lower(subRoot.get("location").get("city")), pattern),
+                                cb.like(cb.lower(subRoot.get("location").get("department")), pattern)
+                            )
                         );
                     orPredicates.add(cb.exists(subquery));
                 } else {
                     Join<Object, Object> locationJoinForSearch = root.join("location", JoinType.LEFT);
                     orPredicates.add(cb.like(cb.lower(locationJoinForSearch.get("name")), pattern));
+                    orPredicates.add(cb.like(cb.lower(locationJoinForSearch.get("city")), pattern));
+                    orPredicates.add(cb.like(cb.lower(locationJoinForSearch.get("department")), pattern));
                 }
 
                 predicates.add(cb.or(orPredicates.toArray(new Predicate[0])));
