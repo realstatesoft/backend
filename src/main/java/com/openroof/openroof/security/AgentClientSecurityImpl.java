@@ -34,7 +34,7 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
         // 2. AGENT solo si es el agente asignado a este cliente
         if (currentUser.getRole() == UserRole.AGENT) {
-            return agentClientRepository.findById(agentClientId)
+            return agentClientRepository.findByIdWithAgentAndUser(agentClientId)
                     .map(client -> client.getAgent() != null &&
                                    client.getAgent().getUser().getId().equals(currentUser.getId()))
                     .orElse(false);
@@ -57,7 +57,7 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
         // 2. AGENT solo si está operando sobre su propio agentId
         if (currentUser.getRole() == UserRole.AGENT) {
-            return agentProfileRepository.findById(agentId)
+            return agentProfileRepository.findByIdWithUser(agentId)
                     .map(agentProfile -> agentProfile.getUser().getId().equals(currentUser.getId()))
                     .orElse(false);
         }

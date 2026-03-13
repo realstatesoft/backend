@@ -19,4 +19,10 @@ public interface AgentClientRepository extends JpaRepository<AgentClient, Long>,
     Optional<AgentClient> findByAgent_IdAndUser_Id(Long agentId, Long userId);
 
     boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT ac FROM AgentClient ac " +
+            "JOIN FETCH ac.agent a " +
+            "JOIN FETCH a.user " +
+            "WHERE ac.id = :id")
+    Optional<AgentClient> findByIdWithAgentAndUser(@org.springframework.data.repository.query.Param("id") Long id);
 }

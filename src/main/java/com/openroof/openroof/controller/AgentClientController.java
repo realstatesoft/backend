@@ -88,7 +88,7 @@ public class AgentClientController {
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, principal)")
     @Operation(summary = "Eliminar un cliente de agente")
-    public ResponseEntity<ApiResponse<Void>> delete(
+    public ResponseEntity<Void> delete(
             @P("id") @Parameter(description = "ID del registro agent-client") @PathVariable Long id) {
 
         agentClientService.delete(id);
