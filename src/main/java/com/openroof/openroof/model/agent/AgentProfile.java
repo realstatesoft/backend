@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -54,6 +55,7 @@ public class AgentProfile extends BaseEntity {
             joinColumns = @JoinColumn(name = "agent_id"),
             inverseJoinColumns = @JoinColumn(name = "specialty_id")
     )
+    @BatchSize(size = 30)
     @Builder.Default
     private List<AgentSpecialty> specialties = new ArrayList<>();
 

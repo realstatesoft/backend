@@ -2,6 +2,8 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.agent.*;
+import com.openroof.openroof.model.enums.PropertyCategory;
+import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.service.AgentProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/agents")
@@ -68,6 +72,24 @@ public class AgentProfileController {
 
         Page<AgentProfileSummaryResponse> page = agentProfileService.search(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
+    @GetMapping("/suggested")
+    @Operation(summary = "Obtener agentes sugeridos basados en tipo de propiedad y categoría")
+    public ResponseEntity<ApiResponse<List<AgentProfileSummaryResponse>>> getSuggestedAgents(
+            @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)")
+            @RequestParam(required = false) PropertyType propertyType,
+
+            @Parameter(description = "Categoría (SALE, RENT, SALE_OR_RENT)")
+            @RequestParam(required = false) PropertyCategory category,
+
+            @Parameter(description = "Cantidad máxima de agentes (default: 5, max: 20)")
+            @RequestParam(required = false, defaultValue = "5") Integer limit) {
+
+        SuggestedAgentsRequest request = new SuggestedAgentsRequest(propertyType, category, limit);
+
+        List<AgentProfileSummaryResponse> agents = agentProfileService.getSuggestedAgents(request);
+        return ResponseEntity.ok(ApiResponse.ok(agents));
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────

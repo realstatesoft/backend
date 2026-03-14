@@ -121,12 +121,7 @@ public class AuthService {
                                 .build();
         }
 
-        private String parseToken(String header) {
-                if (header == null || !header.startsWith("Bearer ")) {
-                        throw new BadRequestException("Token no proporcionado");
-                }
-                return header.substring(7);
-        }
+  
 
         /*
          * * Desc: Invalida la sesión actual eliminando el registro del Refresh Token de

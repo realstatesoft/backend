@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,4 +31,35 @@ public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long
            "OR LOWER(a.companyName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(a.licenseNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<AgentProfile> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Busca agentes que tengan especialidades cuyos nombres coincidan con alguno de los valores dados.
+     * Ordena por rating descendente, luego por experiencia descendente (nulls al final).
+     * Acepta {@link Pageable} para aplicar el límite en base de datos.
+     * <p>
+     * Usa sub-select con DISTINCT para evitar el error de PostgreSQL:
+     * "for SELECT DISTINCT, ORDER BY expressions must appear in select list".
+     */
+    @Query("SELECT a FROM AgentProfile a " +
+           "JOIN FETCH a.user u " +
+           "LEFT JOIN FETCH a.specialties " +
+           "WHERE a.id IN (" +
+           "  SELECT DISTINCT a2.id FROM AgentProfile a2 " +
+           "  JOIN a2.specialties s " +
+           "  WHERE LOWER(s.name) IN :specialtyNames" +
+           ") " +
+           "ORDER BY a.avgRating DESC, " +
+           "CASE WHEN a.experienceYears IS NULL THEN 1 ELSE 0 END ASC, " +
+           "a.experienceYears DESC")
+    List<AgentProfile> findBySpecialtyNamesOrderByRating(
+            @Param("specialtyNames") List<String> specialtyNames,
+            Pageable pageable);
+
+    /**
+     * Obtiene los agentes mejor calificados (top N por rating y experiencia, nulls al final).
+     */
+    @Query("SELECT a FROM AgentProfile a " +
+           "JOIN FETCH a.user u " +
+           "ORDER BY a.avgRating DESC, CASE WHEN a.experienceYears IS NULL THEN 1 ELSE 0 END ASC, a.experienceYears DESC")
+    List<AgentProfile> findTopAgentsOrderByRating(Pageable pageable);
 }
