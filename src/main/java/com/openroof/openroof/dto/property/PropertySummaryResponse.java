@@ -16,5 +16,7 @@ public record PropertySummaryResponse(
         BigDecimal surfaceArea,
         String status,
         String locationName,
+        BigDecimal lat,
+        BigDecimal lng,
         LocalDateTime trashedAt) {
 }
