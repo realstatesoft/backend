@@ -11,9 +11,9 @@ import java.util.Optional;
 
 public interface PropertyAssignmentRepository extends JpaRepository<PropertyAssignment, Long> {
 
-    List<PropertyAssignment> findByPropertyId(Long propertyId);
+    List<PropertyAssignment> findByProperty_Id(Long propertyId);
 
-    List<PropertyAssignment> findByAgentId(Long agentId);
+    List<PropertyAssignment> findByAgent_Id(Long agentId);
 
     @Query("""
             SELECT pa FROM PropertyAssignment pa
