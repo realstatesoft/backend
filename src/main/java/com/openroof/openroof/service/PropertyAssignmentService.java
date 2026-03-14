@@ -40,13 +40,13 @@ public class PropertyAssignmentService {
 
         validateIsOwner(property, currentUser);
 
-        AgentProfile agent = agentProfileRepository.findById(request.agentId())
+        AgentProfile agent = agentProfileRepository.findById(request.agentProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Perfil de agente no encontrado con ID: " + request.agentId()));
+                        "Perfil de agente no encontrado con ID: " + request.agentProfileId()));
 
         // Block duplicate active assignments
         assignmentRepository.findActiveByPropertyAndAgent(
-                propertyId, request.agentId(),
+                propertyId, request.agentProfileId(),
                 List.of(AssignmentStatus.PENDING, AssignmentStatus.ACCEPTED))
                 .ifPresent(existing -> {
                     throw new BadRequestException(
@@ -118,7 +118,7 @@ public class PropertyAssignmentService {
             throw new BadRequestException("No tienes permiso para ver las asignaciones de esta propiedad");
         }
 
-        return assignmentRepository.findByPropertyId(propertyId).stream()
+        return assignmentRepository.findByProperty_Id(propertyId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -131,7 +131,7 @@ public class PropertyAssignmentService {
                 .orElseThrow(() -> new BadRequestException(
                         "No tienes un perfil de agente asociado a tu cuenta"));
 
-        return assignmentRepository.findByAgentId(agentProfile.getId()).stream()
+        return assignmentRepository.findByAgent_Id(agentProfile.getId()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -178,6 +178,7 @@ public class PropertyAssignmentService {
                 a.getProperty().getId(),
                 a.getProperty().getTitle(),
                 a.getAgent().getId(),
+                a.getAgent().getUser().getId(),
                 a.getAgent().getUser().getName(),
                 a.getAssignedBy().getId(),
                 a.getAssignedBy().getName(),
