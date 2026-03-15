@@ -296,14 +296,6 @@ public class PropertyService {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
 
-        Location location = property.getLocation();
-        if (location == null) {
-            log.warn("Property with id: {} has no location, using fallback search", propertyId);
-            return fallbackSearch(property, limit).stream()
-                    .map(propertyMapper::toResponse)
-                    .toList();
-        }
-
         // PRICE RANGE
         BigDecimal basePrice = property.getPrice();
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
@@ -312,15 +304,15 @@ public class PropertyService {
         String propertyType = property.getPropertyType().name();
 
         // COORDINATES CHECK
-        if (!location.hasCoordinates()) {
-            log.warn("Property with id: {} has no coordinates, using fallback search method", propertyId);
+        if (!property.hasCoordinates()) {
+            log.warn("Property with id: {} has no coordinates, using fallback search", propertyId);
             return fallbackSearch(property, limit).stream()
                     .map(propertyMapper::toResponse)
                     .toList();
         }
 
-        Double baseLat = location.getLat();
-        Double baseLng = location.getLng();
+        Double baseLat = property.getLat();
+        Double baseLng = property.getLng();
 
         Set<Long> seenPropertyIds = new HashSet<>();
         seenPropertyIds.add(propertyId); // exclude base property
@@ -417,12 +409,7 @@ public class PropertyService {
 
     // helpers for calculating all criteria
     private double calculateDistanceScore(Property base, Property candidate) {
-        // check if properties have location and coordinates
-        if ((base.getLocation() == null || candidate.getLocation() == null)
-                && (base.getGeoLocation() == null || candidate.getGeoLocation() == null)) {
-            return 0.5; // Neutral score
-        }
-
+        // check if properties have location or coordinates
         if (!base.hasCoordinates() || !candidate.hasCoordinates()) {
             return 0.5; // Neutral score
         }
