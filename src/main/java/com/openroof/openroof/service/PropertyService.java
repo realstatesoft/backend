@@ -370,7 +370,24 @@ public class PropertyService {
                     .limit(remainingNeeded)
                     .toList();
 
+            log.info("{} found by cityy", citySuggestions.size());
             allSuggestions.addAll(citySuggestions);
+        }
+
+        // last resort fallback: find any property indistinct of location
+        if (allSuggestions.size() < limit) {
+            log.debug("Very few properties found ({}), expanding to any property of same type", allSuggestions.size());
+            int remainingNeeded = limit - allSuggestions.size();
+
+            List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
+                    .stream()
+                    .filter(p -> !seenPropertyIds.contains(p.getId()))
+                    .peek(p -> seenPropertyIds.add(p.getId()))
+                    .limit(remainingNeeded)
+                    .toList();
+
+            log.info("Found {} properties of same type as last resort", anySuggestions.size());
+            allSuggestions.addAll(anySuggestions);
         }
 
         return rankAndLimit(allSuggestions, property, limit).stream()
@@ -500,6 +517,24 @@ public class PropertyService {
                 property.getPropertyType().name(),
                 minPrice,
                 maxPrice,
+                basePrice,
+                limit
+        );
+    }
+
+    private List<Property> fallbackAnyPropertySearch(Property property, int limit) {
+        if (limit <= 0) return List.of();
+
+        BigDecimal basePrice = property.getPrice();
+        // Rango de precio muy amplio para cualquier propiedad
+        BigDecimal wideMinPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION * 2));
+        BigDecimal wideMaxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION * 2));
+
+        return propertyRepository.findByPropertyTypeOnly(
+                property.getId(),
+                property.getPropertyType().name(),
+                wideMinPrice,
+                wideMaxPrice,
                 basePrice,
                 limit
         );

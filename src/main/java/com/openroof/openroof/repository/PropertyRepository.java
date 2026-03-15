@@ -79,6 +79,8 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     // search by coordinates
     // optimization: first select properties inside the bounding box to prevent
     // performing heavy calculations trigonometric on all properties
+
+    // VALIDATE STATUS = "PUBLISHED" WHEN APPROVAL IS IMPLEMENTED
     @Query(value = """
     SELECT * FROM (
         SELECT p.*,
@@ -87,7 +89,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
                 sin(radians(p.lat)))) AS distance_km
         FROM properties p
         WHERE p.id != :propertyId
-        AND p.status = 'PUBLISHED'
         AND p.visibility = 'PUBLIC'
         AND p.deleted_at IS NULL
         AND p.trashed_at IS NULL
@@ -120,11 +121,12 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     );
 
     // fallback when no coordinates
+
+    // VALIDATE STATUS = "PUBLISHED" WHEN APPROVAL IS IMPLEMENTED
     @Query(value = """
         SELECT p.* FROM properties p
         JOIN locations l ON p.location_id = l.id
         WHERE p.id != :propertyId
-        AND p.status = 'PUBLISHED'
         AND p.visibility = 'PUBLIC'
         AND p.deleted_at IS NULL
         AND p.trashed_at IS NULL      
@@ -144,4 +146,23 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
             @Param("limit") int limit
     );
 
+    // VALIDATE STATUS = "PUBLISHED" WHEN APPROVAL IS IMPLEMENTED
+    @Query(value = """
+        SELECT p.* FROM properties p
+        WHERE p.id != :propertyId
+        AND p.visibility = 'PUBLIC'
+        AND p.deleted_at IS NULL
+        AND p.property_type = :propertyType
+        AND p.price BETWEEN :minPrice AND :maxPrice
+        ORDER BY ABS(p.price - :basePrice) ASC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<Property> findByPropertyTypeOnly(
+            @Param("propertyId") Long propertyId,
+            @Param("propertyType") String propertyType,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("basePrice") BigDecimal basePrice,
+            @Param("limit") int limit
+    );
 }
