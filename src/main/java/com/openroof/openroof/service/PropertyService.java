@@ -456,8 +456,8 @@ public class PropertyService {
     }
 
     private double calculateBathroomsScore(Property base, Property candidate) {
-        double baseBathrooms = base.getBathrooms() != null ? base.getBathrooms().doubleValue() : 0.0;
-        double candidateBathrooms = candidate.getBathrooms() != null ? candidate.getBathrooms().doubleValue() : 0.0;
+        double baseBathrooms = Objects.requireNonNullElse(base.getBathrooms(), BigDecimal.ZERO).doubleValue();
+        double candidateBathrooms = Objects.requireNonNullElse(candidate.getBathrooms(), BigDecimal.ZERO).doubleValue();
         double diff = Math.abs(baseBathrooms - candidateBathrooms);
 
         if (diff <= 0.5) return 1.0;
