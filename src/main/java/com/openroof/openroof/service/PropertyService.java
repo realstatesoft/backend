@@ -296,14 +296,6 @@ public class PropertyService {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
 
-        Location location = property.getLocation();
-        if (location == null) {
-            log.warn("Property with id: {} has no location, using fallback search", propertyId);
-            return fallbackSearch(property, limit).stream()
-                    .map(propertyMapper::toResponse)
-                    .toList();
-        }
-
         // PRICE RANGE
         BigDecimal basePrice = property.getPrice();
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
@@ -312,15 +304,15 @@ public class PropertyService {
         String propertyType = property.getPropertyType().name();
 
         // COORDINATES CHECK
-        if (!location.hasCoordinates()) {
-            log.warn("Property with id: {} has no coordinates, using fallback search method", propertyId);
+        if (!property.hasCoordinates()) {
+            log.warn("Property with id: {} has no coordinates, using fallback search", propertyId);
             return fallbackSearch(property, limit).stream()
                     .map(propertyMapper::toResponse)
                     .toList();
         }
 
-        Double baseLat = location.getLat();
-        Double baseLng = location.getLng();
+        Double baseLat = property.getLat();
+        Double baseLng = property.getLng();
 
         Set<Long> seenPropertyIds = new HashSet<>();
         seenPropertyIds.add(propertyId); // exclude base property
@@ -417,20 +409,16 @@ public class PropertyService {
 
     // helpers for calculating all criteria
     private double calculateDistanceScore(Property base, Property candidate) {
-        // check if properties have location and coordinates
-        if (base.getLocation() == null || candidate.getLocation() == null) {
-            return 0.5; // Neutral score
-        }
-
-        if (!base.getLocation().hasCoordinates() || !candidate.getLocation().hasCoordinates()) {
+        // check if properties have location or coordinates
+        if (!base.hasCoordinates() || !candidate.hasCoordinates()) {
             return 0.5; // Neutral score
         }
 
         double distance = haversineDistance(
-                base.getLocation().getLat(),
-                base.getLocation().getLng(),
-                candidate.getLocation().getLat(),
-                candidate.getLocation().getLng()
+                base.getLat(),
+                base.getLng(),
+                candidate.getLat(),
+                candidate.getLng()
         );
 
         // 1.0 for 0km, 0.5 for 5km, 0.0 for 10km+
@@ -454,7 +442,9 @@ public class PropertyService {
     }
 
     private double calculateBedroomsScore(Property base, Property candidate) {
-        int diff = Math.abs(base.getBedrooms() - candidate.getBedrooms());
+        int baseBedrooms = Objects.requireNonNullElse(base.getBedrooms(), 0);
+        int candidateBedrooms = Objects.requireNonNullElse(candidate.getBedrooms(), 0);
+        int diff = Math.abs(baseBedrooms - candidateBedrooms);
 
         // assign scores according to difference
         return switch (diff) {
@@ -466,9 +456,9 @@ public class PropertyService {
     }
 
     private double calculateBathroomsScore(Property base, Property candidate) {
-        double diff = Math.abs(
-                base.getBathrooms().doubleValue() - candidate.getBathrooms().doubleValue()
-        );
+        double baseBathrooms = Objects.requireNonNullElse(base.getBathrooms(), BigDecimal.ZERO).doubleValue();
+        double candidateBathrooms = Objects.requireNonNullElse(candidate.getBathrooms(), BigDecimal.ZERO).doubleValue();
+        double diff = Math.abs(baseBathrooms - candidateBathrooms);
 
         if (diff <= 0.5) return 1.0;
         if (diff <= 1.0) return 0.7;

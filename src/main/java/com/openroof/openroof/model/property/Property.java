@@ -171,9 +171,9 @@ public class Property extends BaseEntity {
 
         // ─── Publicación ─────────────────────────────────────────────
 
-    // ─── Papelera de Reciclaje ────────────────────────────────────
-    @Column(name = "trashed_at")
-    private LocalDateTime trashedAt;
+        // ─── Papelera de Reciclaje ────────────────────────────────────
+        @Column(name = "trashed_at")
+        private LocalDateTime trashedAt;
 
     // ─── Colecciones ──────────────────────────────────────────────
 
@@ -191,4 +191,21 @@ public class Property extends BaseEntity {
         @JoinTable(name = "property_exterior_features", joinColumns = @JoinColumn(name = "property_id"), inverseJoinColumns = @JoinColumn(name = "feature_id"))
         @Builder.Default
         private List<ExteriorFeature> exteriorFeatures = new ArrayList<>();
+
+
+        // === Métodos de conveniencia para acceso a coordenadas ===
+
+        public Double getLat() {
+            return geoLocation != null ? geoLocation.getLatAsDouble() : null;
+        }
+
+        public Double getLng() {
+            return geoLocation != null ? geoLocation.getLngAsDouble() : null;
+        }
+
+        public boolean hasCoordinates() {
+            return geoLocation != null
+                    && geoLocation.getLat() != null
+                    && geoLocation.getLng() != null;
+        }
 }
