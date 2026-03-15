@@ -418,19 +418,20 @@ public class PropertyService {
     // helpers for calculating all criteria
     private double calculateDistanceScore(Property base, Property candidate) {
         // check if properties have location and coordinates
-        if (base.getLocation() == null || candidate.getLocation() == null) {
+        if ((base.getLocation() == null || candidate.getLocation() == null)
+                && (base.getGeoLocation() == null || candidate.getGeoLocation() == null)) {
             return 0.5; // Neutral score
         }
 
-        if (!base.getLocation().hasCoordinates() || !candidate.getLocation().hasCoordinates()) {
+        if (!base.hasCoordinates() || !candidate.hasCoordinates()) {
             return 0.5; // Neutral score
         }
 
         double distance = haversineDistance(
-                base.getLocation().getLat(),
-                base.getLocation().getLng(),
-                candidate.getLocation().getLat(),
-                candidate.getLocation().getLng()
+                base.getLat(),
+                base.getLng(),
+                candidate.getLat(),
+                candidate.getLng()
         );
 
         // 1.0 for 0km, 0.5 for 5km, 0.0 for 10km+
@@ -454,7 +455,9 @@ public class PropertyService {
     }
 
     private double calculateBedroomsScore(Property base, Property candidate) {
-        int diff = Math.abs(base.getBedrooms() - candidate.getBedrooms());
+        int baseBedrooms = Objects.requireNonNullElse(base.getBedrooms(), 0);
+        int candidateBedrooms = Objects.requireNonNullElse(candidate.getBedrooms(), 0);
+        int diff = Math.abs(baseBedrooms - candidateBedrooms);
 
         // assign scores according to difference
         return switch (diff) {
@@ -466,9 +469,9 @@ public class PropertyService {
     }
 
     private double calculateBathroomsScore(Property base, Property candidate) {
-        double diff = Math.abs(
-                base.getBathrooms().doubleValue() - candidate.getBathrooms().doubleValue()
-        );
+        double baseBathrooms = base.getBathrooms() != null ? base.getBathrooms().doubleValue() : 0.0;
+        double candidateBathrooms = candidate.getBathrooms() != null ? candidate.getBathrooms().doubleValue() : 0.0;
+        double diff = Math.abs(baseBathrooms - candidateBathrooms);
 
         if (diff <= 0.5) return 1.0;
         if (diff <= 1.0) return 0.7;
