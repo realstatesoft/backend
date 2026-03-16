@@ -1,8 +1,8 @@
 package com.openroof.openroof.config;
 
-import com.openroof.openroof.security.JwtAuthenticationFilter;
+import java.util.Arrays;
+import java.util.List;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,8 +25,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.List;
+import com.openroof.openroof.security.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Configuración central de Spring Security.
@@ -50,7 +51,7 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
-                        "/properties/**" // TODO: Restringir POST/PUT/DELETE a usuarios autenticados
+                        
         };
 
         @Bean
@@ -66,6 +67,8 @@ public class SecurityConfig {
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

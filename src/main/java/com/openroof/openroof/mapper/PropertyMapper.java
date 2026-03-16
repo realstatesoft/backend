@@ -100,6 +100,8 @@ public class PropertyMapper {
                 p.getSurfaceArea(),
                 enumName(p.getStatus()),
                 p.getLocation() != null ? p.getLocation().getName() : null,
+                p.getGeoLocation() != null ? p.getGeoLocation().getLat() : null,
+                p.getGeoLocation() != null ? p.getGeoLocation().getLng() : null,
                 p.getTrashedAt());
     }
 
@@ -208,6 +210,8 @@ public class PropertyMapper {
                     .lat(req.lat())
                     .lng(req.lng())
                     .build());
+        } else if (req.lat() == null && req.lng() == null) {
+            property.setGeoLocation(null);
         }
 
         // ConstructionDetails: actualizar campos individualmente
