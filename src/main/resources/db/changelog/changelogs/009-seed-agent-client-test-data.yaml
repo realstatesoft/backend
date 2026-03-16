@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - changeSet:
+      id: seed-test-agent-user-v2
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM users WHERE email = 'agent.test@openroof.com'"
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column: {name: id, valueNumeric: 200}
+              - column: {name: email, value: agent.test@openroof.com}
+              - column: {name: password_hash, value: "$2a$10$w3oa2wou4oTUPuafWGrR.ezomBs0tjgLZYL4Nd6ccvQ5mIiMDCYsS"}
+              - column: {name: name, value: Agente de Prueba}
+              - column: {name: role, value: AGENT}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-agent-profile-v2
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM agent_profiles WHERE user_id = 200"
+      changes:
+        - insert:
+            tableName: agent_profiles
+            columns:
+              - column: {name: id, valueNumeric: 200}
+              - column: {name: user_id, valueNumeric: 200}
+              - column: {name: company_name, value: OpenRoof Real Estate}
+              - column: {name: experience_years, valueNumeric: 5}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-client-user-v2
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM users WHERE email = 'juan.perez@test.com'"
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column: {name: id, valueNumeric: 201}
+              - column: {name: email, value: juan.perez@test.com}
+              - column: {name: password_hash, value: "$2a$10$w3oa2wou4oTUPuafWGrR.ezomBs0tjgLZYL4Nd6ccvQ5mIiMDCYsS"}
+              - column: {name: name, value: Juan Pérez}
+              - column: {name: role, value: USER}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-agent-client-relation-v2
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM agent_clients WHERE agent_id = 200 AND user_id = 201"
+      changes:
+        - insert:
+            tableName: agent_clients
+            columns:
+              - column: {name: agent_id, valueNumeric: 200}
+              - column: {name: user_id, valueNumeric: 201}
+              - column: {name: priority, value: HIGH}
+              - column: {name: status, value: ACTIVE}
+              - column: {name: preferred_contact_method, value: EMAIL}
+              - column: {name: interactions_count, valueNumeric: 15}
+              - column: {name: visited_properties_count, valueNumeric: 5}
+              - column: {name: offers_count, valueNumeric: 2}
+              - column: {name: min_budget, valueNumeric: 200000}
+              - column: {name: max_budget, valueNumeric: 400000}
+              - column: {name: min_bedrooms, valueNumeric: 2}
+              - column: {name: max_bedrooms, valueNumeric: 4}
+              - column: {name: min_bathrooms, valueNumeric: 2}
+              - column: {name: max_bathrooms, valueNumeric: 3}
+              - column: {name: marital_status, value: MARRIED}
+              - column: {name: birth_date, value: "1985-06-15"}
+              - column: {name: occupation, value: "Ingeniero de Software"}
+              - column: {name: annual_income, valueNumeric: 85000}
+              - column: {name: address, value: "Av. Aviadores del Chaco 123, Asunción"}
+              - column: {name: source_channel, value: "Referral"}
+              - column: {name: preferred_property_types, value: '["Casa", "Apartamento"]'}
+              - column: {name: preferred_areas, value: '["Centro", "San Pedro", "Cambyreta"]'}
+              - column: {name: desired_features, value: '["Jardín", "Garaje", "Terraza", "Ascensor"]'}
+              - column: {name: tags, value: '["Comprador Serio", "Primera Vivienda", "Financiación Pre-Aprobada"]'}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}

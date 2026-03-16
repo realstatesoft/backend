@@ -1,6 +1,7 @@
 package com.openroof.openroof.dto.agent;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,6 +42,18 @@ public record AgentClientResponse(
 
         // Notas
         String notes,
+
+        // Perfil detallado
+        LocalDate birthDate,
+        String maritalStatus,
+        String occupation,
+        BigDecimal annualIncome,
+        String address,
+        String sourceChannel,
+        Integer interactionsCount,
+        List<String> preferredPropertyTypes,
+        List<String> preferredAreas,
+        List<String> desiredFeatures,
 
         // Audit
         LocalDateTime createdAt,

@@ -5,6 +5,7 @@ import com.openroof.openroof.common.embeddable.IntegerRange;
 import com.openroof.openroof.common.embeddable.MoneyRange;
 import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ContactMethod;
+import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
 import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
@@ -92,6 +93,44 @@ public class AgentClient extends BaseEntity {
 
     @Column(name = "last_contact_date")
     private LocalDateTime lastContactDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "marital_status", length = 20)
+    private MaritalStatus maritalStatus;
+
+    @Column(name = "birth_date")
+    private java.time.LocalDate birthDate;
+
+    @Column(length = 255)
+    private String occupation;
+
+    @Column(name = "annual_income", precision = 19, scale = 2)
+    private java.math.BigDecimal annualIncome;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "source_channel", length = 100)
+    private String sourceChannel;
+
+    @Column(name = "interactions_count")
+    @Builder.Default
+    private Integer interactionsCount = 0;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "preferred_property_types", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> preferredPropertyTypes = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "preferred_areas", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> preferredAreas = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "desired_features", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> desiredFeatures = new ArrayList<>();
 
     @Column(columnDefinition = "TEXT")
     private String notes;

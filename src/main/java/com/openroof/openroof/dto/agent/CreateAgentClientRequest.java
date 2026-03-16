@@ -2,6 +2,7 @@ package com.openroof.openroof.dto.agent;
 
 import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ContactMethod;
+import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
@@ -9,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record CreateAgentClientRequest(
@@ -42,6 +44,19 @@ public record CreateAgentClientRequest(
         Integer maxBathrooms,
 
         ContactMethod preferredContactMethod,
+
+        // Detalle personal
+        LocalDate birthDate,
+        MaritalStatus maritalStatus,
+        String occupation,
+        BigDecimal annualIncome,
+        String address,
+        String sourceChannel,
+
+        // Preferencias
+        List<String> preferredPropertyTypes,
+        List<String> preferredAreas,
+        List<String> desiredFeatures,
 
         String notes) {
 

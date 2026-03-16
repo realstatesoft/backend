@@ -23,5 +23,9 @@ databaseChangeLog:
   - include:
       file: changelogs/007-add-agent-client-unique-constraint.yaml
       relativeToChangelogFile: true
-
-    
+  - include:
+      file: changelogs/008-add-missing-agent-client-columns.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/009-seed-agent-client-test-data.yaml
+      relativeToChangelogFile: true
