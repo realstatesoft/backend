@@ -306,7 +306,41 @@ public class PropertyService {
         // COORDINATES CHECK
         if (!property.hasCoordinates()) {
             log.warn("Property with id: {} has no coordinates, using fallback search", propertyId);
-            return fallbackSearch(property, limit).stream()
+
+            Set<Long> seenPropertyIds = new HashSet<>();
+            seenPropertyIds.add(propertyId); // exclude base property
+
+            List<Property> allSuggestions = new ArrayList<>();
+
+            // Try city-based search first
+            if (property.getLocation() != null) {
+                List<Property> citySuggestions = fallbackSearch(property, limit * 2)
+                        .stream()
+                        .filter(p -> !seenPropertyIds.contains(p.getId()))
+                        .peek(p -> seenPropertyIds.add(p.getId()))
+                        .toList();
+
+                allSuggestions.addAll(citySuggestions);
+                log.debug("Found {} properties in same city", citySuggestions.size());
+            }
+
+            // If we still need more, try any property of same type
+            if (allSuggestions.size() < limit) {
+                int remainingNeeded = limit - allSuggestions.size();
+                log.debug("Not enough city properties ({}), expanding to any property of same type", allSuggestions.size());
+
+                List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
+                        .stream()
+                        .filter(p -> !seenPropertyIds.contains(p.getId()))
+                        .peek(p -> seenPropertyIds.add(p.getId()))
+                        .limit(remainingNeeded)
+                        .toList();
+
+                log.info("Found {} properties of same type as fallback", anySuggestions.size());
+                allSuggestions.addAll(anySuggestions);
+            }
+
+            return rankAndLimit(allSuggestions, property, limit).stream()
                     .map(propertyMapper::toResponse)
                     .toList();
         }
@@ -370,7 +404,24 @@ public class PropertyService {
                     .limit(remainingNeeded)
                     .toList();
 
+            log.info("{} found by city", citySuggestions.size());
             allSuggestions.addAll(citySuggestions);
+        }
+
+        // last resort fallback: find any property indistinct of location
+        if (allSuggestions.size() < limit) {
+            log.debug("Very few properties found ({}), expanding to any property of same type", allSuggestions.size());
+            int remainingNeeded = limit - allSuggestions.size();
+
+            List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
+                    .stream()
+                    .filter(p -> !seenPropertyIds.contains(p.getId()))
+                    .peek(p -> seenPropertyIds.add(p.getId()))
+                    .limit(remainingNeeded)
+                    .toList();
+
+            log.info("Found {} properties of same type as last resort", anySuggestions.size());
+            allSuggestions.addAll(anySuggestions);
         }
 
         return rankAndLimit(allSuggestions, property, limit).stream()
@@ -500,6 +551,24 @@ public class PropertyService {
                 property.getPropertyType().name(),
                 minPrice,
                 maxPrice,
+                basePrice,
+                limit
+        );
+    }
+
+    private List<Property> fallbackAnyPropertySearch(Property property, int limit) {
+        if (limit <= 0) return List.of();
+
+        BigDecimal basePrice = property.getPrice();
+        // Rango de precio muy amplio para cualquier propiedad
+        BigDecimal wideMinPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION * 2));
+        BigDecimal wideMaxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION * 2));
+
+        return propertyRepository.findByPropertyTypeOnly(
+                property.getId(),
+                property.getPropertyType().name(),
+                wideMinPrice,
+                wideMaxPrice,
                 basePrice,
                 limit
         );
