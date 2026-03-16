@@ -12,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -129,13 +128,12 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
     @Operation(summary = "Actualizar una propiedad (parcial)")
-    
+
     public ResponseEntity<ApiResponse<PropertyResponse>> update(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody UpdatePropertyRequest request) {
@@ -144,11 +142,12 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad actualizada exitosamente"));
     }
 
-    // ─── DELETE & TRASHCAN METHODS ────────────────────────────────────────────────
+    // ─── DELETE & TRASHCAN METHODS
+    // ────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
     public ResponseEntity<ApiResponse<Void>> delete(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
 
@@ -160,7 +159,8 @@ public class PropertyController {
 
     @PatchMapping("/{id}/trash")
     @Operation(summary = "Mover una propiedad a la papelera")
-    public  ResponseEntity<ApiResponse<PropertyResponse>> trash(
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
+    public ResponseEntity<ApiResponse<PropertyResponse>> trash(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
 
         PropertyResponse response = propertyService.trash(id);
@@ -170,15 +170,17 @@ public class PropertyController {
 
     @PatchMapping("/{id}/restore")
     @Operation(summary = "Restaurar una propiedad de la papelera")
-    public  ResponseEntity<ApiResponse<PropertyResponse>> restoreFromTrashcan(
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
+    public ResponseEntity<ApiResponse<PropertyResponse>> restoreFromTrashcan(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
 
         PropertyResponse response = propertyService.restoreFromTrashcan(id);
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad restaurada de la papelera exitosamente"));
     }
-    
+
     @PostMapping("/clear-trashcan")
     @Operation(summary = "Vaciar la papelera del usuario actual (soft delete definitivo)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<Void>> clearTrashcan(@AuthenticationPrincipal User user) {
 
         int deletedCount = propertyService.clearTrashcanForUser(user.getId());
@@ -191,14 +193,14 @@ public class PropertyController {
                 ApiResponse.<Void>builder()
                         .success(deletedCount > 0)
                         .message(message)
-                        .build()
-        );
+                        .build());
     }
 
     @GetMapping("/trashcan")
     @Operation(summary = "Obtener la papelera del usuario actual")
-     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getTrashcan(
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable, 
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
+    public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getTrashcan(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User user) {
 
         Page<PropertySummaryResponse> page = propertyService.getTrashcan(user.getId(), pageable);
@@ -209,7 +211,7 @@ public class PropertyController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Cambiar el estado de una propiedad")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") //seguridad!!
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request) {
@@ -224,7 +226,7 @@ public class PropertyController {
     public ResponseEntity<ApiResponse<List<PropertyResponse>>> findSimilar(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @RequestParam int size) {
-        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
+        List<PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
         return ResponseEntity.ok(ApiResponse.ok(properties));
     }
 }

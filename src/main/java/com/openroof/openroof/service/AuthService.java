@@ -19,7 +19,7 @@ import com.openroof.openroof.repository.Auth.UserSessionRepository;
 import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 
@@ -57,19 +57,19 @@ public class AuthService {
                 }
 
                 // Convertimos el String que viene del frontend al Enum de Java
-                UserRole selectedRole;
-                try {
-                        selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
-                } catch (IllegalArgumentException | NullPointerException e) {
-                        throw new BadRequestException("Rol inválido: " + request.getRole());
-                }
+                // UserRole selectedRole;
+                // try {
+                // selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+                // } catch (IllegalArgumentException | NullPointerException e) {
+                // throw new BadRequestException("Rol inválido: " + request.getRole());
+                // }
 
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(selectedRole)
+                                .role(UserRole.USER)
                                 .build();
 
                 userRepository.save(user);
@@ -85,23 +85,23 @@ public class AuthService {
         @Transactional
         public AuthResponse refreshToken(String oldRefreshToken, HttpServletRequest httpRequest) {
 
-                String userEmail = jwtService.extractUsername(oldRefreshToken);
-
-                var user = userRepository.findByEmail(userEmail)
-                                .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
-
-                // 2. BUSCAR LA SESIÓN: Validar que el token existe en nuestra DB
-                var session = userSessionRepository.findByTokenHash(oldRefreshToken)
+                // 1. Buscar y bloquear la sesión en una sola transacción
+                var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshToken)
                                 .orElseThrow(() -> new BadRequestException("Sesión inválida o ya utilizada"));
 
-                // 3. VALIDAR EL JWT: Verificar expiración y firma
+                // 2. Obtener el usuario desde la sesión bloqueada
+                var user = session.getUser();
+
+                // 3. Validar el refresh token
                 if (!jwtService.isTokenValid(oldRefreshToken, user)) {
-                        userSessionRepository.delete(session); // Limpiamos la DB si expiró
+                        userSessionRepository.delete(session); // limpiamos si expiró o es inválido
                         throw new BadRequestException("El token de refresco ha expirado");
                 }
 
+                // 4. Consumir la sesión actual
                 userSessionRepository.delete(session);
 
+                // 5. Emitir nuevos tokens y guardar nueva sesión
                 return generateFullAuthResponse(user, httpRequest);
         }
 
@@ -120,8 +120,6 @@ public class AuthService {
                                 .role(user.getRole().name())
                                 .build();
         }
-
-  
 
         /*
          * * Desc: Invalida la sesión actual eliminando el registro del Refresh Token de
