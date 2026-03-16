@@ -306,7 +306,46 @@ public class PropertyService {
         // COORDINATES CHECK
         if (!property.hasCoordinates()) {
             log.warn("Property with id: {} has no coordinates, using fallback search", propertyId);
-            return fallbackSearch(property, limit).stream()
+
+            Set<Long> seenPropertyIds = new HashSet<>();
+            seenPropertyIds.add(propertyId); // exclude base property
+
+            List<Property> allSuggestions = new ArrayList<>();
+
+            // Try city-based search first
+            if (property.getLocation() != null) {
+                List<Property> citySuggestions = fallbackSearch(property, limit * 2)
+                        .stream()
+                        .filter(p -> !seenPropertyIds.contains(p.getId()))
+                        .peek(p -> seenPropertyIds.add(p.getId()))
+                        .toList();
+
+                allSuggestions.addAll(citySuggestions);
+                log.debug("Found {} properties in same city", citySuggestions.size());
+            }
+
+            // If we still need more, try any property of same type
+            if (allSuggestions.size() < limit) {
+                int remainingNeeded = limit - allSuggestions.size();
+                log.debug("Not enough city properties ({}), expanding to any property of same type", allSuggestions.size());
+
+                List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
+                        .stream()
+                        .filter(p -> !seenPropertyIds.contains(p.getId()))
+                        .peek(p -> seenPropertyIds.add(p.getId()))
+                        .limit(remainingNeeded)
+                        .toList();
+
+                log.info("Found {} properties of same type as fallback", anySuggestions.size());
+                allSuggestions.addAll(anySuggestions);
+            }
+
+            // If we have more than limit, rank them
+            if (allSuggestions.size() > limit) {
+                allSuggestions = rankAndLimit(allSuggestions, property, limit);
+            }
+
+            return allSuggestions.stream()
                     .map(propertyMapper::toResponse)
                     .toList();
         }
@@ -370,7 +409,7 @@ public class PropertyService {
                     .limit(remainingNeeded)
                     .toList();
 
-            log.info("{} found by cityy", citySuggestions.size());
+            log.info("{} found by city", citySuggestions.size());
             allSuggestions.addAll(citySuggestions);
         }
 

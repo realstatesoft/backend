@@ -152,6 +152,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
         WHERE p.id != :propertyId
         AND p.visibility = 'PUBLIC'
         AND p.deleted_at IS NULL
+        AND p.trashed_at IS NULL
         AND p.property_type = :propertyType
         AND p.price BETWEEN :minPrice AND :maxPrice
         ORDER BY ABS(p.price - :basePrice) ASC
