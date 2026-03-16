@@ -340,12 +340,7 @@ public class PropertyService {
                 allSuggestions.addAll(anySuggestions);
             }
 
-            // If we have more than limit, rank them
-            if (allSuggestions.size() > limit) {
-                allSuggestions = rankAndLimit(allSuggestions, property, limit);
-            }
-
-            return allSuggestions.stream()
+            return rankAndLimit(allSuggestions, property, limit).stream()
                     .map(propertyMapper::toResponse)
                     .toList();
         }
