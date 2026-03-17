@@ -6,7 +6,9 @@ import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PastOrPresent;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,9 +43,12 @@ public record UpdateAgentClientRequest(
         ContactMethod preferredContactMethod,
 
         // Detalle personal
+        @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura")
         LocalDate birthDate,
         MaritalStatus maritalStatus,
         String occupation,
+        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales")
         BigDecimal annualIncome,
         String address,
         String sourceChannel,

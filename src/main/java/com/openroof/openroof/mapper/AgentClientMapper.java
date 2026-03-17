@@ -55,7 +55,7 @@ public class AgentClientMapper {
                 ac.getNotes(),
                 // Perfil detallado
                 ac.getBirthDate(),
-                enumName(ac.getMaritalStatus()),
+                ac.getMaritalStatus(),
                 ac.getOccupation(),
                 ac.getAnnualIncome(),
                 ac.getAddress(),
@@ -104,15 +104,15 @@ public class AgentClientMapper {
             builder.notes(req.notes());
 
         // New fields
-        builder.birthDate(req.birthDate())
-               .maritalStatus(req.maritalStatus())
-               .occupation(req.occupation())
-               .annualIncome(req.annualIncome())
-               .address(req.address())
-               .sourceChannel(req.sourceChannel())
-               .preferredPropertyTypes(req.preferredPropertyTypes())
-               .preferredAreas(req.preferredAreas())
-               .desiredFeatures(req.desiredFeatures());
+        if (req.birthDate() != null) builder.birthDate(req.birthDate());
+        if (req.maritalStatus() != null) builder.maritalStatus(req.maritalStatus());
+        if (req.occupation() != null) builder.occupation(req.occupation());
+        if (req.annualIncome() != null) builder.annualIncome(req.annualIncome());
+        if (req.address() != null) builder.address(req.address());
+        if (req.sourceChannel() != null) builder.sourceChannel(req.sourceChannel());
+        if (req.preferredPropertyTypes() != null) builder.preferredPropertyTypes(req.preferredPropertyTypes());
+        if (req.preferredAreas() != null) builder.preferredAreas(req.preferredAreas());
+        if (req.desiredFeatures() != null) builder.desiredFeatures(req.desiredFeatures());
 
         // Budget range
         if (req.minBudget() != null || req.maxBudget() != null) {

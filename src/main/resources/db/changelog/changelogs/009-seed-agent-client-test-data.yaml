@@ -4,10 +4,15 @@ databaseChangeLog:
       author: Otto
       preConditions:
         - onFail: MARK_RAN
-          not:
-            sqlCheck:
-              expectedResult: 1
-              sql: "SELECT COUNT(*) FROM users WHERE email = 'agent.test@openroof.com'"
+          and:
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE email = 'agent.test@openroof.com'"
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE id = 200"
       changes:
         - insert:
             tableName: users
@@ -47,10 +52,15 @@ databaseChangeLog:
       author: Otto
       preConditions:
         - onFail: MARK_RAN
-          not:
-            sqlCheck:
-              expectedResult: 1
-              sql: "SELECT COUNT(*) FROM users WHERE email = 'juan.perez@test.com'"
+          and:
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE email = 'juan.perez@test.com'"
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE id = 201"
       changes:
         - insert:
             tableName: users

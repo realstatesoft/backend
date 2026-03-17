@@ -1,5 +1,7 @@
 package com.openroof.openroof.dto.agent;
 
+import com.openroof.openroof.model.enums.MaritalStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,7 +47,7 @@ public record AgentClientResponse(
 
         // Perfil detallado
         LocalDate birthDate,
-        String maritalStatus,
+        MaritalStatus maritalStatus,
         String occupation,
         BigDecimal annualIncome,
         String address,

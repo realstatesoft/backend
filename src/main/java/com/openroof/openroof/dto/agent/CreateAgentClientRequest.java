@@ -5,8 +5,11 @@ import com.openroof.openroof.model.enums.ContactMethod;
 import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
@@ -46,9 +49,12 @@ public record CreateAgentClientRequest(
         ContactMethod preferredContactMethod,
 
         // Detalle personal
+        @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
         LocalDate birthDate,
         MaritalStatus maritalStatus,
         String occupation,
+        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales")
         BigDecimal annualIncome,
         String address,
         String sourceChannel,
@@ -59,6 +65,20 @@ public record CreateAgentClientRequest(
         List<String> desiredFeatures,
 
         String notes) {
+
+    public CreateAgentClientRequest {
+        if (birthDate != null && birthDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha de nacimiento no puede ser una fecha futura");
+        }
+        if (annualIncome != null) {
+            if (annualIncome.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("El ingreso anual no puede ser negativo");
+            }
+            if (annualIncome.scale() > 2) {
+                throw new IllegalArgumentException("El ingreso anual no puede tener más de 2 decimales");
+            }
+        }
+    }
 
     @AssertTrue(message = "El presupuesto mínimo no puede ser mayor que el máximo")
     private boolean isBudgetRangeValid() {
