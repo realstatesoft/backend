@@ -97,6 +97,7 @@ public class PropertyController {
 
     @GetMapping("/me")
     @Operation(summary = "Listar propiedades del usuario actual")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getMine(
             @AuthenticationPrincipal User user,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -180,7 +181,7 @@ public class PropertyController {
 
     @PostMapping("/clear-trashcan")
     @Operation(summary = "Vaciar la papelera del usuario actual (soft delete definitivo)")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> clearTrashcan(@AuthenticationPrincipal User user) {
 
         int deletedCount = propertyService.clearTrashcanForUser(user.getId());
@@ -198,7 +199,7 @@ public class PropertyController {
 
     @GetMapping("/trashcan")
     @Operation(summary = "Obtener la papelera del usuario actual")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getTrashcan(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User user) {
