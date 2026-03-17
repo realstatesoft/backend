@@ -18,6 +18,7 @@ public record AgentClientResponse(
         Long userId,
         String userName,
         String userEmail,
+        String userPhone,
 
         // Estado
         String status,
