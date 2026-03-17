@@ -9,7 +9,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
@@ -29,33 +29,24 @@ public record CreateAgentClientRequest(
         List<String> tags,
 
         // Budget range
-        @PositiveOrZero(message = "El presupuesto mínimo no puede ser negativo")
-        BigDecimal minBudget,
-        @PositiveOrZero(message = "El presupuesto máximo no puede ser negativo")
-        BigDecimal maxBudget,
+        @PositiveOrZero(message = "El presupuesto mínimo no puede ser negativo") BigDecimal minBudget,
+        @PositiveOrZero(message = "El presupuesto máximo no puede ser negativo") BigDecimal maxBudget,
 
         // Bedroom range
-        @Min(value = 0, message = "El número mínimo de habitaciones no puede ser negativo")
-        Integer minBedrooms,
-        @Min(value = 0, message = "El número máximo de habitaciones no puede ser negativo")
-        Integer maxBedrooms,
+        @Min(value = 0, message = "El número mínimo de habitaciones no puede ser negativo") Integer minBedrooms,
+        @Min(value = 0, message = "El número máximo de habitaciones no puede ser negativo") Integer maxBedrooms,
 
         // Bathroom range
-        @Min(value = 0, message = "El número mínimo de baños no puede ser negativo")
-        Integer minBathrooms,
-        @Min(value = 0, message = "El número máximo de baños no puede ser negativo")
-        Integer maxBathrooms,
+        @Min(value = 0, message = "El número mínimo de baños no puede ser negativo") Integer minBathrooms,
+        @Min(value = 0, message = "El número máximo de baños no puede ser negativo") Integer maxBathrooms,
 
         ContactMethod preferredContactMethod,
 
         // Detalle personal
-        @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura")
-        LocalDate birthDate,
+        @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura") LocalDate birthDate,
         MaritalStatus maritalStatus,
         String occupation,
-        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo")
-        @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales")
-        BigDecimal annualIncome,
+        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo") @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales") BigDecimal annualIncome,
         String address,
         String sourceChannel,
 
@@ -82,19 +73,22 @@ public record CreateAgentClientRequest(
 
     @AssertTrue(message = "El presupuesto mínimo no puede ser mayor que el máximo")
     private boolean isBudgetRangeValid() {
-        if (minBudget == null || maxBudget == null) return true;
+        if (minBudget == null || maxBudget == null)
+            return true;
         return minBudget.compareTo(maxBudget) <= 0;
     }
 
     @AssertTrue(message = "El mínimo de habitaciones no puede ser mayor que el máximo")
     private boolean isBedroomRangeValid() {
-        if (minBedrooms == null || maxBedrooms == null) return true;
+        if (minBedrooms == null || maxBedrooms == null)
+            return true;
         return minBedrooms <= maxBedrooms;
     }
 
     @AssertTrue(message = "El mínimo de baños no puede ser mayor que el máximo")
     private boolean isBathroomRangeValid() {
-        if (minBathrooms == null || maxBathrooms == null) return true;
+        if (minBathrooms == null || maxBathrooms == null)
+            return true;
         return minBathrooms <= maxBathrooms;
     }
 }
