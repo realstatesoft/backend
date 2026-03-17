@@ -15,8 +15,27 @@ databaseChangeLog:
       file: changelogs/005-create-property-assignments-table.yaml
       relativeToChangelogFile: true
   - include:
+      file: changelogs/005-create-visit-requests-table.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changelogs/005-add-buyer-tenant-to-properties.yaml
       relativeToChangelogFile: true
   - include:
       file: changelogs/005-add-trashed-at-to-property.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/006-add-property-indexes.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/007-add-agent-client-unique-constraint.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/008-add-missing-agent-client-columns.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/009-seed-agent-client-test-data.yaml
+      relativeToChangelogFile: true
+      contextFilter: dev,test
+  - include:
+      file: changelogs/010-update-agent-client-constraints.yaml
       relativeToChangelogFile: true
