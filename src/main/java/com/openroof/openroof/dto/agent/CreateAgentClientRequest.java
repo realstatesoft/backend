@@ -49,7 +49,7 @@ public record CreateAgentClientRequest(
         ContactMethod preferredContactMethod,
 
         // Detalle personal
-        @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
+        @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura")
         LocalDate birthDate,
         MaritalStatus maritalStatus,
         String occupation,
