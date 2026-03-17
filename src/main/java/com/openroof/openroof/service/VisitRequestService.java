@@ -41,9 +41,8 @@ public class VisitRequestService {
     public VisitRequestResponse create(CreateVisitRequestRequest request, String currentUserEmail) {
         User buyer = getUserByEmail(currentUserEmail);
 
-        if (buyer.getRole() != UserRole.BUYER && buyer.getRole() != UserRole.TENANT
-                && buyer.getRole() != UserRole.ADMIN) {
-            throw new BadRequestException("Solo un comprador o arrendatario puede crear una solicitud de visita");
+        if (buyer.getRole() != UserRole.USER && buyer.getRole() != UserRole.ADMIN) {
+            throw new BadRequestException("Solo un usuario puede crear una solicitud de visita");
         }
 
         Property property = getProperty(request.propertyId());

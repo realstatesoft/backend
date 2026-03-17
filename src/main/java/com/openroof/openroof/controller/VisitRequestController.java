@@ -29,8 +29,8 @@ public class VisitRequestController {
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('BUYER','TENANT','ADMIN')")
-    @Operation(summary = "Crear solicitud de visita (BUYER/TENANT)")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @Operation(summary = "Crear solicitud de visita (USER)")
     public ResponseEntity<ApiResponse<VisitRequestResponse>> create(
             @Valid @RequestBody CreateVisitRequestRequest request,
             Principal principal) {
@@ -84,8 +84,8 @@ public class VisitRequestController {
     // ─── CANCEL (buyer) ───────────────────────────────────────────
 
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('BUYER','TENANT','ADMIN')")
-    @Operation(summary = "Cancelar solicitud de visita (BUYER/TENANT)")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @Operation(summary = "Cancelar solicitud de visita (USER)")
     public ResponseEntity<ApiResponse<VisitRequestResponse>> cancel(
             @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             Principal principal) {
@@ -97,7 +97,7 @@ public class VisitRequestController {
     // ─── QUERIES ──────────────────────────────────────────────────
 
     @GetMapping("/me/buyer")
-    @PreAuthorize("hasAnyRole('BUYER','TENANT','ADMIN')")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Mis solicitudes como comprador")
     public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsBuyer(Principal principal) {
         List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsBuyer(principal.getName());
