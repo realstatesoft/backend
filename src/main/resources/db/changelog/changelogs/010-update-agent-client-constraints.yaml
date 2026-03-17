@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: update-agent-client-constraints
+      author: Otto
+      changes:
+        # Update existing NULLs and add constraints for interactions_count
+        - update:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: interactions_count
+                  valueNumeric: 0
+            where: "interactions_count IS NULL"
+        - addNotNullConstraint:
+            tableName: agent_clients
+            columnName: interactions_count
+            columnDataType: INTEGER
+            defaultNullValue: 0
+        - addDefaultValue:
+            tableName: agent_clients
+            columnName: interactions_count
+            defaultValueNumeric: 0
+
+        # Update existing NULLs and add constraints for preferred_property_types
+        - update:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: preferred_property_types
+                  value: "[]"
+            where: "preferred_property_types IS NULL"
+        - addNotNullConstraint:
+            tableName: agent_clients
+            columnName: preferred_property_types
+            columnDataType: JSONB
+            defaultNullValue: "[]"
+        - addDefaultValue:
+            tableName: agent_clients
+            columnName: preferred_property_types
+            defaultValue: "[]"
+
+        # Update existing NULLs and add constraints for preferred_areas
+        - update:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: preferred_areas
+                  value: "[]"
+            where: "preferred_areas IS NULL"
+        - addNotNullConstraint:
+            tableName: agent_clients
+            columnName: preferred_areas
+            columnDataType: JSONB
+            defaultNullValue: "[]"
+        - addDefaultValue:
+            tableName: agent_clients
+            columnName: preferred_areas
+            defaultValue: "[]"
+
+        # Update existing NULLs and add constraints for desired_features
+        - update:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: desired_features
+                  value: "[]"
+            where: "desired_features IS NULL"
+        - addNotNullConstraint:
+            tableName: agent_clients
+            columnName: desired_features
+            columnDataType: JSONB
+            defaultNullValue: "[]"
+        - addDefaultValue:
+            tableName: agent_clients
+            columnName: desired_features
+            defaultValue: "[]"

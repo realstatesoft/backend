@@ -55,11 +55,11 @@ public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long
             @Param("specialtyNames") List<String> specialtyNames,
             Pageable pageable);
 
-    /**
-     * Obtiene los agentes mejor calificados (top N por rating y experiencia, nulls al final).
-     */
     @Query("SELECT a FROM AgentProfile a " +
            "JOIN FETCH a.user u " +
            "ORDER BY a.avgRating DESC, CASE WHEN a.experienceYears IS NULL THEN 1 ELSE 0 END ASC, a.experienceYears DESC")
     List<AgentProfile> findTopAgentsOrderByRating(Pageable pageable);
+
+    @Query("SELECT ap FROM AgentProfile ap JOIN FETCH ap.user WHERE ap.id = :id")
+    Optional<AgentProfile> findByIdWithUser(@Param("id") Long id);
 }
