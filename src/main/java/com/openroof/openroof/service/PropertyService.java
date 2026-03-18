@@ -295,6 +295,10 @@ public class PropertyService {
                         "Propiedad no encontrada con ID: " + propertyId));
 
         BigDecimal basePrice = property.getPrice();
+        if (basePrice == null || basePrice.signum() <= 0) {
+            log.warn("Propiedad {} sin precio válido, no se pueden buscar similares", propertyId);
+            return List.of();
+        }
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
         BigDecimal maxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION));
         String propertyType = property.getPropertyType().name();
