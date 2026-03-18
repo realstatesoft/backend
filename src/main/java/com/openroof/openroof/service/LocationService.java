@@ -80,6 +80,8 @@ public class LocationService {
         }
 
         newLocation = locationRepository.save(newLocation);
-        return locationMapper.toDto(newLocation);
+        LocationDto dto = locationMapper.toDto(newLocation);
+        // Explicitly set isNew to true for the newly created location
+        return new LocationDto(dto.id(), dto.name(), dto.city(), dto.department(), dto.country(), dto.lat(), dto.lng(), true);
     }
 }
