@@ -469,48 +469,6 @@ public class PropertyService {
 
         return EARTH_RADIUS * c;
     }
-
-    // search for property without coordinates
-    private List<Property> fallbackSearch(Property property, int limit) {
-        if (limit <= 0) return List.of();
-
-        if (property.getLocation() == null) {
-            log.warn("Property {} has no location, cannot perform city search", property.getId());
-            return List.of();
-        }
-
-        BigDecimal basePrice = property.getPrice();
-        BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
-        BigDecimal maxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION));
-
-        return propertyRepository.findByCity(
-                property.getId(),
-                property.getLocation().getCity(),
-                property.getPropertyType().name(),
-                minPrice,
-                maxPrice,
-                basePrice,
-                limit
-        );
-    }
-
-    private List<Property> fallbackAnyPropertySearch(Property property, int limit) {
-        if (limit <= 0) return List.of();
-
-        BigDecimal basePrice = property.getPrice();
-        // Rango de precio muy amplio para cualquier propiedad
-        BigDecimal wideMinPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION * 2));
-        BigDecimal wideMaxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION * 2));
-
-        return propertyRepository.findByPropertyTypeOnly(
-                property.getId(),
-                property.getPropertyType().name(),
-                wideMinPrice,
-                wideMaxPrice,
-                basePrice,
-                limit
-        );
-    }
     
     // ─── Helpers privados ─────────────────────────────────────────
 
