@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -157,10 +158,18 @@ public class VisitRequestService {
     @Transactional(readOnly = true)
     public List<VisitRequestResponse> getMyRequestsAsAgent(String currentUserEmail) {
         User currentUser = getUserByEmail(currentUserEmail);
-        AgentProfile agentProfile = agentProfileRepository.findByUser_Id(currentUser.getId())
-                .orElseThrow(() -> new BadRequestException(
-                        "No tienes un perfil de agente asociado a tu cuenta"));
-        return visitRequestRepository.findByAgentId(agentProfile.getId())
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return visitRequestRepository.findAll()
+                    .stream().map(this::toResponse).collect(Collectors.toList());
+        }
+
+        Optional<AgentProfile> agentProfileOpt = agentProfileRepository.findByUser_Id(currentUser.getId());
+        if (agentProfileOpt.isEmpty()) {
+            return List.of(); // Devuelve lista vacía en lugar de error 400 si el agente no tiene perfil aún
+        }
+
+        return visitRequestRepository.findByAgentId(agentProfileOpt.get().getId())
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 

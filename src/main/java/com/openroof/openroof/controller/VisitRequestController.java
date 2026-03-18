@@ -105,8 +105,8 @@ public class VisitRequestController {
     }
 
     @GetMapping("/me/agent")
-    @PreAuthorize("hasRole('AGENT')")
-    @Operation(summary = "Solicitudes asignadas a mí como agente")
+    @PreAuthorize("hasAnyRole('AGENT','ADMIN')")
+    @Operation(summary = "Solicitudes asignadas a mí como agente (o todas si es ADMIN)")
     public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsAgent(Principal principal) {
         List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsAgent(principal.getName());
         return ResponseEntity.ok(ApiResponse.ok(response));
