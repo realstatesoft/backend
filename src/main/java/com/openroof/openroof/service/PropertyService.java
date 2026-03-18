@@ -54,9 +54,6 @@ public class PropertyService {
 
     private static final double EARTH_RADIUS = 6371;
 
-    // progressive radius for searching similar properties
-    private static final double[] SEARCH_RADIUS = {1.0, 2.0, 3.0, 5.0, 8.0, 10.0, 15.0, 20.0, 30.0, 50.0};
-
     // price variation percentage for searching similar properties
     private static final double PRICE_VARIATION = 0.30;
 
@@ -288,144 +285,85 @@ public class PropertyService {
     // 2. Each criterion is scored and normalized in a value from 1.0 (completely equal) to 0.0 (unequal)
     // 3. each criterion is weighted to get the final similarity score
 
-    public List<PropertyResponse> findSimilarProperties(Long propertyId, int limit) {
+    public List<PropertySummaryResponse> findSimilarProperties(Long propertyId, int limit) {
         if (limit <= 0 || limit > 20) {
             throw new BadRequestException("El limite debe estar entre 1 y 20");
         }
 
         Property property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Propiedad no encontrada con ID: " + propertyId));
 
-        // PRICE RANGE
         BigDecimal basePrice = property.getPrice();
         BigDecimal minPrice = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION));
         BigDecimal maxPrice = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION));
-
         String propertyType = property.getPropertyType().name();
 
-        // COORDINATES CHECK
-        if (!property.hasCoordinates()) {
-            log.warn("Property with id: {} has no coordinates, using fallback search", propertyId);
+        Set<Long> seenIds = new HashSet<>();
+        seenIds.add(propertyId);
+        List<Property> candidates = new ArrayList<>();
 
-            Set<Long> seenPropertyIds = new HashSet<>();
-            seenPropertyIds.add(propertyId); // exclude base property
+        // 1. search by coordinates
+        if (property.hasCoordinates()) {
+            BoundingBox bbox = calculateBoundingBox(
+                    property.getLat(), property.getLng(), MAX_DISTANCE_KM);
 
-            List<Property> allSuggestions = new ArrayList<>();
-
-            // Try city-based search first
-            if (property.getLocation() != null) {
-                List<Property> citySuggestions = fallbackSearch(property, limit * 2)
-                        .stream()
-                        .filter(p -> !seenPropertyIds.contains(p.getId()))
-                        .peek(p -> seenPropertyIds.add(p.getId()))
-                        .toList();
-
-                allSuggestions.addAll(citySuggestions);
-                log.debug("Found {} properties in same city", citySuggestions.size());
-            }
-
-            // If we still need more, try any property of same type
-            if (allSuggestions.size() < limit) {
-                int remainingNeeded = limit - allSuggestions.size();
-                log.debug("Not enough city properties ({}), expanding to any property of same type", allSuggestions.size());
-
-                List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
-                        .stream()
-                        .filter(p -> !seenPropertyIds.contains(p.getId()))
-                        .peek(p -> seenPropertyIds.add(p.getId()))
-                        .limit(remainingNeeded)
-                        .toList();
-
-                log.info("Found {} properties of same type as fallback", anySuggestions.size());
-                allSuggestions.addAll(anySuggestions);
-            }
-
-            return rankAndLimit(allSuggestions, property, limit).stream()
-                    .map(propertyMapper::toResponse)
-                    .toList();
-        }
-
-        Double baseLat = property.getLat();
-        Double baseLng = property.getLng();
-
-        Set<Long> seenPropertyIds = new HashSet<>();
-        seenPropertyIds.add(propertyId); // exclude base property
-
-        List<Property> allSuggestions = new ArrayList<>();
-
-        // SEARCH WITH INCREASING RADIUS
-        for (double radius : SEARCH_RADIUS) {
-            // Calculate bounding box for current radius
-            BoundingBox bbox = calculateBoundingBox(baseLat, baseLng, radius);
-
-            List<Property> suggestions = propertyRepository.findNearbyProperties(
+            List<Property> nearby = propertyRepository.findNearbyProperties(
                     propertyId,
-                    baseLat,
-                    baseLng,
-                    bbox.getMinLat(),
-                    bbox.getMaxLat(),
-                    bbox.getMinLng(),
-                    bbox.getMaxLng(),
+                    property.getLat(), property.getLng(),
+                    bbox.getMinLat(), bbox.getMaxLat(),
+                    bbox.getMinLng(), bbox.getMaxLng(),
                     propertyType,
-                    minPrice,
-                    maxPrice,
-                    basePrice,
-                    radius,
+                    minPrice, maxPrice, basePrice,
+                    MAX_DISTANCE_KM,
                     limit * 3
             );
 
-            // filter duplicates before adding to suggestions
-            List<Property> newSuggestions = suggestions.stream()
-                    .filter(p -> !seenPropertyIds.contains(p.getId()))
-                    .peek(p -> seenPropertyIds.add(p.getId()))
-                    .toList();
+            nearby.stream()
+                    .filter(p -> seenIds.add(p.getId()))
+                    .forEach(candidates::add);
 
-            allSuggestions.addAll(newSuggestions);
-
-            // when we have enough properties, rank them
-            if (allSuggestions.size() >= limit) {
-                log.debug("Accumulated {} unique suggestions within {}km", allSuggestions.size(), radius);
-                return rankAndLimit(allSuggestions, property, limit).stream()
-                        .map(propertyMapper::toResponse)
-                        .toList();
-            }
+            log.debug("Nearby search encontró {} candidatos dentro de {}km",
+                    candidates.size(), MAX_DISTANCE_KM);
         }
 
-        // FALLBACK TO CITY SEARCH
-        if (allSuggestions.size() < limit) {
-            log.debug("Not enough nearby properties ({}), expanding to city search", allSuggestions.size());
-            int remainingNeeded = limit - allSuggestions.size();
+        // 2. fallback: same city
+        if (candidates.size() < limit && property.getLocation() != null) {
+            int needed = (limit - candidates.size()) * 2;
 
-            // add more properties if needed
-            List<Property> citySuggestions = fallbackSearch(property, remainingNeeded * 2)
+            propertyRepository.findByCity(
+                            propertyId,
+                            property.getLocation().getCity(),
+                            propertyType,
+                            minPrice, maxPrice, basePrice,
+                            needed)
                     .stream()
-                    .filter(p -> !seenPropertyIds.contains(p.getId()))
-                    .peek(p -> seenPropertyIds.add(p.getId()))
-                    .limit(remainingNeeded)
-                    .toList();
+                    .filter(p -> seenIds.add(p.getId()))
+                    .forEach(candidates::add);
 
-            log.info("{} found by city", citySuggestions.size());
-            allSuggestions.addAll(citySuggestions);
+            log.debug("Fallback ciudad: {} candidatos acumulados", candidates.size());
         }
 
-        // last resort fallback: find any property indistinct of location
-        if (allSuggestions.size() < limit) {
-            log.debug("Very few properties found ({}), expanding to any property of same type", allSuggestions.size());
-            int remainingNeeded = limit - allSuggestions.size();
+        // 3. last resort: property of same type
+        if (candidates.size() < limit) {
+            int needed = (limit - candidates.size()) * 2;
+            BigDecimal wideMin = basePrice.multiply(BigDecimal.valueOf(1 - PRICE_VARIATION * 2));
+            BigDecimal wideMax = basePrice.multiply(BigDecimal.valueOf(1 + PRICE_VARIATION * 2));
 
-            List<Property> anySuggestions = fallbackAnyPropertySearch(property, remainingNeeded * 2)
+            propertyRepository.findByPropertyTypeOnly(
+                            propertyId,
+                            propertyType,
+                            wideMin, wideMax, basePrice,
+                            needed)
                     .stream()
-                    .filter(p -> !seenPropertyIds.contains(p.getId()))
-                    .peek(p -> seenPropertyIds.add(p.getId()))
-                    .limit(remainingNeeded)
-                    .toList();
+                    .filter(p -> seenIds.add(p.getId()))
+                    .forEach(candidates::add);
 
-            log.info("Found {} properties of same type as last resort", anySuggestions.size());
-            allSuggestions.addAll(anySuggestions);
+            log.debug("Fallback tipo: {} candidatos acumulados", candidates.size());
         }
 
-        return rankAndLimit(allSuggestions, property, limit).stream()
-                .map(propertyMapper::toResponse)
+        return rankAndLimit(candidates, property, limit).stream()
+                .map(propertyMapper::toSummaryResponse)
                 .toList();
     }
 

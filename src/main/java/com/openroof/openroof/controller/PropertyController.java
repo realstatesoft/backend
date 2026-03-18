@@ -221,10 +221,10 @@ public class PropertyController {
     // ─── SIMILAR ────────────────────────────────────────────
     @GetMapping("/{id}/similar")
     @Operation(summary = "Obtener propiedades similares")
-    public ResponseEntity<ApiResponse<List<PropertyResponse>>> findSimilar(
+    public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> findSimilar(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @RequestParam int size) {
-        List <PropertyResponse> properties = propertyService.findSimilarProperties(id, size);
+        List <PropertySummaryResponse> properties = propertyService.findSimilarProperties(id, size);
         return ResponseEntity.ok(ApiResponse.ok(properties));
     }
 }

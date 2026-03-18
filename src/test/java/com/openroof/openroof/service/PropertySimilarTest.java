@@ -1,6 +1,6 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.dto.property.PropertyResponse;
+import com.openroof.openroof.dto.property.PropertySummaryResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.PropertyType;
@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,43 +26,46 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)  // ← clave para evitar UnnecessaryStubbingException
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PropertySimilarTest {
 
-    @Mock
-    private PropertyRepository propertyRepository;
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private LocationRepository locationRepository;
-    @Mock
-    private AgentProfileRepository agentProfileRepository;
-    @Mock
-    private ExteriorFeatureRepository exteriorFeatureRepository;
-    @Mock
-    private InteriorFeatureRepository interiorFeatureRepository;
-    @Mock
-    private PropertyMapper propertyMapper;
+    @Mock private PropertyRepository propertyRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private LocationRepository locationRepository;
+    @Mock private AgentProfileRepository agentProfileRepository;
+    @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
+    @Mock private InteriorFeatureRepository interiorFeatureRepository;
+    @Mock private PropertyMapper propertyMapper;
 
     private PropertyService propertyService;
 
     private Property baseProperty;
     private Property nearbyProperty1;
     private Property nearbyProperty2;
-    private PropertyResponse propertyResponse1;
-    private PropertyResponse propertyResponse2;
+    private PropertySummaryResponse summaryResponse1;
+    private PropertySummaryResponse summaryResponse2;
 
     private static final Long PROPERTY_ID = 1L;
     private static final BigDecimal BASE_PRICE = new BigDecimal("150000");
 
-    private PropertyResponse createPropertyResponse(String title) {
-        return new PropertyResponse(
-                null, title, "", "", "", "",
-                null, null, null, 0, null, 0, 0,
-                null, null, 0, 0, 0, "", "", "", "", "",
-                "", "", "", "", "", "", false, null, 0, 0,
-                null, "", null, null, "", null, null,
-                null, LocalDateTime.now(), LocalDateTime.now(), null, LocalDateTime.now()
+    // Constructor alineado con el record real (15 campos)
+    private PropertySummaryResponse createSummaryResponse(String title) {
+        return new PropertySummaryResponse(
+                null,               // id
+                title,              // title
+                BASE_PRICE,         // price
+                "APARTMENT",        // propertyType
+                "RESIDENTIAL",      // category
+                "Calle Falsa 123",  // address
+                null,               // primaryImageUrl
+                2,                  // bedrooms
+                new BigDecimal("2"),// bathrooms
+                new BigDecimal("80"),// surfaceArea
+                "PUBLISHED",        // status
+                "Asuncion",         // locationName
+                new BigDecimal("-25.2637"), // lat
+                new BigDecimal("-57.5759"), // lng
+                null                // trashedAt
         );
     }
 
@@ -84,7 +86,6 @@ class PropertySimilarTest {
                 .country("Paraguay")
                 .build();
 
-        // Mocks con identidad única para que .distinct() no los colapse
         baseProperty = mock(Property.class);
         when(baseProperty.getId()).thenReturn(PROPERTY_ID);
         when(baseProperty.getPrice()).thenReturn(BASE_PRICE);
@@ -110,8 +111,8 @@ class PropertySimilarTest {
         when(nearbyProperty2.getBathrooms()).thenReturn(new BigDecimal("2.5"));
         when(nearbyProperty2.hasCoordinates()).thenReturn(false);
 
-        propertyResponse1 = createPropertyResponse("Nearby Similar Apartment");
-        propertyResponse2 = createPropertyResponse("Nearby Different Apartment");
+        summaryResponse1 = createSummaryResponse("Nearby Similar Apartment");
+        summaryResponse2 = createSummaryResponse("Nearby Different Apartment");
     }
 
     @Test
@@ -126,10 +127,11 @@ class PropertySimilarTest {
                         anyString(), any(), any(), any(), anyDouble(), anyInt()
                 );
 
-        when(propertyMapper.toResponse(nearbyProperty1)).thenReturn(propertyResponse1);
-        when(propertyMapper.toResponse(nearbyProperty2)).thenReturn(propertyResponse2);
+        // toSummaryResponse en vez de toResponse
+        when(propertyMapper.toSummaryResponse(nearbyProperty1)).thenReturn(summaryResponse1);
+        when(propertyMapper.toSummaryResponse(nearbyProperty2)).thenReturn(summaryResponse2);
 
-        List<PropertyResponse> result = propertyService.findSimilarProperties(PROPERTY_ID, 2);
+        List<PropertySummaryResponse> result = propertyService.findSimilarProperties(PROPERTY_ID, 2);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -153,9 +155,7 @@ class PropertySimilarTest {
 
     @Test
     void findSimilarProperties_withPropertyWithoutCoordinates_usesFallbackSearch() {
-        // Sobreescribir hasCoordinates solo para este test
         when(baseProperty.hasCoordinates()).thenReturn(false);
-
         when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(baseProperty));
 
         doReturn(Arrays.asList(nearbyProperty1, nearbyProperty2))
@@ -165,10 +165,11 @@ class PropertySimilarTest {
                         any(), any(), any(), anyInt()
                 );
 
-        when(propertyMapper.toResponse(nearbyProperty1)).thenReturn(propertyResponse1);
-        when(propertyMapper.toResponse(nearbyProperty2)).thenReturn(propertyResponse2);
+        // toSummaryResponse en vez de toResponse
+        when(propertyMapper.toSummaryResponse(nearbyProperty1)).thenReturn(summaryResponse1);
+        when(propertyMapper.toSummaryResponse(nearbyProperty2)).thenReturn(summaryResponse2);
 
-        List<PropertyResponse> result = propertyService.findSimilarProperties(PROPERTY_ID, 2);
+        List<PropertySummaryResponse> result = propertyService.findSimilarProperties(PROPERTY_ID, 2);
 
         assertNotNull(result);
         assertEquals(2, result.size());
