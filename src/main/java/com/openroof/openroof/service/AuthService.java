@@ -16,6 +16,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.Auth.UserSessionRepository;
+import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +36,7 @@ public class AuthService {
         private final PasswordEncoder passwordEncoder;
         private final UserRepository userRepository;
         private final UserSessionRepository userSessionRepository;
+        private final AgentProfileRepository agentProfileRepository;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -73,6 +76,14 @@ public class AuthService {
                                 .build();
 
                 userRepository.save(user);
+
+                if (selectedRole == UserRole.AGENT) {
+                        AgentProfile agentProfile = AgentProfile.builder()
+                                        .user(user)
+                                        .build();
+                        agentProfileRepository.save(agentProfile);
+                }
+
                 return generateFullAuthResponse(user, httpRequest);
         }
 
