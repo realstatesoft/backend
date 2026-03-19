@@ -167,7 +167,10 @@ public class PropertyAssignmentService {
                 .orElseThrow(() -> new BadRequestException(
                         "No tienes un perfil de agente asociado a tu cuenta"));
 
-        return assignmentRepository.findByAgent_IdAndStatus(agentProfile.getId(), AssignmentStatus.ACCEPTED).stream()
+        return assignmentRepository.findByAgent_IdAndStatusIn(
+                agentProfile.getId(),
+                List.of(AssignmentStatus.PENDING, AssignmentStatus.ACCEPTED)
+            ).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
