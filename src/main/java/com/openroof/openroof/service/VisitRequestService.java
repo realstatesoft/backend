@@ -244,10 +244,7 @@ public class VisitRequestService {
 
         return propertyAssignmentRepository
                 .findTopByProperty_IdAndStatusOrderByAssignedAtDesc(property.getId(), AssignmentStatus.ACCEPTED)
-                .map(pa -> {
-                    property.setAgent(pa.getAgent());
-                    return pa.getAgent();
-                })
+                .map(pa -> pa.getAgent())
                 .orElse(null);
     }
 
