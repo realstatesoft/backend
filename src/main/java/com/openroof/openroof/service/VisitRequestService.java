@@ -6,6 +6,7 @@ import com.openroof.openroof.dto.visit.VisitRequestResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.enums.VisitStatus;
@@ -14,6 +15,7 @@ import com.openroof.openroof.model.interaction.VisitRequest;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.VisitRepository;
@@ -36,6 +38,7 @@ public class VisitRequestService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final PropertyAssignmentRepository propertyAssignmentRepository;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -48,8 +51,7 @@ public class VisitRequestService {
 
         Property property = getProperty(request.propertyId());
 
-        // Resolve the agent from the property (optional)
-        AgentProfile agent = property.getAgent();
+        AgentProfile agent = resolveAssignedAgent(property);
 
         VisitRequest visitRequest = VisitRequest.builder()
                 .property(property)
@@ -233,6 +235,20 @@ public class VisitRequestService {
                     "La solicitud debe estar en estado PENDING o COUNTER_PROPOSED. Estado actual: "
                             + visitRequest.getStatus());
         }
+    }
+
+    private AgentProfile resolveAssignedAgent(Property property) {
+        if (property.getAgent() != null) {
+            return property.getAgent();
+        }
+
+        return propertyAssignmentRepository
+                .findTopByProperty_IdAndStatusOrderByAssignedAtDesc(property.getId(), AssignmentStatus.ACCEPTED)
+                .map(pa -> {
+                    property.setAgent(pa.getAgent());
+                    return pa.getAgent();
+                })
+                .orElse(null);
     }
 
     private VisitRequestResponse toResponse(VisitRequest vr) {
