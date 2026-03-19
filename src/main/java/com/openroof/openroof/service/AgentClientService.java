@@ -17,9 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,29 +78,79 @@ public class AgentClientService {
     @Transactional(readOnly = true)
     public String exportClientsToCsv(Long agentId, AgentClientSearchRequest criteria) {
         Specification<AgentClient> spec = AgentClientSpecification.filterBy(agentId, criteria);
-        List<AgentClient> clients = agentClientRepository.findAll(spec);
 
         StringBuilder csv = new StringBuilder();
         csv.append("ID,Name,Email,Status,Priority,ClientType,CreatedAt\n");
 
-        for (AgentClient ac : clients) {
-            User u = ac.getUser();
-            csv.append(ac.getId()).append(",")
-                    .append(u != null ? u.getName() : "").append(",")
-                    .append(u != null ? u.getEmail() : "").append(",")
-                    .append(ac.getStatus()).append(",")
-                    .append(ac.getPriority()).append(",")
-                    .append(ac.getClientType() != null ? ac.getClientType() : "").append(",")
-                    .append(ac.getCreatedAt()).append("\n");
-        }
+        int page = 0;
+        int size = 1000;
+        Page<AgentClient> clientPage;
+
+        do {
+            clientPage = agentClientRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(page, size));
+            for (AgentClient ac : clientPage.getContent()) {
+                User u = ac.getUser();
+                csv.append(escapeCsv(String.valueOf(ac.getId()))).append(",")
+                        .append(escapeCsv(u != null ? u.getName() : "")).append(",")
+                        .append(escapeCsv(u != null ? u.getEmail() : "")).append(",")
+                        .append(escapeCsv(ac.getStatus() != null ? ac.getStatus().name() : "")).append(",")
+                        .append(escapeCsv(ac.getPriority() != null ? ac.getPriority().name() : "")).append(",")
+                        .append(escapeCsv(ac.getClientType() != null ? ac.getClientType().name() : "")).append(",")
+                        .append(escapeCsv(ac.getCreatedAt() != null ? ac.getCreatedAt().toString() : "")).append("\n");
+            }
+            page++;
+        } while (clientPage.hasNext());
 
         return csv.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        String escaped = value.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────
 
     public AgentClientResponse update(Long id, UpdateAgentClientRequest request) {
         AgentClient agentClient = findOrThrow(id);
+        
+        // Update associated User profile fields if provided
+        User user = agentClient.getUser();
+        if (user != null) {
+            boolean userModified = false;
+            
+            // Handle Name (concatenation)
+            if (request.firstName() != null || request.lastName() != null) {
+                String currentName = user.getName() != null ? user.getName() : "";
+                String[] parts = currentName.split(" ", 2);
+                String fName = request.firstName() != null ? request.firstName() : (parts.length > 0 ? parts[0] : "");
+                String lName = request.lastName() != null ? request.lastName() : (parts.length > 1 ? parts[1] : "");
+                
+                user.setName((fName + " " + lName).trim());
+                userModified = true;
+            }
+            
+            if (request.userEmail() != null) {
+                user.setEmail(request.userEmail());
+                userModified = true;
+            }
+            
+            if (request.userPhone() != null) {
+                user.setPhone(request.userPhone());
+                userModified = true;
+            }
+            
+            if (userModified) {
+                userRepository.save(user);
+            }
+        }
+
         agentClientMapper.updateEntity(agentClient, request);
         agentClient = agentClientRepository.save(agentClient);
         return agentClientMapper.toResponse(agentClient);

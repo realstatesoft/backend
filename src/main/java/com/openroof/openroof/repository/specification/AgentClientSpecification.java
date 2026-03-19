@@ -24,10 +24,15 @@ public class AgentClientSpecification {
                 // Search by query (name or email)
                 if (StringUtils.hasText(criteria.q())) {
                     Join<AgentClient, User> userJoin = root.join("user");
-                    String pattern = "%" + criteria.q().toLowerCase() + "%";
+                    String escapedQ = criteria.q()
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_")
+                            .toLowerCase();
+                    String pattern = "%" + escapedQ + "%";
                     predicates.add(cb.or(
-                            cb.like(cb.lower(userJoin.get("name")), pattern),
-                            cb.like(cb.lower(userJoin.get("email")), pattern)
+                            cb.like(cb.lower(userJoin.get("name")), pattern, '\\'),
+                            cb.like(cb.lower(userJoin.get("email")), pattern, '\\')
                     ));
                 }
 

@@ -45,3 +45,9 @@ databaseChangeLog:
   - include:
       file: changelogs/012-add-client-type-to-agent-client.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/013-add-client-type-index-to-agent-client.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/014-add-is-searching-property-to-agent-client.yaml
+      relativeToChangelogFile: true

@@ -52,23 +52,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, AgentClientControllerTest.SecurityTestConfig.class })
+@Import({ SecurityConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
 class AgentClientControllerTest {
-
-        @TestConfiguration
-        static class SecurityTestConfig {
-                @Bean(name = "agentClientSecurity")
-                public AgentClientSecurity agentClientSecurity() {
-                        return mock(AgentClientSecurity.class);
-                }
-        }
 
         private MockMvc mockMvc;
 
         @Autowired
         private WebApplicationContext context;
 
-        @Autowired
+        @MockitoBean(name = "agentClientSecurity")
         private AgentClientSecurity agentClientSecurity;
 
         private final ObjectMapper objectMapper = new ObjectMapper()
@@ -99,21 +91,19 @@ class AgentClientControllerTest {
                                 .apply(springSecurity())
                                 .build();
 
-                // Setup JWT filter passthrough
                 doAnswer(invocation -> {
-                        ServletRequest req = invocation.getArgument(0);
-                        ServletResponse res = invocation.getArgument(1);
-                        FilterChain chain = invocation.getArgument(2);
+                        jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+                        jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+                        jakarta.servlet.FilterChain chain = invocation.getArgument(2);
                         chain.doFilter(req, res);
                         return null;
                 }).when(jwtAuthenticationFilter).doFilter(
-                                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+                                any(jakarta.servlet.ServletRequest.class), any(jakarta.servlet.ServletResponse.class), any(jakarta.servlet.FilterChain.class));
 
-                // Setup AuthenticationEntryPoint mock behavior
                 doAnswer(invocation -> {
-                        HttpServletResponse response = invocation.getArgument(1);
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                        jakarta.servlet.http.HttpServletResponse response = invocation.getArgument(1);
+                        response.setStatus(401);
+                        response.setContentType(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
                         response.getWriter().write("{\"success\":false,\"message\":\"No autorizado\"}");
                         return null;
                 }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
@@ -146,6 +136,7 @@ class AgentClientControllerTest {
                                 LocalDate.of(1990, 1, 1), null, "Software Engineer", new BigDecimal("50000"),
                                 "Calle Falsa 123", "FACEBOOK", 5,
                                 List.of("Apartment"), List.of("Downtown"), List.of("Pool"),
+                                false,
                                 // Audit
                                 LocalDateTime.now(), LocalDateTime.now());
         }
@@ -335,6 +326,15 @@ class AgentClientControllerTest {
                                         .andExpect(jsonPath("$.data.minBudget").value(100000))
                                         .andExpect(jsonPath("$.data.maxBudget").value(300000))
                                         .andExpect(jsonPath("$.data.tags", hasSize(2)));
+
+                        // Wait, there's no way to know if required values are null, just add checks
+                        verify(agentClientService).create(argThat(req -> 
+                                req != null &&
+                                req.minBudget() != null && req.minBudget().equals(new BigDecimal("100000")) &&
+                                req.maxBudget() != null && req.maxBudget().equals(new BigDecimal("300000")) &&
+                                req.preferredContactMethod() != null && "WHATSAPP".equals(req.preferredContactMethod().name()) &&
+                                req.tags() != null && req.tags().contains("comprador")
+                        ));
                 }
         }
 
@@ -434,6 +434,7 @@ class AgentClientControllerTest {
                                         null, null, null, null, null, null,
                                         null, null, "Cerró trato",
                                         null, null, null, null, null, null, 0, List.of(), List.of(), List.of(),
+                                        false,
                                         LocalDateTime.now(), LocalDateTime.now());
 
                         when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(true);
@@ -492,6 +493,10 @@ class AgentClientControllerTest {
                                         .content(json))
                                         .andExpect(status().isOk())
                                         .andExpect(jsonPath("$.success").value(true));
+
+                        verify(agentClientService).update(eq(1L), argThat(req -> 
+                                req != null && "Nueva nota".equals(req.notes())
+                        ));
                 }
         }
 

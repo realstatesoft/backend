@@ -1,7 +1,5 @@
 package com.openroof.openroof.controller;
 
-import com.openroof.openroof.mapper.AgentClientMapper;
-import com.openroof.openroof.model.agent.AgentClient;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.agent.*;
@@ -33,7 +31,7 @@ public class AgentClientController {
     // ─── CREATE ───────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canManageAgent(#request.agentId, principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canManageAgent(#request.agentId, authentication.principal)")
     @Operation(summary = "Asociar un cliente a un agente")
     public ResponseEntity<ApiResponse<AgentClientResponse>> create(
             @P("request") @Valid @RequestBody CreateAgentClientRequest request) {
@@ -47,7 +45,7 @@ public class AgentClientController {
     // ─── READ ─────────────────────────────────────────────────────
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, authentication.principal)")
     @Operation(summary = "Obtener un cliente de agente por ID")
     public ResponseEntity<ApiResponse<AgentClientResponse>> getById(
             @P("id") @Parameter(description = "ID del registro agent-client") @PathVariable Long id) {
@@ -59,7 +57,7 @@ public class AgentClientController {
     private static final int MAX_PAGE_SIZE = 100;
 
     @GetMapping("/agent/{agentId}")
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canManageAgent(#agentId, principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canManageAgent(#agentId, authentication.principal)")
     @Operation(summary = "Listar los clientes de un agente (paginado)")
     public ResponseEntity<ApiResponse<Page<AgentClientSummaryResponse>>> getByAgent(
             @P("agentId") @Parameter(description = "ID del agente") @PathVariable Long agentId,
@@ -74,7 +72,7 @@ public class AgentClientController {
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(authentication.principal)")
     @Operation(summary = "Buscar clientes del agente autenticado (paginado)")
     public ResponseEntity<ApiResponse<Page<AgentClientSummaryResponse>>> search(
             AgentClientSearchRequest criteria,
@@ -96,7 +94,7 @@ public class AgentClientController {
     }
 
     @GetMapping("/export")
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(authentication.principal)")
     @Operation(summary = "Exportar clientes del agente autenticado a CSV")
     public ResponseEntity<byte[]> export(
             AgentClientSearchRequest criteria,
@@ -107,8 +105,8 @@ public class AgentClientController {
 
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=clients.csv")
-                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv"))
-                .body(csv.getBytes());
+                .contentType(org.springframework.http.MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private Long getAgentIdFromUser(User user) {
@@ -127,7 +125,7 @@ public class AgentClientController {
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, authentication.principal)")
     @Operation(summary = "Actualizar un cliente de agente (parcial)")
     public ResponseEntity<ApiResponse<AgentClientResponse>> update(
             @P("id") @Parameter(description = "ID del registro agent-client") @PathVariable Long id,
@@ -140,7 +138,7 @@ public class AgentClientController {
     // ─── DELETE ───────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, principal)")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccess(#id, authentication.principal)")
     @Operation(summary = "Eliminar un cliente de agente")
     public ResponseEntity<Void> delete(
             @P("id") @Parameter(description = "ID del registro agent-client") @PathVariable Long id) {

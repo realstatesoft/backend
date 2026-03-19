@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-add-client-type-index-to-agent-client
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: agent_clients
+                indexName: idx_agent_clients_type
+      changes:
+        - createIndex:
+            indexName: idx_agent_clients_client_type
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: client_type
+      rollback:
+        - dropIndex:
+            indexName: idx_agent_clients_client_type
+            tableName: agent_clients

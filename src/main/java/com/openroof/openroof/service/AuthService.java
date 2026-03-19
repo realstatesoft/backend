@@ -59,20 +59,21 @@ public class AuthService {
                         throw new BadRequestException("El email ya está registrado");
                 }
 
-                // Convertimos el String que viene del frontend al Enum de Java
-                // UserRole selectedRole;
-                // try {
-                // selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
-                // } catch (IllegalArgumentException | NullPointerException e) {
-                // throw new BadRequestException("Rol inválido: " + request.getRole());
-                // }
+                UserRole selectedRole = UserRole.USER;
+                if (request.getRole() != null) {
+                        try {
+                                selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+                        } catch (IllegalArgumentException e) {
+                                throw new BadRequestException("Rol inválido: " + request.getRole());
+                        }
+                }
 
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(UserRole.USER)
+                                .role(selectedRole)
                                 .build();
 
                 userRepository.save(user);

@@ -108,7 +108,8 @@ class AuthServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertEquals(UserRole.AGENT, captor.getValue().getRole());
-        
-        verify(agentProfileRepository).save(any(AgentProfile.class));
+        ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
+        verify(agentProfileRepository).save(profileCaptor.capture());
+        assertEquals(captor.getValue(), profileCaptor.getValue().getUser());
     }
 }

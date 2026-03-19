@@ -58,6 +58,8 @@ public record AgentClientResponse(
         List<String> preferredAreas,
         List<String> desiredFeatures,
 
+        Boolean isSearchingProperty,
+
         // Audit
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {

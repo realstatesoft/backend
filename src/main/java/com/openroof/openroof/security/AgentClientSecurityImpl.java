@@ -70,6 +70,6 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
         if (!(principal instanceof User currentUser)) {
             return false;
         }
-        return currentUser.getRole() == UserRole.ADMIN || currentUser.getRole() == UserRole.AGENT;
+        return currentUser.getRole() == UserRole.AGENT;
     }
 }

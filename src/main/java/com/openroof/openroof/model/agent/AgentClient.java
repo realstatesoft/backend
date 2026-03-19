@@ -25,7 +25,8 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_agent_clients_agent", columnList = "agent_id"),
         @Index(name = "idx_agent_clients_user", columnList = "user_id"),
         @Index(name = "idx_agent_clients_status", columnList = "status"),
-        @Index(name = "idx_agent_clients_priority", columnList = "priority")
+        @Index(name = "idx_agent_clients_priority", columnList = "priority"),
+        @Index(name = "idx_agent_clients_client_type", columnList = "client_type")
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -139,4 +140,8 @@ public class AgentClient extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "is_searching_property")
+    @Builder.Default
+    private Boolean isSearchingProperty = false;
 }
