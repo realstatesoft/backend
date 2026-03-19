@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 011-add-client-type-to-agent-client
+      id: 012-add-client-type-to-agent-client
       author: Otto
       changes:
         - addColumn:

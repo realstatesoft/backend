@@ -40,5 +40,8 @@ databaseChangeLog:
       file: changelogs/010-update-agent-client-constraints.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/011-add-client-type-to-agent-client.yaml
+      file: changelogs/011-enforce-single-accepted-assignment-per-property.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/012-add-client-type-to-agent-client.yaml
       relativeToChangelogFile: true
