@@ -6,6 +6,8 @@ import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.Auth.UserSessionRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,8 @@ class AuthServiceTest {
     @Mock
     private UserSessionRepository userSessionRepository;
     @Mock
+    private AgentProfileRepository agentProfileRepository;
+    @Mock
     private HttpServletRequest httpRequest;
 
     private AuthService authService;
@@ -48,7 +52,8 @@ class AuthServiceTest {
                 jwtService,
                 passwordEncoder,
                 userRepository,
-                userSessionRepository
+                userSessionRepository,
+                agentProfileRepository
         );
 
         when(passwordEncoder.encode(any())).thenReturn("encoded");
@@ -103,5 +108,7 @@ class AuthServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertEquals(UserRole.AGENT, captor.getValue().getRole());
+        
+        verify(agentProfileRepository).save(any(AgentProfile.class));
     }
 }
