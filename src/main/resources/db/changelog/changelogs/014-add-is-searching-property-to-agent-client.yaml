@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-is-searching-property-to-agent-client
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: agent_clients
+                columnName: is_searching_property
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: is_searching_property
+                  type: boolean
+                  defaultValueBoolean: false
+      rollback:
+        - dropColumn:
+            tableName: agent_clients
+            columnName: is_searching_property

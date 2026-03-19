@@ -65,6 +65,7 @@ public class AgentClientMapper {
                 ac.getPreferredPropertyTypes(),
                 ac.getPreferredAreas(),
                 ac.getDesiredFeatures(),
+                ac.getIsSearchingProperty(),
                 // Audit
                 ac.getCreatedAt(),
                 ac.getUpdatedAt());
@@ -80,8 +81,10 @@ public class AgentClientMapper {
                 user != null ? user.getId() : null,
                 user != null ? user.getName() : null,
                 user != null ? user.getEmail() : null,
+                user != null ? user.getPhone() : null,
                 enumName(ac.getStatus()),
                 enumName(ac.getPriority()),
+                enumName(ac.getClientType()),
                 ac.getLastContactDate(),
                 ac.getCreatedAt());
     }
@@ -156,6 +159,7 @@ public class AgentClientMapper {
         if (req.preferredPropertyTypes() != null) ac.setPreferredPropertyTypes(req.preferredPropertyTypes());
         if (req.preferredAreas() != null) ac.setPreferredAreas(req.preferredAreas());
         if (req.desiredFeatures() != null) ac.setDesiredFeatures(req.desiredFeatures());
+        if (req.isSearchingProperty() != null) ac.setIsSearchingProperty(req.isSearchingProperty());
 
         // Budget range
         ac.setBudgetRange(mergeMoneyRange(ac.getBudgetRange(), req.minBudget(), req.maxBudget()));

@@ -16,6 +16,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.Auth.UserSessionRepository;
+import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +36,7 @@ public class AuthService {
         private final PasswordEncoder passwordEncoder;
         private final UserRepository userRepository;
         private final UserSessionRepository userSessionRepository;
+        private final AgentProfileRepository agentProfileRepository;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -56,23 +59,38 @@ public class AuthService {
                         throw new BadRequestException("El email ya está registrado");
                 }
 
-                // Convertimos el String que viene del frontend al Enum de Java
-                // UserRole selectedRole;
-                // try {
-                // selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
-                // } catch (IllegalArgumentException | NullPointerException e) {
-                // throw new BadRequestException("Rol inválido: " + request.getRole());
-                // }
+                UserRole selectedRole = UserRole.USER;
+                if (request.getRole() != null) {
+                        String roleName = request.getRole().toUpperCase();
+                        java.util.Set<UserRole> allowedRoles = java.util.Set.of(UserRole.USER, UserRole.AGENT);
+                        try {
+                                UserRole parsed = UserRole.valueOf(roleName);
+                                if (!allowedRoles.contains(parsed)) {
+                                        throw new BadRequestException("Rol inválido: " + request.getRole());
+                                }
+                                selectedRole = parsed;
+                        } catch (IllegalArgumentException e) {
+                                throw new BadRequestException("Rol inválido: " + request.getRole());
+                        }
+                }
 
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(UserRole.USER)
+                                .role(selectedRole)
                                 .build();
 
                 userRepository.save(user);
+
+                if (selectedRole == UserRole.AGENT) {
+                        AgentProfile agentProfile = AgentProfile.builder()
+                                        .user(user)
+                                        .build();
+                        agentProfileRepository.save(agentProfile);
+                }
+
                 return generateFullAuthResponse(user, httpRequest);
         }
 
