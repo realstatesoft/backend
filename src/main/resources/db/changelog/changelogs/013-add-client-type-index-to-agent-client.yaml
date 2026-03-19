@@ -7,7 +7,7 @@ databaseChangeLog:
         - not:
             - indexExists:
                 tableName: agent_clients
-                indexName: idx_agent_clients_type
+                indexName: idx_agent_clients_client_type
       changes:
         - createIndex:
             indexName: idx_agent_clients_client_type

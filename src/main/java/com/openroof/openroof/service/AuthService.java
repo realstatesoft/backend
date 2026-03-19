@@ -61,8 +61,14 @@ public class AuthService {
 
                 UserRole selectedRole = UserRole.USER;
                 if (request.getRole() != null) {
+                        String roleName = request.getRole().toUpperCase();
+                        java.util.Set<UserRole> allowedRoles = java.util.Set.of(UserRole.USER, UserRole.AGENT);
                         try {
-                                selectedRole = UserRole.valueOf(request.getRole().toUpperCase());
+                                UserRole parsed = UserRole.valueOf(roleName);
+                                if (!allowedRoles.contains(parsed)) {
+                                        throw new BadRequestException("Rol inválido: " + request.getRole());
+                                }
+                                selectedRole = parsed;
                         } catch (IllegalArgumentException e) {
                                 throw new BadRequestException("Rol inválido: " + request.getRole());
                         }

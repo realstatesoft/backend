@@ -87,7 +87,8 @@ public class AgentClientService {
         Page<AgentClient> clientPage;
 
         do {
-            clientPage = agentClientRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(page, size));
+            clientPage = agentClientRepository.findAll(spec,
+                    org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").ascending()));
             for (AgentClient ac : clientPage.getContent()) {
                 User u = ac.getUser();
                 csv.append(escapeCsv(String.valueOf(ac.getId()))).append(",")
@@ -125,18 +126,27 @@ public class AgentClientService {
         if (user != null) {
             boolean userModified = false;
             
-            // Handle Name (concatenation)
+            // Handle Name — preserve existing parts when only one component is provided
             if (request.firstName() != null || request.lastName() != null) {
                 String currentName = user.getName() != null ? user.getName() : "";
-                String[] parts = currentName.split(" ", 2);
-                String fName = request.firstName() != null ? request.firstName() : (parts.length > 0 ? parts[0] : "");
-                String lName = request.lastName() != null ? request.lastName() : (parts.length > 1 ? parts[1] : "");
-                
+                int lastSpace = currentName.lastIndexOf(' ');
+                String existingFirst = lastSpace > 0 ? currentName.substring(0, lastSpace) : currentName;
+                String existingLast  = lastSpace > 0 ? currentName.substring(lastSpace + 1) : "";
+
+                String fName = request.firstName() != null ? request.firstName() : existingFirst;
+                String lName = request.lastName()  != null ? request.lastName()  : existingLast;
+
                 user.setName((fName + " " + lName).trim());
                 userModified = true;
             }
-            
-            if (request.userEmail() != null) {
+
+            // Email — validate uniqueness before updating
+            if (request.userEmail() != null && !request.userEmail().equals(user.getEmail())) {
+                userRepository.findByEmail(request.userEmail()).ifPresent(existing -> {
+                    if (!existing.getId().equals(user.getId())) {
+                        throw new BadRequestException("El email '" + request.userEmail() + "' ya está en uso por otro usuario");
+                    }
+                });
                 user.setEmail(request.userEmail());
                 userModified = true;
             }
