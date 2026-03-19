@@ -64,4 +64,12 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
         return false;
     }
+
+    @Override
+    public boolean isAgent(Object principal) {
+        if (!(principal instanceof User currentUser)) {
+            return false;
+        }
+        return currentUser.getRole() == UserRole.ADMIN || currentUser.getRole() == UserRole.AGENT;
+    }
 }

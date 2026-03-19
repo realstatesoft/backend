@@ -4,6 +4,7 @@ import com.openroof.openroof.common.BaseEntity;
 import com.openroof.openroof.common.embeddable.IntegerRange;
 import com.openroof.openroof.common.embeddable.MoneyRange;
 import com.openroof.openroof.model.enums.ClientStatus;
+import com.openroof.openroof.model.enums.ClientType;
 import com.openroof.openroof.model.enums.ContactMethod;
 import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
@@ -51,6 +52,10 @@ public class AgentClient extends BaseEntity {
     @Column(length = 20)
     @Builder.Default
     private Priority priority = Priority.MEDIUM;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_type", length = 20)
+    private ClientType clientType;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

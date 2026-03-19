@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-add-client-type-to-agent-client
+      author: Otto
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: client_type
+                  type: varchar(20)
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: client_type
+                  type: varchar(20)

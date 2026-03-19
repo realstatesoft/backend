@@ -39,3 +39,6 @@ databaseChangeLog:
   - include:
       file: changelogs/010-update-agent-client-constraints.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/011-add-client-type-to-agent-client.yaml
+      relativeToChangelogFile: true

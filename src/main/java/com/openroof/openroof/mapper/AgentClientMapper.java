@@ -82,6 +82,7 @@ public class AgentClientMapper {
                 user != null ? user.getEmail() : null,
                 enumName(ac.getStatus()),
                 enumName(ac.getPriority()),
+                enumName(ac.getClientType()),
                 ac.getLastContactDate(),
                 ac.getCreatedAt());
     }
