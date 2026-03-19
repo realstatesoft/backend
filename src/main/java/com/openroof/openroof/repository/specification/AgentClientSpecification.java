@@ -48,10 +48,10 @@ public class AgentClientSpecification {
 
                 // Filter by creation date range
                 if (criteria.createdAtFrom() != null) {
-                    predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), criteria.createdAtFrom()));
+                    predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), criteria.createdAtFrom().atStartOfDay()));
                 }
                 if (criteria.createdAtTo() != null) {
-                    predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), criteria.createdAtTo()));
+                    predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), criteria.createdAtTo().atTime(23, 59, 59, 999999999)));
                 }
             }
 
