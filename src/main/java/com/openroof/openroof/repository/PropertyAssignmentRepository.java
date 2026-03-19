@@ -15,6 +15,8 @@ public interface PropertyAssignmentRepository extends JpaRepository<PropertyAssi
 
     List<PropertyAssignment> findByAgent_Id(Long agentId);
 
+        List<PropertyAssignment> findByAgent_IdAndStatus(Long agentId, AssignmentStatus status);
+
     @Query("""
             SELECT pa FROM PropertyAssignment pa
             WHERE pa.property.id = :propertyId

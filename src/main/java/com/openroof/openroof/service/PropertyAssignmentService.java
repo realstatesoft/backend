@@ -86,6 +86,13 @@ public class PropertyAssignmentService {
         }
 
         assignment.setStatus(newStatus);
+
+        if (newStatus == AssignmentStatus.ACCEPTED) {
+            Property property = assignment.getProperty();
+            property.setAgent(assignment.getAgent());
+            propertyRepository.save(property);
+        }
+
         return toResponse(assignmentRepository.save(assignment));
     }
 
@@ -101,6 +108,15 @@ public class PropertyAssignmentService {
                 || assignment.getStatus() == AssignmentStatus.REJECTED) {
             throw new BadRequestException(
                     "No se puede revocar una asignación en estado: " + assignment.getStatus());
+        }
+
+        if (assignment.getStatus() == AssignmentStatus.ACCEPTED) {
+            Property property = assignment.getProperty();
+            if (property.getAgent() != null
+                    && property.getAgent().getId().equals(assignment.getAgent().getId())) {
+                property.setAgent(null);
+                propertyRepository.save(property);
+            }
         }
 
         assignment.setStatus(AssignmentStatus.REVOKED);
@@ -131,7 +147,7 @@ public class PropertyAssignmentService {
                 .orElseThrow(() -> new BadRequestException(
                         "No tienes un perfil de agente asociado a tu cuenta"));
 
-        return assignmentRepository.findByAgent_Id(agentProfile.getId()).stream()
+        return assignmentRepository.findByAgent_IdAndStatus(agentProfile.getId(), AssignmentStatus.ACCEPTED).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
