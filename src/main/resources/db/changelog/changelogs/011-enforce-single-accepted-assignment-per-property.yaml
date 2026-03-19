@@ -1,0 +1,25 @@
+databaseChangeLog:
+
+  # ──────────────────────────────────────────────────────────────────
+  # 011 – Garantizar una sola asignación ACCEPTED por propiedad
+  # ──────────────────────────────────────────────────────────────────
+
+  - changeSet:
+      id: 011-enforce-single-accepted-assignment-per-property
+      author: openroof-team
+      comment: "Evita múltiples property_assignments en estado ACCEPTED para una misma propiedad"
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              CREATE UNIQUE INDEX IF NOT EXISTS uq_pa_one_accepted_per_property
+              ON property_assignments(property_id)
+              WHERE status = 'ACCEPTED' AND deleted_at IS NULL;
+
+      rollback:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: |
+              DROP INDEX IF EXISTS uq_pa_one_accepted_per_property;

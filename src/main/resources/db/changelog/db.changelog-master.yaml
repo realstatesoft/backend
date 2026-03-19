@@ -39,3 +39,6 @@ databaseChangeLog:
   - include:
       file: changelogs/010-update-agent-client-constraints.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/011-enforce-single-accepted-assignment-per-property.yaml
+      relativeToChangelogFile: true
