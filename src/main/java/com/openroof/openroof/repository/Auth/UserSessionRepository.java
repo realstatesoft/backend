@@ -2,7 +2,11 @@ package com.openroof.openroof.repository.Auth;
 
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
+
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -15,9 +19,10 @@ import java.util.Optional;
 @Repository
 public interface UserSessionRepository extends JpaRepository<UserSession, Long> {
 
-
     Optional<UserSession> findByTokenHash(String tokenHash);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<UserSession> findByTokenHashForUpdate(String tokenHash);
 
     boolean existsByTokenHash(String tokenHash);
 

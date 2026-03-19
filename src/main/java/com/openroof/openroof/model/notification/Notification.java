@@ -6,6 +6,7 @@ import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_notifications_created", columnList = "created_at")
 })
 @SQLRestriction("deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE notifications SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @Getter
 @Setter
 @NoArgsConstructor
