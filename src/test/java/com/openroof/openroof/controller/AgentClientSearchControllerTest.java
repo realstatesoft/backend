@@ -120,7 +120,7 @@ class AgentClientSearchControllerTest {
         when(agentClientService.getAgentIdByUser(agentUser.getId())).thenReturn(10L);
         
         AgentClientSummaryResponse summary = new AgentClientSummaryResponse(
-                1L, 20L, "Client Name", "client@email.com", 
+                1L, 20L, "Client Name", "client@email.com", null,
                 "ACTIVE", "MEDIUM", "INDIVIDUAL", null, LocalDateTime.now());
         
         Page<AgentClientSummaryResponse> page = new PageImpl<>(List.of(summary));

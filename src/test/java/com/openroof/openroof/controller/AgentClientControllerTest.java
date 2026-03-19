@@ -144,7 +144,7 @@ class AgentClientControllerTest {
         private AgentClientSummaryResponse sampleSummary() {
                 return new AgentClientSummaryResponse(
                 1L,
-                20L, "Cliente Test", "cliente@test.com",
+                20L, "Cliente Test", "cliente@test.com", null,
                 "ACTIVE", "MEDIUM",
                 "INDIVIDUAL", null, LocalDateTime.now());
         }

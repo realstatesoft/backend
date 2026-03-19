@@ -81,6 +81,7 @@ public class AgentClientMapper {
                 user != null ? user.getId() : null,
                 user != null ? user.getName() : null,
                 user != null ? user.getEmail() : null,
+                user != null ? user.getPhone() : null,
                 enumName(ac.getStatus()),
                 enumName(ac.getPriority()),
                 enumName(ac.getClientType()),

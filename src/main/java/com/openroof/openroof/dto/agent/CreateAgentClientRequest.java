@@ -22,6 +22,8 @@ public record CreateAgentClientRequest(
 
         @NotNull(message = "El ID del usuario/cliente es obligatorio") Long userId,
 
+        String userPhone,
+
         ClientStatus status,
 
         Priority priority,

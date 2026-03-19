@@ -42,6 +42,11 @@ public class AgentClientService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Usuario no encontrado con ID: " + request.userId()));
 
+        if (request.userPhone() != null) {
+            user.setPhone(request.userPhone());
+            userRepository.save(user);
+        }
+
         AgentClient agentClient = agentClientMapper.toEntity(request, agent, user);
         
         try {
