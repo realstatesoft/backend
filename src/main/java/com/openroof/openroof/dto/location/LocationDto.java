@@ -7,6 +7,7 @@ public record LocationDto(
         String department,
         String country,
         Double lat,
-        Double lng
+        Double lng,
+        boolean isNew
 ) {
 }

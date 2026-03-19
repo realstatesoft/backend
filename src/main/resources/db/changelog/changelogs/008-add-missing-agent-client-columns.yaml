@@ -1,0 +1,171 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-agent-client-marital-status
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: marital_status
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: marital_status
+                  type: VARCHAR(20)
+
+  - changeSet:
+      id: add-agent-client-birth-date
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: birth_date
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: birth_date
+                  type: DATE
+
+  - changeSet:
+      id: add-agent-client-occupation
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: occupation
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: occupation
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: add-agent-client-annual-income
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: annual_income
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: annual_income
+                  type: NUMERIC(19, 2)
+
+  - changeSet:
+      id: add-agent-client-address
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: address
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: address
+                  type: TEXT
+
+  - changeSet:
+      id: add-agent-client-source-channel
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: source_channel
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: source_channel
+                  type: VARCHAR(100)
+
+  - changeSet:
+      id: add-agent-client-interactions-count
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: interactions_count
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: interactions_count
+                  type: INTEGER
+                  defaultValueNumeric: 0
+
+  - changeSet:
+      id: add-agent-client-preferred-property-types
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: preferred_property_types
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: preferred_property_types
+                  type: JSONB
+
+  - changeSet:
+      id: add-agent-client-preferred-areas
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: preferred_areas
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: preferred_areas
+                  type: JSONB
+
+  - changeSet:
+      id: add-agent-client-desired-features
+      author: Otto
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: agent_clients
+              columnName: desired_features
+      changes:
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: desired_features
+                  type: JSONB

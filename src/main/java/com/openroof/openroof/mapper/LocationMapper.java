@@ -19,7 +19,8 @@ public class LocationMapper {
                 location.getDepartment(),
                 location.getCountry(),
                 location.getLat(),
-                location.getLng()
+                location.getLng(),
+                false
         );
     }
 }

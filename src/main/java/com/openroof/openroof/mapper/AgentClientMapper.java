@@ -5,6 +5,7 @@ import com.openroof.openroof.common.embeddable.MoneyRange;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.model.agent.AgentClient;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.user.User;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,7 @@ public class AgentClientMapper {
                 user != null ? user.getId() : null,
                 user != null ? user.getName() : null,
                 user != null ? user.getEmail() : null,
+                user != null ? user.getPhone() : null,
                 // Estado
                 enumName(ac.getStatus()),
                 enumName(ac.getPriority()),
@@ -52,6 +54,17 @@ public class AgentClientMapper {
                 ac.getLastContactDate(),
                 // Notas
                 ac.getNotes(),
+                // Perfil detallado
+                ac.getBirthDate(),
+                ac.getMaritalStatus(),
+                ac.getOccupation(),
+                ac.getAnnualIncome(),
+                ac.getAddress(),
+                ac.getSourceChannel(),
+                ac.getInteractionsCount(),
+                ac.getPreferredPropertyTypes(),
+                ac.getPreferredAreas(),
+                ac.getDesiredFeatures(),
                 // Audit
                 ac.getCreatedAt(),
                 ac.getUpdatedAt());
@@ -91,6 +104,17 @@ public class AgentClientMapper {
         if (req.notes() != null)
             builder.notes(req.notes());
 
+        // New fields
+        if (req.birthDate() != null) builder.birthDate(req.birthDate());
+        if (req.maritalStatus() != null) builder.maritalStatus(req.maritalStatus());
+        if (req.occupation() != null) builder.occupation(req.occupation());
+        if (req.annualIncome() != null) builder.annualIncome(req.annualIncome());
+        if (req.address() != null) builder.address(req.address());
+        if (req.sourceChannel() != null) builder.sourceChannel(req.sourceChannel());
+        if (req.preferredPropertyTypes() != null) builder.preferredPropertyTypes(req.preferredPropertyTypes());
+        if (req.preferredAreas() != null) builder.preferredAreas(req.preferredAreas());
+        if (req.desiredFeatures() != null) builder.desiredFeatures(req.desiredFeatures());
+
         // Budget range
         if (req.minBudget() != null || req.maxBudget() != null) {
             builder.budgetRange(new MoneyRange(req.minBudget(), req.maxBudget()));
@@ -122,6 +146,16 @@ public class AgentClientMapper {
             ac.setPreferredContactMethod(req.preferredContactMethod());
         if (req.notes() != null)
             ac.setNotes(req.notes());
+
+        if (req.birthDate() != null) ac.setBirthDate(req.birthDate());
+        if (req.maritalStatus() != null) ac.setMaritalStatus(req.maritalStatus());
+        if (req.occupation() != null) ac.setOccupation(req.occupation());
+        if (req.annualIncome() != null) ac.setAnnualIncome(req.annualIncome());
+        if (req.address() != null) ac.setAddress(req.address());
+        if (req.sourceChannel() != null) ac.setSourceChannel(req.sourceChannel());
+        if (req.preferredPropertyTypes() != null) ac.setPreferredPropertyTypes(req.preferredPropertyTypes());
+        if (req.preferredAreas() != null) ac.setPreferredAreas(req.preferredAreas());
+        if (req.desiredFeatures() != null) ac.setDesiredFeatures(req.desiredFeatures());
 
         // Budget range
         ac.setBudgetRange(mergeMoneyRange(ac.getBudgetRange(), req.minBudget(), req.maxBudget()));
