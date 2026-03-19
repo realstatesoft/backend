@@ -15,6 +15,7 @@ import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,15 +86,34 @@ public class PropertyAssignmentService {
                     "Solo se puede responder a asignaciones en estado PENDING. Estado actual: " + assignment.getStatus());
         }
 
-        assignment.setStatus(newStatus);
-
         if (newStatus == AssignmentStatus.ACCEPTED) {
-            Property property = assignment.getProperty();
-            property.setAgent(assignment.getAgent());
-            propertyRepository.save(property);
+            Property lockedProperty = propertyRepository.findByIdForUpdate(assignment.getProperty().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Propiedad no encontrada con ID: " + assignment.getProperty().getId()));
+
+            boolean hasAnotherAccepted = assignmentRepository.existsByPropertyAndStatusExcludingAssignment(
+                    lockedProperty.getId(), AssignmentStatus.ACCEPTED, assignment.getId());
+
+            if (hasAnotherAccepted) {
+                throw new BadRequestException(
+                        "Ya existe una asignación ACCEPTED para esta propiedad. Revoca o rechaza la asignación activa antes de aceptar otra.");
+            }
+
+            lockedProperty.setAgent(assignment.getAgent());
+            propertyRepository.save(lockedProperty);
         }
 
-        return toResponse(assignmentRepository.save(assignment));
+        assignment.setStatus(newStatus);
+
+        try {
+            return toResponse(assignmentRepository.save(assignment));
+        } catch (DataIntegrityViolationException ex) {
+            if (newStatus == AssignmentStatus.ACCEPTED) {
+                throw new BadRequestException(
+                        "Ya existe una asignación ACCEPTED para esta propiedad. Revoca o rechaza la asignación activa antes de aceptar otra.");
+            }
+            throw ex;
+        }
     }
 
     // ─── REVOKE (owner) ───────────────────────────────────────────
