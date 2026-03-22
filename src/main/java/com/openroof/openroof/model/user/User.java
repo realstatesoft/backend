@@ -1,6 +1,7 @@
 package com.openroof.openroof.model.user;
 
 import com.openroof.openroof.common.BaseEntity;
+import com.openroof.openroof.model.enums.ClientType;
 import com.openroof.openroof.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +49,10 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private UserRole role = UserRole.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_type", length = 20)
+    private ClientType clientType;
 
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;

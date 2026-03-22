@@ -2,15 +2,24 @@ package com.openroof.openroof.dto.agent;
 
 import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ContactMethod;
+import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PastOrPresent;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record UpdateAgentClientRequest(
+        // User fields
+        String firstName,
+        String lastName,
+        String userEmail,
+        String userPhone,
 
         ClientStatus status,
 
@@ -38,7 +47,25 @@ public record UpdateAgentClientRequest(
 
         ContactMethod preferredContactMethod,
 
-        String notes) {
+        // Detalle personal
+        @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura")
+        LocalDate birthDate,
+        MaritalStatus maritalStatus,
+        String occupation,
+        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo")
+        @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales")
+        BigDecimal annualIncome,
+        String address,
+        String sourceChannel,
+
+        // Preferencias
+        List<String> preferredPropertyTypes,
+        List<String> preferredAreas,
+        List<String> desiredFeatures,
+
+        String notes,
+
+        Boolean isSearchingProperty) {
 
     @AssertTrue(message = "Los rangos de presupuesto, habitaciones o baños son inconsistentes (min > max)")
     private boolean isRangesValid() {

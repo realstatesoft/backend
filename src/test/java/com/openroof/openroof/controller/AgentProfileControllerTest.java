@@ -87,7 +87,7 @@ class AgentProfileControllerTest {
 
     private AgentProfileSummaryResponse sampleSummary() {
         return new AgentProfileSummaryResponse(
-                10L, "Test Agent", null, "Test Realty", 5, "LIC-001",
+                10L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
                 BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }

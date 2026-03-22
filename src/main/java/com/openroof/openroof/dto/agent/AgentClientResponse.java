@@ -1,6 +1,9 @@
 package com.openroof.openroof.dto.agent;
 
+import com.openroof.openroof.model.enums.MaritalStatus;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,6 +18,7 @@ public record AgentClientResponse(
         Long userId,
         String userName,
         String userEmail,
+        String userPhone,
 
         // Estado
         String status,
@@ -41,6 +45,20 @@ public record AgentClientResponse(
 
         // Notas
         String notes,
+
+        // Perfil detallado
+        LocalDate birthDate,
+        MaritalStatus maritalStatus,
+        String occupation,
+        BigDecimal annualIncome,
+        String address,
+        String sourceChannel,
+        Integer interactionsCount,
+        List<String> preferredPropertyTypes,
+        List<String> preferredAreas,
+        List<String> desiredFeatures,
+
+        Boolean isSearchingProperty,
 
         // Audit
         LocalDateTime createdAt,
