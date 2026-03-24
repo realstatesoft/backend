@@ -65,6 +65,8 @@ class SecurityEndpointsTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockitoBean
     private UserDetailsService userDetailsService;
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @BeforeEach
     void setUp() throws Exception {

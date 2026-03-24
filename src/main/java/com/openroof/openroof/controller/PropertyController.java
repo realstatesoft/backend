@@ -132,14 +132,14 @@ public class PropertyController {
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     @Operation(summary = "Actualizar una propiedad (parcial)")
-
     public ResponseEntity<ApiResponse<PropertyResponse>> update(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
-            @Valid @RequestBody UpdatePropertyRequest request) {
+            @Valid @RequestBody UpdatePropertyRequest request,
+            @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.update(id, request);
+        PropertyResponse response = propertyService.update(id, request, user.getId(), user.getRole());
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad actualizada exitosamente"));
     }
 
@@ -148,11 +148,12 @@ public class PropertyController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
 
-        propertyService.delete(id);
+        propertyService.delete(id, user.getId(), user.getRole());
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
@@ -162,20 +163,21 @@ public class PropertyController {
     @Operation(summary = "Mover una propiedad a la papelera")
     @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<PropertyResponse>> trash(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.trash(id);
+        PropertyResponse response = propertyService.trash(id, user.getId(), user.getRole());
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad movida a papelera exitosamente"));
-
     }
 
     @PatchMapping("/{id}/restore")
     @Operation(summary = "Restaurar una propiedad de la papelera")
     @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<PropertyResponse>> restoreFromTrashcan(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.restoreFromTrashcan(id);
+        PropertyResponse response = propertyService.restoreFromTrashcan(id, user.getId(), user.getRole());
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad restaurada de la papelera exitosamente"));
     }
 
@@ -184,7 +186,7 @@ public class PropertyController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> clearTrashcan(@AuthenticationPrincipal User user) {
 
-        int deletedCount = propertyService.clearTrashcanForUser(user.getId());
+        int deletedCount = propertyService.clearTrashcanForUser(user.getId(), user.getId(), user.getRole());
 
         String message = deletedCount > 0
                 ? "Se vació la papelera. Propiedades eliminadas: " + deletedCount
@@ -211,13 +213,14 @@ public class PropertyController {
     // ─── CHANGE STATUS ────────────────────────────────────────────
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Cambiar el estado de una propiedad")
-    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)") // seguridad!!
+    @Operation(summary = "Cambiar el estado de una propiedad (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
-            @Valid @RequestBody ChangeStatusRequest request) {
+            @Valid @RequestBody ChangeStatusRequest request,
+            @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.changeStatus(id, request.newStatus());
+        PropertyResponse response = propertyService.changeStatus(id, request.newStatus(), user.getRole());
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
