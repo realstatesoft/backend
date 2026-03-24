@@ -1,9 +1,16 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.exception.ResourceNotFoundException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.openroof.openroof.dto.agent.AgentAgendaResponse;
 import com.openroof.openroof.dto.agent.CreateAgentAgendaRequest;
 import com.openroof.openroof.dto.agent.UpdateAgentAgendaRequest;
+import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentAgendaMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.interaction.AgentAgenda;
@@ -11,13 +18,8 @@ import com.openroof.openroof.model.interaction.Visit;
 import com.openroof.openroof.repository.AgentAgendaRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.VisitRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

@@ -1,7 +1,8 @@
 package com.openroof.openroof.dto.agent;
 
-import com.openroof.openroof.model.enums.EventType;
 import java.time.LocalDateTime;
+
+import com.openroof.openroof.model.enums.EventType;
 
 public record AgentAgendaResponse(
         Long id,
