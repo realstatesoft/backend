@@ -63,9 +63,15 @@ public class AgentAgendaMapper {
         if (req.location() != null) entity.setLocation(req.location());
         if (req.notes() != null) entity.setNotes(req.notes());
         
-        // If the request explicitly comes with a visitId, update it (null is also valid to remove it)
-        if (req.visitId() != null || visit != null) {
-            entity.setVisit(visit);
-        }
+        // visitId == null means "remove association"; only skip update if field was not included.
+        // Since UpdateAgentAgendaRequest is a plain record (null = not sent OR explicit null),
+        // we use the resolved `visit` parameter from the service which is:
+        //   - a Visit object  → caller sent a valid visitId
+        //   - null            → caller sent visitId: null  (explicit removal)
+        //   The service always calls this method, so we must always apply the value.
+        //   To distinguish "not included in request" we rely on the service only passing
+        //   a non-null `visit` when visitId != null, and null otherwise — which is correct.
+        //   We therefore always update the visit field to support explicit dissociation.
+        entity.setVisit(visit);
     }
 }
