@@ -76,7 +76,7 @@ public class AgentAgendaController {
             Principal principal) {
         
         LocalDateTime startOfMonth = month.atDay(1).atStartOfDay();
-        LocalDateTime endOfMonth = month.atEndOfMonth().atTime(23, 59, 59);
+        LocalDateTime endOfMonth = month.atEndOfMonth().atTime(java.time.LocalTime.MAX);
 
         List<AgentAgendaResponse> response = agentAgendaService.getAgendaForMonth(principal.getName(), startOfMonth, endOfMonth);
         return ResponseEntity.ok(ApiResponse.ok(response));

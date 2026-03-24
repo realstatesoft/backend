@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.openroof.openroof.dto.agent.AgentAgendaResponse;
 import com.openroof.openroof.dto.agent.CreateAgentAgendaRequest;
 import com.openroof.openroof.dto.agent.UpdateAgentAgendaRequest;
+import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentAgendaMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
@@ -35,7 +37,7 @@ public class AgentAgendaService {
         AgentProfile agent = agentProfileRepository.findByUser_Email(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent", "email", username));
 
-        return agentAgendaRepository.findByAgentIdAndStartsAtBetweenOrderByStartsAtAsc(agent.getId(), startOfMonth, endOfMonth)
+        return agentAgendaRepository.findByAgentAndMonthOverlap(agent.getId(), startOfMonth, endOfMonth)
                 .stream()
                 .map(agentAgendaMapper::toResponse)
                 .collect(Collectors.toList());
@@ -58,6 +60,11 @@ public class AgentAgendaService {
                     .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", request.visitId()));
         }
 
+        if (request.endsAt() != null && request.startsAt() != null
+                && !request.endsAt().isAfter(request.startsAt())) {
+            throw new BadRequestException("La fecha de fin debe ser posterior a la fecha de inicio");
+        }
+
         AgentAgenda newEvent = agentAgendaMapper.toEntity(request, agent, visit);
         newEvent = agentAgendaRepository.save(newEvent);
 
@@ -72,6 +79,13 @@ public class AgentAgendaService {
         if (request.visitId() != null) {
             visit = visitRepository.findById(request.visitId())
                     .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", request.visitId()));
+        }
+
+        // Resolve effective times (after partial update) to validate the range
+        LocalDateTime effectiveStart = request.startsAt() != null ? request.startsAt() : event.getStartsAt();
+        LocalDateTime effectiveEnd   = request.endsAt()   != null ? request.endsAt()   : event.getEndsAt();
+        if (effectiveEnd != null && effectiveStart != null && !effectiveEnd.isAfter(effectiveStart)) {
+            throw new BadRequestException("La fecha de fin debe ser posterior a la fecha de inicio");
         }
 
         agentAgendaMapper.updateEntity(event, request, visit);
@@ -94,7 +108,7 @@ public class AgentAgendaService {
                 .orElseThrow(() -> new ResourceNotFoundException("AgentAgenda", "id", id));
 
         if (!event.getAgent().getId().equals(agent.getId())) {
-            throw new IllegalArgumentException("No tienes permiso para modificar este evento.");
+            throw new ForbiddenException("No tienes permiso para modificar este evento.");
         }
         
         return event;

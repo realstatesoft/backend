@@ -1,6 +1,7 @@
 package com.openroof.openroof.dto.agent;
 
 import com.openroof.openroof.model.enums.EventType;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -23,7 +24,12 @@ public record CreateAgentAgendaRequest(
         String location,
 
         String notes,
-        
+
         Long visitId
 ) {
+    @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
+    public boolean isEndsAtAfterStartsAt() {
+        if (startsAt == null || endsAt == null) return true;
+        return endsAt.isAfter(startsAt);
+    }
 }
