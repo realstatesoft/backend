@@ -11,7 +11,6 @@ import com.openroof.openroof.dto.agent.AgentAgendaResponse;
 import com.openroof.openroof.dto.agent.CreateAgentAgendaRequest;
 import com.openroof.openroof.dto.agent.UpdateAgentAgendaRequest;
 import com.openroof.openroof.exception.BadRequestException;
-import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentAgendaMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
@@ -122,18 +121,13 @@ public class AgentAgendaService {
     }
 
     /**
-     * Loads the event and verifies that the authenticated user is its owner.
+     * Loads the event filtering by both id and owner in a single query.
+     * Always throws 404 — whether the event doesn't exist OR belongs to
+     * another user — to prevent ID enumeration attacks.
      */
     private AgentAgenda getEventForUser(Long id, String username) {
         User user = findUserByEmail(username);
-
-        AgentAgenda event = agentAgendaRepository.findById(id)
+        return agentAgendaRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("AgentAgenda", "id", id));
-
-        if (!event.getUser().getId().equals(user.getId())) {
-            throw new ForbiddenException("No tienes permiso para modificar este evento.");
-        }
-
-        return event;
     }
 }
