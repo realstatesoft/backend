@@ -87,7 +87,9 @@ public class AgentAgendaService {
     public AgentAgendaResponse update(Long id, UpdateAgentAgendaRequest request, String username) {
         AgentAgenda event = getEventForUser(id, username);
 
-        Visit visit = null;
+        // Preserve existing visit unless a new visitId is explicitly provided.
+        // (null visitId = "don't touch the association", not "remove it")
+        Visit visit = event.getVisit();
         if (request.visitId() != null) {
             visit = visitRepository.findById(request.visitId())
                     .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", request.visitId()));
