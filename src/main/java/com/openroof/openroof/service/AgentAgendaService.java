@@ -48,7 +48,8 @@ public class AgentAgendaService {
 
     @Transactional(readOnly = true)
     public AgentAgendaResponse getById(Long id, String username) {
-        AgentAgenda event = getEventForUser(id, username);
+        User user = findUserByEmail(username);
+        AgentAgenda event = getEventForUser(id, user);
         return agentAgendaMapper.toResponse(event);
     }
 
@@ -66,7 +67,7 @@ public class AgentAgendaService {
 
         Visit visit = null;
         if (request.visitId() != null) {
-            visit = visitRepository.findById(request.visitId())
+            visit = visitRepository.findByIdAndUserAccess(request.visitId(), user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", request.visitId()));
         }
 
@@ -84,13 +85,14 @@ public class AgentAgendaService {
 
     @Transactional
     public AgentAgendaResponse update(Long id, UpdateAgentAgendaRequest request, String username) {
-        AgentAgenda event = getEventForUser(id, username);
+        User user = findUserByEmail(username);
+        AgentAgenda event = getEventForUser(id, user);
 
         // Preserve existing visit unless a new visitId is explicitly provided.
         // (null visitId = "don't touch the association", not "remove it")
         Visit visit = event.getVisit();
         if (request.visitId() != null) {
-            visit = visitRepository.findById(request.visitId())
+            visit = visitRepository.findByIdAndUserAccess(request.visitId(), user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Visit", "id", request.visitId()));
         }
 
@@ -109,7 +111,8 @@ public class AgentAgendaService {
 
     @Transactional
     public void delete(Long id, String username) {
-        AgentAgenda event = getEventForUser(id, username);
+        User user = findUserByEmail(username);
+        AgentAgenda event = getEventForUser(id, user);
         agentAgendaRepository.delete(event);
     }
 
@@ -125,8 +128,7 @@ public class AgentAgendaService {
      * Always throws 404 — whether the event doesn't exist OR belongs to
      * another user — to prevent ID enumeration attacks.
      */
-    private AgentAgenda getEventForUser(Long id, String username) {
-        User user = findUserByEmail(username);
+    private AgentAgenda getEventForUser(Long id, User user) {
         return agentAgendaRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("AgentAgenda", "id", id));
     }
