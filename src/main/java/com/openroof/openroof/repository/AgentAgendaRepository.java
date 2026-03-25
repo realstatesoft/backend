@@ -15,14 +15,24 @@ import com.openroof.openroof.model.interaction.AgentAgenda;
 public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>, JpaSpecificationExecutor<AgentAgenda> {
 
     /**
-     * Returns events for a given agent whose time range overlaps with [start, end].
+     * Returns events for a given user whose time range overlaps with [start, end].
      * Intersection condition: startsAt <= endOfMonth AND endsAt >= startOfMonth
      */
-    @Query("SELECT a FROM AgentAgenda a WHERE a.agent.id = :agentId " +
+    @Query("SELECT a FROM AgentAgenda a WHERE a.user.id = :userId " +
            "AND a.startsAt <= :end AND a.endsAt >= :start " +
            "ORDER BY a.startsAt ASC")
-    List<AgentAgenda> findByAgentAndMonthOverlap(
-            @Param("agentId") Long agentId,
+    List<AgentAgenda> findByUserAndMonthOverlap(
+            @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    /**
+     * Finds a single event by its ID and owning user in one query.
+     * Returns empty if the event doesn't exist OR belongs to a different user,
+     * preventing ID enumeration (callers should always throw 404 on empty).
+     */
+    @Query("SELECT a FROM AgentAgenda a WHERE a.id = :id AND a.user.id = :userId")
+    java.util.Optional<AgentAgenda> findByIdAndUserId(
+            @Param("id") Long id,
+            @Param("userId") Long userId);
 }

@@ -6,6 +6,7 @@ import com.openroof.openroof.dto.agent.UpdateAgentAgendaRequest;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.interaction.AgentAgenda;
 import com.openroof.openroof.model.interaction.Visit;
+import com.openroof.openroof.model.user.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,6 +19,7 @@ public class AgentAgendaMapper {
 
         return new AgentAgendaResponse(
                 entity.getId(),
+                entity.getUser() != null ? entity.getUser().getId() : null,
                 entity.getAgent() != null ? entity.getAgent().getId() : null,
                 entity.getVisit() != null ? entity.getVisit().getId() : null,
                 entity.getEventType(),
@@ -32,12 +34,18 @@ public class AgentAgendaMapper {
         );
     }
 
-    public AgentAgenda toEntity(CreateAgentAgendaRequest req, AgentProfile agent, Visit visit) {
+    /**
+     * @param user  always required (the owner)
+     * @param agent nullable – populated only when the user has role AGENT
+     * @param visit nullable
+     */
+    public AgentAgenda toEntity(CreateAgentAgendaRequest req, User user, AgentProfile agent, Visit visit) {
         if (req == null) {
             return null;
         }
 
         return AgentAgenda.builder()
+                .user(user)
                 .agent(agent)
                 .visit(visit)
                 .eventType(req.eventType())
@@ -62,16 +70,8 @@ public class AgentAgendaMapper {
         if (req.endsAt() != null) entity.setEndsAt(req.endsAt());
         if (req.location() != null) entity.setLocation(req.location());
         if (req.notes() != null) entity.setNotes(req.notes());
-        
-        // visitId == null means "remove association"; only skip update if field was not included.
-        // Since UpdateAgentAgendaRequest is a plain record (null = not sent OR explicit null),
-        // we use the resolved `visit` parameter from the service which is:
-        //   - a Visit object  → caller sent a valid visitId
-        //   - null            → caller sent visitId: null  (explicit removal)
-        //   The service always calls this method, so we must always apply the value.
-        //   To distinguish "not included in request" we rely on the service only passing
-        //   a non-null `visit` when visitId != null, and null otherwise — which is correct.
-        //   We therefore always update the visit field to support explicit dissociation.
+
+        // Always apply visit (null = remove association)
         entity.setVisit(visit);
     }
 }

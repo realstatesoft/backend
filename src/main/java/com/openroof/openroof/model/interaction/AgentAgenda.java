@@ -6,6 +6,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 import com.openroof.openroof.common.BaseEntity;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.enums.EventType;
 
 import jakarta.persistence.Column;
@@ -38,7 +39,11 @@ import lombok.Setter;
 public class AgentAgenda extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agent_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_id")
     private AgentProfile agent;
 
     @ManyToOne(fetch = FetchType.LAZY)
