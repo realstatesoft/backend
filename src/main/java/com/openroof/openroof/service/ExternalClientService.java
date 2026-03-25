@@ -36,8 +36,9 @@ public class ExternalClientService {
                     .orElseThrow(() -> new ResourceNotFoundException("No se encontró el perfil de agente para el usuario actual"));
         }
 
-        AgentProfile agent = agentProfileRepository.findById(agentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + agentId));
+        final Long finalAgentId = agentId;
+        AgentProfile agent = agentProfileRepository.findById(finalAgentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + finalAgentId));
 
         ExternalClient client = ExternalClient.builder()
                 .agent(agent)
@@ -48,7 +49,7 @@ public class ExternalClientService {
                 .priority(request.priority() != null ? request.priority() : Priority.MEDIUM)
                 .clientType(request.clientType() != null ? request.clientType() : ClientType.INDIVIDUAL)
                 .origin(request.sourceChannel()) // Using sourceChannel as origin
-                .tags(request.tags() != null ? request.tags() : new ArrayList<>())
+                .tags(new ArrayList<>())
                 .notes(request.notes())
                 .birthDate(request.birthDate())
                 .maritalStatus(request.maritalStatus() != null ? MaritalStatus.valueOf(request.maritalStatus()) : null)

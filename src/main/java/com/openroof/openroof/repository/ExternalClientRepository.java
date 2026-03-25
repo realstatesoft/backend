@@ -13,7 +13,10 @@ import java.util.Map;
 
 @Repository
 public interface ExternalClientRepository extends JpaRepository<ExternalClient, Long>, JpaSpecificationExecutor<ExternalClient> {
-    
+    @Query("SELECT e FROM ExternalClient e LEFT JOIN FETCH e.agent a LEFT JOIN FETCH a.user WHERE e.id = :id")
+    java.util.Optional<ExternalClient> findByIdWithAgentAndUser(@Param("id") Long id);
+
+
     @Query(value = """
             SELECT * FROM (
                 SELECT 

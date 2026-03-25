@@ -57,7 +57,7 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
         }
 
         if (currentUser.getRole() == UserRole.AGENT) {
-            return externalClientRepository.findById(externalClientId)
+            return externalClientRepository.findByIdWithAgentAndUser(externalClientId)
                     .map(client -> client.getAgent() != null &&
                                    client.getAgent().getUser().getId().equals(currentUser.getId()))
                     .orElse(false);
