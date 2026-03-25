@@ -1,0 +1,70 @@
+databaseChangeLog:
+# ── 015a ─────────────────────────────────────────────────────────────────────
+# Make agent_id nullable: agents-only restriction is now lifted.
+# This is idempotent on production (runs once) and also applies to fresh envs.
+- changeSet:
+    id: 015-make-agent-id-nullable-and-fk-user-id-in-agent-agenda
+    author: antigravity
+    comment: >
+      Lifts the NOT NULL constraint on agent_id so that non-agent users
+      can own agenda events.  user_id is the primary owner FK.
+    changes:
+    - dropNotNullConstraint:
+        tableName: agent_agenda
+        columnName: agent_id
+        columnDataType: BIGINT
+
+# ── 015b ─────────────────────────────────────────────────────────────────────
+# Add user_id column for fresh environments.
+# Production already has this column (added manually), so the preCondition
+# marks it as MARK_RAN automatically when the column already exists.
+- changeSet:
+    id: 015b-add-user-id-column-to-agent-agenda
+    author: antigravity
+    comment: >
+      Adds user_id (BIGINT NOT NULL) to agent_agenda for environments that do
+      not have the column yet.  Skipped automatically on production where the
+      column was added out-of-band.
+    preConditions:
+      onFail: MARK_RAN
+      onError: MARK_RAN
+      not:
+        columnExists:
+          tableName: agent_agenda
+          columnName: user_id
+    changes:
+    - addColumn:
+        tableName: agent_agenda
+        columns:
+        - column:
+            name: user_id
+            type: BIGINT
+            constraints:
+              nullable: false
+
+# ── 015c ─────────────────────────────────────────────────────────────────────
+# Add FK from user_id → users.id.
+# Skipped when FK already exists (production had it created manually).
+- changeSet:
+    id: 015c-add-fk-user-id-to-agent-agenda
+    author: antigravity
+    comment: Adds FK constraint from agent_agenda.user_id to users.id.
+    preConditions:
+      onFail: MARK_RAN
+      onError: MARK_RAN
+      not:
+        foreignKeyConstraintExists:
+          foreignKeyTableName: agent_agenda
+          foreignKeyName: fk_agent_agenda_user
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: agent_agenda
+        constraintName: fk_agent_agenda_user
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: CASCADE
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
