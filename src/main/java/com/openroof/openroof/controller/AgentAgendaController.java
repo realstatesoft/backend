@@ -34,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/agent-agenda")
 @RequiredArgsConstructor
-@Tag(name = "Agent Agenda", description = "Gestión de la agenda del agente")
+@Tag(name = "Agent Agenda", description = "Gestión de la agenda personal (agentes y usuarios)")
 public class AgentAgendaController {
 
     private final AgentAgendaService agentAgendaService;
@@ -42,8 +42,8 @@ public class AgentAgendaController {
     // ─── CREATE ───────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasRole('AGENT')")
-    @Operation(summary = "Crear un nuevo evento en la agenda (solo AGENT)")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Crear un nuevo evento en la agenda (cualquier usuario autenticado)")
     public ResponseEntity<ApiResponse<AgentAgendaResponse>> create(
             @Valid @RequestBody CreateAgentAgendaRequest request,
             Principal principal) {
@@ -57,7 +57,7 @@ public class AgentAgendaController {
     // ─── READ ─────────────────────────────────────────────────────
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('AGENT')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener un evento por ID")
     public ResponseEntity<ApiResponse<AgentAgendaResponse>> getById(
             @Parameter(description = "ID del evento") @PathVariable Long id,
@@ -68,13 +68,13 @@ public class AgentAgendaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('AGENT')")
-    @Operation(summary = "Listar eventos del agente autenticado en un mes determinado")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Listar eventos del usuario autenticado en un mes determinado")
     public ResponseEntity<ApiResponse<List<AgentAgendaResponse>>> getAgendaForMonth(
-            @Parameter(description = "Año y mes en formato YYYY-MM") 
+            @Parameter(description = "Año y mes en formato YYYY-MM")
             @RequestParam(required = true) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
             Principal principal) {
-        
+
         LocalDateTime startOfMonth = month.atDay(1).atStartOfDay();
         LocalDateTime endOfMonth = month.atEndOfMonth().atTime(java.time.LocalTime.MAX);
 
@@ -85,7 +85,7 @@ public class AgentAgendaController {
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('AGENT')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Actualizar un evento en la agenda")
     public ResponseEntity<ApiResponse<AgentAgendaResponse>> update(
             @Parameter(description = "ID del evento") @PathVariable Long id,
@@ -99,7 +99,7 @@ public class AgentAgendaController {
     // ─── DELETE ───────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('AGENT')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Eliminar un evento de la agenda")
     public ResponseEntity<ApiResponse<Void>> delete(
             @Parameter(description = "ID del evento") @PathVariable Long id,

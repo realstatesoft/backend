@@ -1,0 +1,15 @@
+databaseChangeLog:
+- changeSet:
+    id: 015-make-agent-id-nullable-and-fk-user-id-in-agent-agenda
+    author: antigravity
+    comment: >
+      The agenda is now available for all authenticated users, not just agents.
+      user_id (already present in DB with FK to users) is the primary owner.
+      agent_id is made nullable (only populated when the owner has role AGENT).
+      Note: the FK fk_agent_agenda_user already existed in the DB, so we only
+      need to drop the NOT NULL constraint on agent_id.
+    changes:
+    - dropNotNullConstraint:
+        tableName: agent_agenda
+        columnName: agent_id
+        columnDataType: BIGINT

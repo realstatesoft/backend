@@ -6,6 +6,7 @@ import com.openroof.openroof.model.enums.EventType;
 
 public record AgentAgendaResponse(
         Long id,
+        Long userId,
         Long agentId,
         Long visitId,
         EventType eventType,
