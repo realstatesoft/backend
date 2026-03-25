@@ -97,7 +97,7 @@ public class AgentClient extends BaseEntity {
     @Builder.Default
     private ContactMethod preferredContactMethod = ContactMethod.EMAIL;
 
-    @Column(name = "last_contact_date")
+    @Column(name = "last_contact_at")
     private LocalDateTime lastContactDate;
 
     @Enumerated(EnumType.STRING)
