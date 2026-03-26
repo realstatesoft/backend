@@ -17,7 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping({"/external-clients", "/clients/external"})
+@RequestMapping("/external-clients")
 @RequiredArgsConstructor
 @Tag(name = "External Clients", description = "CRUD de clientes externos (prospectos)")
 public class ExternalClientController {
