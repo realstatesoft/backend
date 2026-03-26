@@ -59,8 +59,8 @@ databaseChangeLog:
         - addColumn:
             tableName: external_clients
             columns:
-              - column: {name: min_budget, type: "NUMERIC(38, 2)"}
-              - column: {name: max_budget, type: "NUMERIC(38, 2)"}
+              - column: {name: min_budget, type: "NUMERIC(19, 2)"}
+              - column: {name: max_budget, type: "NUMERIC(19, 2)"}
               - column: {name: min_bedrooms, type: INTEGER}
               - column: {name: max_bedrooms, type: INTEGER}
               - column: {name: min_bathrooms, type: INTEGER}

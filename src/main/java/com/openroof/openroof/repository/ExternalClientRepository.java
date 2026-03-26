@@ -59,13 +59,33 @@ public interface ExternalClientRepository extends JpaRepository<ExternalClient, 
             """, 
             countQuery = """
             SELECT COUNT(*) FROM (
-                SELECT ac.id FROM agent_clients ac WHERE ac.agent_id = :agentId AND ac.deleted_at IS NULL
+                SELECT 
+                    ac.id as id, 
+                    u.name as name, 
+                    u.email as email, 
+                    ac.status as status, 
+                    ac.client_type as client_type, 
+                    'AGENT' as internal_type
+                FROM agent_clients ac
+                JOIN users u ON ac.user_id = u.id
+                WHERE ac.agent_id = :agentId AND ac.deleted_at IS NULL
+                
                 UNION ALL
-                SELECT ec.id FROM external_clients ec WHERE ec.agent_id = :agentId AND ec.deleted_at IS NULL
+                
+                SELECT 
+                    ec.id as id, 
+                    ec.name as name, 
+                    ec.email as email, 
+                    ec.status as status, 
+                    ec.client_type as client_type, 
+                    'EXTERNAL' as internal_type
+                FROM external_clients ec
+                WHERE ec.agent_id = :agentId AND ec.deleted_at IS NULL
             ) as unified_counts
-            WHERE (:internalType IS NULL OR CASE 
-                WHEN EXISTS (SELECT 1 FROM agent_clients WHERE id = unified_counts.id) THEN 'AGENT' 
-                ELSE 'EXTERNAL' END = :internalType)
+            WHERE (:query IS NULL OR :query = '' OR LOWER(name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(email) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:status IS NULL OR status = :status)
+            AND (:clientType IS NULL OR client_type = :clientType)
+            AND (:internalType IS NULL OR internal_type = :internalType)
             """,
             nativeQuery = true)
     Page<Map<String, Object>> searchUnifiedClients(

@@ -18,7 +18,9 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +54,7 @@ public class ExternalClientService {
                 .tags(new ArrayList<>())
                 .notes(request.notes())
                 .birthDate(request.birthDate())
-                .maritalStatus(request.maritalStatus() != null ? MaritalStatus.valueOf(request.maritalStatus()) : null)
+                .maritalStatus(parseMaritalStatus(request.maritalStatus()))
                 .occupation(request.occupation())
                 .annualIncome(request.annualIncome())
                 .address(request.address())
@@ -94,7 +96,7 @@ public class ExternalClientService {
 
         // New fields
         if (request.birthDate() != null) client.setBirthDate(request.birthDate());
-        if (request.maritalStatus() != null) client.setMaritalStatus(MaritalStatus.valueOf(request.maritalStatus()));
+        if (request.maritalStatus() != null) client.setMaritalStatus(parseMaritalStatus(request.maritalStatus()));
         if (request.occupation() != null) client.setOccupation(request.occupation());
         if (request.annualIncome() != null) client.setAnnualIncome(request.annualIncome());
         if (request.address() != null) client.setAddress(request.address());
@@ -175,6 +177,21 @@ public class ExternalClientService {
                 client.getCreatedAt(),
                 client.getUpdatedAt()
         );
+    }
+
+    private MaritalStatus parseMaritalStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return MaritalStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            String validValues = Arrays.stream(MaritalStatus.values())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+            throw new IllegalArgumentException(
+                    "Valor inválido para maritalStatus: '" + value + "'. Valores permitidos: [" + validValues + "]");
+        }
     }
 
     private UnifiedClientSummaryResponse mapToUnifiedResponse(Map<String, Object> map) {

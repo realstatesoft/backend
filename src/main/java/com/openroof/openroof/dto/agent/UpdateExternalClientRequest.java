@@ -3,12 +3,13 @@ package com.openroof.openroof.dto.agent;
 import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ClientType;
 import com.openroof.openroof.model.enums.Priority;
+import jakarta.validation.constraints.Email;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record UpdateExternalClientRequest(
         String name,
-        String email,
+        @Email String email,
         String phone,
         ClientStatus status,
         Priority priority,
