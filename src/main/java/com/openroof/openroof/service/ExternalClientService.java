@@ -19,6 +19,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,11 @@ public class ExternalClientService {
         final Long finalAgentId = agentId;
         AgentProfile agent = agentProfileRepository.findById(finalAgentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + finalAgentId));
+
+        // Verify the authenticated user owns this agent profile
+        if (!agent.getUser().getId().equals(currentUserId)) {
+            throw new IllegalArgumentException("No tiene permiso para gestionar clientes del agente con id: " + finalAgentId);
+        }
 
         ExternalClient client = ExternalClient.builder()
                 .agent(agent)
@@ -184,7 +190,7 @@ public class ExternalClientService {
             return null;
         }
         try {
-            return MaritalStatus.valueOf(value.trim().toUpperCase());
+            return MaritalStatus.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             String validValues = Arrays.stream(MaritalStatus.values())
                     .map(Enum::name)
@@ -204,9 +210,19 @@ public class ExternalClientService {
                 (String) map.get("status"),
                 (String) map.get("priority"),
                 (String) map.get("client_type"),
-                map.get("last_contact_date") != null ? ((Timestamp) map.get("last_contact_date")).toLocalDateTime() : null,
-                ((Timestamp) map.get("created_at")).toLocalDateTime(),
+                safeToLocalDateTime(map.get("last_contact_date")),
+                safeToLocalDateTime(map.get("created_at")),
                 (String) map.get("internal_type")
         );
+    }
+
+    private static LocalDateTime safeToLocalDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof Timestamp ts) return ts.toLocalDateTime();
+        if (value instanceof LocalDateTime ldt) return ldt;
+        if (value instanceof java.time.OffsetDateTime odt) return odt.toLocalDateTime();
+        if (value instanceof java.sql.Date d) return d.toLocalDate().atStartOfDay();
+        if (value instanceof String s) return LocalDateTime.parse(s);
+        throw new IllegalArgumentException("Cannot convert " + value.getClass().getName() + " to LocalDateTime");
     }
 }
