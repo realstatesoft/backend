@@ -50,14 +50,14 @@ public class ClientInteractionService {
         findAgentClient(agentClientId);
 
         Page<ClientInteraction> page = type != null
-                ? clientInteractionRepository.findByAgentClient_IdAndType(agentClientId, type, pageable)
-                : clientInteractionRepository.findByAgentClient_Id(agentClientId, pageable);
+                ? clientInteractionRepository.findByAgentClient_IdAndTypeAndDeletedAtIsNull(agentClientId, type, pageable)
+                : clientInteractionRepository.findByAgentClient_IdAndDeletedAtIsNull(agentClientId, pageable);
 
         return page.map(this::toResponse);
     }
 
     public ClientInteractionResponse update(Long agentClientId, Long interactionId, UpdateClientInteractionRequest request) {
-        ClientInteraction interaction = findInteraction(agentClientId, interactionId);
+        ClientInteraction interaction = findActiveInteraction(agentClientId, interactionId);
 
         if (request.subject() != null) {
             interaction.setSubject(request.subject());
@@ -144,8 +144,18 @@ public class ClientInteractionService {
     }
 
     private ClientInteraction findInteraction(Long agentClientId, Long interactionId) {
+        return findInteraction(agentClientId, interactionId, false);
+    }
+
+    private ClientInteraction findActiveInteraction(Long agentClientId, Long interactionId) {
+        return findInteraction(agentClientId, interactionId, true);
+    }
+
+    private ClientInteraction findInteraction(Long agentClientId, Long interactionId, boolean activeOnly) {
         findAgentClient(agentClientId);
-        return clientInteractionRepository.findByIdAndAgentClient_Id(interactionId, agentClientId)
+        return (activeOnly
+                ? clientInteractionRepository.findByIdAndAgentClient_IdAndDeletedAtIsNull(interactionId, agentClientId)
+                : clientInteractionRepository.findByIdAndAgentClient_Id(interactionId, agentClientId))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Interaccion no encontrada con ID: " + interactionId));
     }

@@ -23,9 +23,16 @@ public interface ClientInteractionRepository extends JpaRepository<ClientInterac
 
     Page<ClientInteraction> findByAgentClient_Id(Long agentClientId, Pageable pageable);
 
+    Page<ClientInteraction> findByAgentClient_IdAndDeletedAtIsNull(Long agentClientId, Pageable pageable);
+
     Page<ClientInteraction> findByAgentClient_IdAndType(Long agentClientId, InteractionType type, Pageable pageable);
 
+    Page<ClientInteraction> findByAgentClient_IdAndTypeAndDeletedAtIsNull(Long agentClientId, InteractionType type,
+                                                                          Pageable pageable);
+
     Optional<ClientInteraction> findByIdAndAgentClient_Id(Long id, Long agentClientId);
+
+    Optional<ClientInteraction> findByIdAndAgentClient_IdAndDeletedAtIsNull(Long id, Long agentClientId);
 
     @Query("""
             SELECT COUNT(ci) AS interactionsCount,
