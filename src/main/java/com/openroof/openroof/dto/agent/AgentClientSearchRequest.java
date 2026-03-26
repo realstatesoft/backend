@@ -11,6 +11,7 @@ public record AgentClientSearchRequest(
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     LocalDate createdAtFrom,
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    LocalDate createdAtTo
+    LocalDate createdAtTo,
+    String internalType
 ) {
 }
