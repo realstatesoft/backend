@@ -6,9 +6,13 @@ spring:
   # Requeridas: DB_URL, DB_USER, DB_PASSWORD
   # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+
+    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
+
+    username: ${DB_USERNAME:openroof}
+    password: ${DB_PASSWORD:openroof123}
+
+
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

@@ -11,6 +11,6 @@ public record AgentClientSummaryResponse(
         String status,
         String priority,
         String clientType,
-        LocalDateTime lastContactDate,
+        LocalDateTime lastContactAt,
         LocalDateTime createdAt) {
 }

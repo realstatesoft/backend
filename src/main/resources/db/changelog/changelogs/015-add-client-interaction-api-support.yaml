@@ -1,0 +1,87 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-rename-last-contact-date-column
+      author: Codex
+      preConditions:
+        - onFail: MARK_RAN
+          columnExists:
+            tableName: agent_clients
+            columnName: last_contact_date
+      changes:
+        - renameColumn:
+            tableName: agent_clients
+            oldColumnName: last_contact_date
+            newColumnName: last_contact_at
+            columnDataType: TIMESTAMP WITHOUT TIME ZONE
+
+  - changeSet:
+      id: 015-add-client-interaction-columns
+      author: Codex
+      changes:
+        - addColumn:
+            tableName: client_interactions
+            columns:
+              - column:
+                  name: outcome
+                  type: VARCHAR(100)
+              - column:
+                  name: source
+                  type: VARCHAR(20)
+                  defaultValue: MANUAL
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+        - update:
+            tableName: client_interactions
+            columns:
+              - column:
+                  name: source
+                  value: MANUAL
+            where: "source IS NULL"
+        - sql:
+            sql: "UPDATE client_interactions SET occurred_at = created_at WHERE occurred_at IS NULL;"
+        - addNotNullConstraint:
+            tableName: client_interactions
+            columnName: source
+            columnDataType: VARCHAR(20)
+        - addNotNullConstraint:
+            tableName: client_interactions
+            columnName: occurred_at
+            columnDataType: TIMESTAMP WITHOUT TIME ZONE
+        - createIndex:
+            tableName: client_interactions
+            indexName: idx_interactions_occurred_at
+            columns:
+              - column:
+                  name: occurred_at
+
+  - changeSet:
+      id: 015-create-last-contact-trigger
+      author: Codex
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE OR REPLACE FUNCTION sync_agent_client_last_contact_at()
+              RETURNS TRIGGER AS $$
+              BEGIN
+                  IF NEW.agent_client_id IS NOT NULL THEN
+                      UPDATE agent_clients
+                      SET last_contact_at = CASE
+                          WHEN last_contact_at IS NULL THEN COALESCE(NEW.occurred_at, NEW.created_at)
+                          ELSE GREATEST(last_contact_at, COALESCE(NEW.occurred_at, NEW.created_at))
+                      END
+                      WHERE id = NEW.agent_client_id;
+                  END IF;
+
+                  RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+        - sql:
+            splitStatements: false
+            sql: |
+              DROP TRIGGER IF EXISTS trg_sync_agent_client_last_contact_at ON client_interactions;
+              CREATE TRIGGER trg_sync_agent_client_last_contact_at
+              AFTER INSERT ON client_interactions
+              FOR EACH ROW
+              EXECUTE FUNCTION sync_agent_client_last_contact_at();

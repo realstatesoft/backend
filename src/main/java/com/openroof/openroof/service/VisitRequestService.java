@@ -36,6 +36,7 @@ public class VisitRequestService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final ClientInteractionService clientInteractionService;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -90,6 +91,14 @@ public class VisitRequestService {
 
         visitRequest.setStatus(VisitRequestStatus.ACCEPTED);
         visitRequest.setVisit(visit);
+
+        if (visitRequest.getAgent() != null) {
+            clientInteractionService.recordVisitConfirmed(
+                    visitRequest.getAgent().getId(),
+                    visitRequest.getBuyer().getId(),
+                    visitRequest.getProperty().getId(),
+                    visit.getScheduledAt());
+        }
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
