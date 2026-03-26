@@ -64,14 +64,45 @@ databaseChangeLog:
             sql: |
               CREATE OR REPLACE FUNCTION sync_agent_client_last_contact_at()
               RETURNS TRIGGER AS $$
+              DECLARE
+                  impacted_agent_client_id BIGINT;
+                  max_occ TIMESTAMP WITHOUT TIME ZONE;
               BEGIN
-                  IF NEW.agent_client_id IS NOT NULL THEN
-                      UPDATE agent_clients
-                      SET last_contact_at = CASE
-                          WHEN last_contact_at IS NULL THEN COALESCE(NEW.occurred_at, NEW.created_at)
-                          ELSE GREATEST(last_contact_at, COALESCE(NEW.occurred_at, NEW.created_at))
-                      END
-                      WHERE id = NEW.agent_client_id;
+                  IF TG_OP = 'INSERT' THEN
+                      FOR impacted_agent_client_id IN
+                          SELECT NEW.agent_client_id
+                          WHERE NEW.agent_client_id IS NOT NULL
+                      LOOP
+                          SELECT MAX(ci.occurred_at)
+                          INTO max_occ
+                          FROM client_interactions ci
+                          WHERE ci.agent_client_id = impacted_agent_client_id
+                            AND ci.deleted_at IS NULL;
+
+                          UPDATE agent_clients
+                          SET last_contact_at = max_occ
+                          WHERE id = impacted_agent_client_id;
+                      END LOOP;
+                  ELSIF TG_OP = 'UPDATE' THEN
+                      FOR impacted_agent_client_id IN
+                          SELECT DISTINCT impacted.agent_client_id
+                          FROM (
+                              VALUES
+                                  (OLD.agent_client_id),
+                                  (NEW.agent_client_id)
+                          ) AS impacted(agent_client_id)
+                          WHERE impacted.agent_client_id IS NOT NULL
+                      LOOP
+                          SELECT MAX(ci.occurred_at)
+                          INTO max_occ
+                          FROM client_interactions ci
+                          WHERE ci.agent_client_id = impacted_agent_client_id
+                            AND ci.deleted_at IS NULL;
+
+                          UPDATE agent_clients
+                          SET last_contact_at = max_occ
+                          WHERE id = impacted_agent_client_id;
+                      END LOOP;
                   END IF;
 
                   RETURN NEW;
@@ -82,6 +113,6 @@ databaseChangeLog:
             sql: |
               DROP TRIGGER IF EXISTS trg_sync_agent_client_last_contact_at ON client_interactions;
               CREATE TRIGGER trg_sync_agent_client_last_contact_at
-              AFTER INSERT ON client_interactions
+              AFTER INSERT OR UPDATE ON client_interactions
               FOR EACH ROW
               EXECUTE FUNCTION sync_agent_client_last_contact_at();

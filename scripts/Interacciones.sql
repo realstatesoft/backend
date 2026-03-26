@@ -267,76 +267,77 @@ WHERE NOT EXISTS (
 WITH interaction_seed AS (
     SELECT *
     FROM (VALUES
+        -- occurred_at usa timestamps fijos para que el seed sea idempotente.
         -- Carlos Mendoza + comprador1
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'CALL', 'Llamada de presentacion',
             'Se realizo llamada inicial para entender necesidad y presupuesto.',
             'CONTACTED', 'MANUAL',
-            (NOW() - INTERVAL '12 days')::timestamp
+            TIMESTAMP '2026-03-08 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'NOTE', NULL,
             'Prefiere propiedades en Villa Morra o Manora. No quiere propiedades para refaccion.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '11 days 20 hours')::timestamp
+            TIMESTAMP '2026-03-08 14:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'WHATSAPP', 'Envio de opciones premium',
             'Se compartieron 4 propiedades con piscina y quincho por WhatsApp.',
             'SENT', 'SYSTEM',
-            (NOW() - INTERVAL '10 days')::timestamp
+            TIMESTAMP '2026-03-10 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'EMAIL', 'Brochure de propiedades',
             'Se envio brochure PDF con comparativa de precios y ubicaciones.',
             'SENT', 'MANUAL',
-            (NOW() - INTERVAL '9 days 6 hours')::timestamp
+            TIMESTAMP '2026-03-11 04:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'MEETING', 'Reunion en oficina',
             'Se reviso capacidad financiera y tiempos estimados de compra.',
             'QUALIFIED', 'MANUAL',
-            (NOW() - INTERVAL '8 days')::timestamp
+            TIMESTAMP '2026-03-12 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'VISIT', 'Visita confirmada',
             'Se confirmo visita a Casa moderna en Villa Morra.',
             'CONFIRMED', 'SYSTEM',
-            (NOW() - INTERVAL '7 days 2 hours')::timestamp
+            TIMESTAMP '2026-03-13 08:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'VISIT', 'Visita realizada',
             'El cliente asistio puntualmente y mostro alto interes en la propiedad.',
             'COMPLETED', 'MANUAL',
-            (NOW() - INTERVAL '6 days 18 hours')::timestamp
+            TIMESTAMP '2026-03-13 16:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'CALL', 'Seguimiento post visita',
             'Pidio una segunda visita con su esposa antes de presentar oferta.',
             'FOLLOW_UP_SCHEDULED', 'MANUAL',
-            (NOW() - INTERVAL '6 days 12 hours')::timestamp
+            TIMESTAMP '2026-03-13 22:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'NOTE', NULL,
             'Cliente muestra urgencia moderada. Le preocupa el costo de mantenimiento.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '5 days 23 hours')::timestamp
+            TIMESTAMP '2026-03-14 11:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador1@openroof.com',
             'WHATSAPP', 'Mensaje de recordatorio',
             'Recordatorio automatico enviado para segunda visita.',
             'SENT', 'SYSTEM',
-            (NOW() - INTERVAL '5 days')::timestamp
+            TIMESTAMP '2026-03-15 10:00:00'
         ),
 
         -- Carlos Mendoza + comprador2
@@ -345,42 +346,42 @@ WITH interaction_seed AS (
             'EMAIL', 'Primer contacto',
             'Se recibio consulta por opciones de inversion y rentabilidad estimada.',
             'CONTACTED', 'MANUAL',
-            (NOW() - INTERVAL '14 days')::timestamp
+            TIMESTAMP '2026-03-06 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador2@openroof.com',
             'MEETING', 'Reunion de inversion',
             'Se analizo compra de oficina y departamento para renta.',
             'QUALIFIED', 'MANUAL',
-            (NOW() - INTERVAL '13 days 3 hours')::timestamp
+            TIMESTAMP '2026-03-07 07:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador2@openroof.com',
             'NOTE', NULL,
             'Busca retorno anual minimo del 7%. Prefiere zonas de alta demanda.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '13 days 2 hours')::timestamp
+            TIMESTAMP '2026-03-07 08:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador2@openroof.com',
             'EMAIL', 'Propuesta de inversion',
             'Se enviaron 3 escenarios de compra con renta estimada.',
             'PROPOSAL_SHARED', 'MANUAL',
-            (NOW() - INTERVAL '11 days')::timestamp
+            TIMESTAMP '2026-03-09 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador2@openroof.com',
             'CALL', 'Llamada de seguimiento financiero',
             'Cliente quiere revisar financiacion antes de avanzar.',
             'PENDING_FINANCING', 'MANUAL',
-            (NOW() - INTERVAL '9 days')::timestamp
+            TIMESTAMP '2026-03-11 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'comprador2@openroof.com',
             'WHATSAPP', 'Mensaje enviado',
             'Se envio resumen ejecutivo con links a propiedades comparables.',
             'SENT', 'SYSTEM',
-            (NOW() - INTERVAL '8 days 12 hours')::timestamp
+            TIMESTAMP '2026-03-11 22:00:00'
         ),
 
         -- Carlos Mendoza + inquilino1
@@ -389,42 +390,42 @@ WITH interaction_seed AS (
             'CALL', 'Consulta de renovacion',
             'El cliente evalua renovar alquiler o mudarse a un departamento con balcon.',
             'CONTACTED', 'MANUAL',
-            (NOW() - INTERVAL '15 days')::timestamp
+            TIMESTAMP '2026-03-05 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'inquilino1@openroof.com',
             'NOTE', NULL,
             'Acepta mascotas pequenas y necesita cochera.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '14 days 20 hours')::timestamp
+            TIMESTAMP '2026-03-05 14:00:00'
         ),
         (
             'PY-AG-2018-001', 'inquilino1@openroof.com',
             'VISIT', 'Visita confirmada',
             'Se confirmo visita al Departamento amoblado en Carmelitas.',
             'CONFIRMED', 'SYSTEM',
-            (NOW() - INTERVAL '7 days')::timestamp
+            TIMESTAMP '2026-03-13 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'inquilino1@openroof.com',
             'VISIT', 'Visita realizada',
             'Le gusto la propiedad y pidio condiciones del contrato.',
             'COMPLETED', 'MANUAL',
-            (NOW() - INTERVAL '6 days 20 hours')::timestamp
+            TIMESTAMP '2026-03-13 14:00:00'
         ),
         (
             'PY-AG-2018-001', 'inquilino1@openroof.com',
             'EMAIL', 'Condiciones de alquiler',
             'Se enviaron condiciones, expensas y politica de mascotas.',
             'PROPOSAL_SHARED', 'MANUAL',
-            (NOW() - INTERVAL '6 days')::timestamp
+            TIMESTAMP '2026-03-14 10:00:00'
         ),
         (
             'PY-AG-2018-001', 'inquilino1@openroof.com',
             'WHATSAPP', 'Mensaje enviado',
             'Se envio checklist de documentos requeridos.',
             'SENT', 'SYSTEM',
-            (NOW() - INTERVAL '5 days 18 hours')::timestamp
+            TIMESTAMP '2026-03-14 16:00:00'
         ),
 
         -- Maria Gonzalez + propietario2
@@ -433,28 +434,28 @@ WITH interaction_seed AS (
             'MEETING', 'Reunion de captacion',
             'Se revisaron objetivos de venta del terreno y precio de salida.',
             'QUALIFIED', 'MANUAL',
-            (NOW() - INTERVAL '18 days')::timestamp
+            TIMESTAMP '2026-03-02 10:00:00'
         ),
         (
             'PY-AG-2021-042', 'propietario2@openroof.com',
             'NOTE', NULL,
             'Quiere vender en menos de 90 dias. Esta abierta a contraofertas razonables.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '17 days 22 hours')::timestamp
+            TIMESTAMP '2026-03-02 12:00:00'
         ),
         (
             'PY-AG-2021-042', 'propietario2@openroof.com',
             'CALL', 'Validacion de precio',
             'Se recomendo precio competitivo para acelerar cierre.',
             'PRICE_ALIGNED', 'MANUAL',
-            (NOW() - INTERVAL '16 days')::timestamp
+            TIMESTAMP '2026-03-04 10:00:00'
         ),
         (
             'PY-AG-2021-042', 'propietario2@openroof.com',
             'EMAIL', 'Reporte de mercado',
             'Se envio comparativo de terrenos similares en Luque.',
             'SENT', 'MANUAL',
-            (NOW() - INTERVAL '14 days')::timestamp
+            TIMESTAMP '2026-03-06 10:00:00'
         ),
 
         -- Maria Gonzalez + comprador1
@@ -463,35 +464,35 @@ WITH interaction_seed AS (
             'WHATSAPP', 'Consulta por terreno',
             'Se inicio conversacion sobre Terreno amplio en Luque.',
             'CONTACTED', 'MANUAL',
-            (NOW() - INTERVAL '4 days')::timestamp
+            TIMESTAMP '2026-03-16 10:00:00'
         ),
         (
             'PY-AG-2021-042', 'comprador1@openroof.com',
             'VISIT', 'Visita confirmada',
             'Se confirmo visita al Terreno amplio en Luque.',
             'CONFIRMED', 'SYSTEM',
-            (NOW() - INTERVAL '3 days 6 hours')::timestamp
+            TIMESTAMP '2026-03-17 04:00:00'
         ),
         (
             'PY-AG-2021-042', 'comprador1@openroof.com',
             'VISIT', 'Visita reprogramada',
             'El cliente solicito mover la visita por lluvia.',
             'RESCHEDULED', 'MANUAL',
-            (NOW() - INTERVAL '2 days 18 hours')::timestamp
+            TIMESTAMP '2026-03-17 16:00:00'
         ),
         (
             'PY-AG-2021-042', 'comprador1@openroof.com',
             'CALL', 'Seguimiento luego de reprogramacion',
             'Sigue interesado, pero quiere evaluar acceso y servicios de la zona.',
             'FOLLOW_UP_SCHEDULED', 'MANUAL',
-            (NOW() - INTERVAL '1 day 20 hours')::timestamp
+            TIMESTAMP '2026-03-18 14:00:00'
         ),
         (
             'PY-AG-2021-042', 'comprador1@openroof.com',
             'NOTE', NULL,
             'Muy sensible al precio. Posible comprador si hay margen de negociacion.',
             'INFO_CAPTURED', 'MANUAL',
-            (NOW() - INTERVAL '1 day 10 hours')::timestamp
+            TIMESTAMP '2026-03-19 00:00:00'
         )
     ) AS t(
         license_number, user_email,
@@ -545,6 +546,23 @@ WHERE NOT EXISTS (
 -- ============================================================
 -- 3. RECONCILIAR interactions_count Y last_contact_at
 -- ============================================================
+CREATE TEMP TABLE seed_agent_client_scope ON COMMIT DROP AS
+SELECT ac.id
+FROM agent_clients ac
+JOIN agent_profiles ap ON ap.id = ac.agent_id
+JOIN users u ON u.id = ac.user_id
+JOIN (
+    VALUES
+        ('PY-AG-2018-001', 'comprador1@openroof.com'),
+        ('PY-AG-2018-001', 'comprador2@openroof.com'),
+        ('PY-AG-2018-001', 'inquilino1@openroof.com'),
+        ('PY-AG-2021-042', 'propietario2@openroof.com'),
+        ('PY-AG-2021-042', 'comprador1@openroof.com')
+) AS seed_scope(license_number, user_email)
+    ON seed_scope.license_number = ap.license_number
+   AND seed_scope.user_email = u.email
+WHERE ac.deleted_at IS NULL;
+
 UPDATE agent_clients ac
 SET
     interactions_count = stats.interactions_count,
@@ -560,7 +578,8 @@ FROM (
       AND ci.agent_client_id IS NOT NULL
     GROUP BY ci.agent_client_id
 ) stats
-WHERE ac.id = stats.agent_client_id;
+WHERE ac.id = stats.agent_client_id
+  AND ac.id IN (SELECT id FROM seed_agent_client_scope);
 
 -- Para agent_clients sin interacciones
 UPDATE agent_clients
@@ -574,11 +593,19 @@ WHERE id IN (
     LEFT JOIN client_interactions ci
       ON ci.agent_client_id = ac.id
      AND ci.deleted_at IS NULL
+    WHERE ac.id IN (SELECT id FROM seed_agent_client_scope)
     GROUP BY ac.id
     HAVING COUNT(ci.id) = 0
 );
+UPDATE agent_clients
+SET client_type = 'INDIVIDUAL'
+WHERE client_type IN ('BUYER', 'OWNER', 'TENANT')
+  AND id IN (SELECT id FROM seed_agent_client_scope);
 
-COMMIT;
+UPDATE agent_clients
+SET preferred_contact_method = 'PHONE'
+WHERE preferred_contact_method = 'CALL'
+  AND id IN (SELECT id FROM seed_agent_client_scope);
 
 -- ============================================================
 -- VERIFICACION RAPIDA
@@ -594,9 +621,9 @@ SELECT
     ac.interactions_count,
     ac.last_contact_at
 FROM agent_clients ac
+JOIN seed_agent_client_scope scope ON scope.id = ac.id
 JOIN agent_profiles ap ON ap.id = ac.agent_id
 JOIN users u ON u.id = ac.user_id
-WHERE ap.license_number IN ('PY-AG-2018-001', 'PY-AG-2021-042')
 ORDER BY ap.license_number, u.email;
 
 -- Resumen de interacciones por cliente CRM
@@ -610,6 +637,7 @@ SELECT
     ci.occurred_at
 FROM client_interactions ci
 JOIN agent_clients ac ON ac.id = ci.agent_client_id
+JOIN seed_agent_client_scope scope ON scope.id = ac.id
 JOIN agent_profiles ap ON ap.id = ci.agent_id
 JOIN users u ON u.id = ac.user_id
 WHERE ci.deleted_at IS NULL
@@ -617,20 +645,13 @@ ORDER BY ac.id, ci.occurred_at DESC;
 
 -- Conteo por tipo
 SELECT
-    type,
-    source,
+    ci.type,
+    ci.source,
     COUNT(*) AS total
-FROM client_interactions
-WHERE deleted_at IS NULL
-GROUP BY type, source
-ORDER BY type, source;
+FROM client_interactions ci
+JOIN seed_agent_client_scope scope ON scope.id = ci.agent_client_id
+WHERE ci.deleted_at IS NULL
+GROUP BY ci.type, ci.source
+ORDER BY ci.type, ci.source;
 
-
-
-UPDATE agent_clients
-SET client_type = 'INDIVIDUAL'
-WHERE client_type IN ('BUYER', 'OWNER', 'TENANT');
-
-UPDATE agent_clients
-SET preferred_contact_method = 'PHONE'
-WHERE preferred_contact_method = 'CALL';
+COMMIT;

@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.agent;
 
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ public record UpdateClientInteractionRequest(
         @Size(max = 100, message = "El outcome no puede superar los 100 caracteres")
         String outcome,
 
+        @PastOrPresent(message = "La fecha de la interacción no puede ser futura")
         LocalDateTime occurredAt
 ) {
 }
