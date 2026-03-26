@@ -8,11 +8,13 @@ spring:
   datasource:
 
     url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-
     username: ${DB_USERNAME:openroof}
     password: ${DB_PASSWORD:openroof123}
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> c0b0ee4 (correccion 2 code rabbit)
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

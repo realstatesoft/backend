@@ -41,7 +41,7 @@ public class ClientInteractionService {
                 .build();
 
         ClientInteraction saved = clientInteractionRepository.save(interaction);
-        bumpInteractionCount(agentClient, 1);
+        recalcInteractionMetricsForAgentClient(agentClient.getId());
         return toResponse(saved);
     }
 
@@ -72,7 +72,9 @@ public class ClientInteractionService {
             interaction.setOccurredAt(request.occurredAt());
         }
 
-        return toResponse(clientInteractionRepository.save(interaction));
+        ClientInteraction saved = clientInteractionRepository.save(interaction);
+        recalcInteractionMetricsForAgentClient(agentClientId);
+        return toResponse(saved);
     }
 
     public void delete(Long agentClientId, Long interactionId) {
@@ -80,20 +82,24 @@ public class ClientInteractionService {
         if (interaction.getDeletedAt() == null) {
             interaction.softDelete();
             clientInteractionRepository.save(interaction);
-            bumpInteractionCount(interaction.getAgentClient(), -1);
+            recalcInteractionMetricsForAgentClient(agentClientId);
         }
     }
 
-    public void recordVisitConfirmed(Long agentId, Long userId, Long propertyId, LocalDateTime scheduledAt) {
-        agentClientRepository.findByAgent_IdAndUser_Id(agentId, userId)
-                .ifPresent(agentClient -> recordSystemInteraction(
-                        agentClient,
-                        InteractionType.VISIT,
-                        "Visita confirmada",
-                        "Se confirmo la visita para la propiedad " + propertyId + " el " + scheduledAt,
-                        "CONFIRMED",
-                        LocalDateTime.now()
-                ));
+    public boolean recordVisitConfirmed(Long agentId, Long userId, Long propertyId, LocalDateTime scheduledAt) {
+        return agentClientRepository.findByAgent_IdAndUser_Id(agentId, userId)
+                .map(agentClient -> {
+                    recordSystemInteraction(
+                            agentClient,
+                            InteractionType.VISIT,
+                            "Visita confirmada",
+                            "Se confirmo la visita para la propiedad " + propertyId + " el " + scheduledAt,
+                            "CONFIRMED",
+                            LocalDateTime.now()
+                    );
+                    return true;
+                })
+                .orElse(false);
     }
 
     public void recordMessageSent(Long agentId, Long userId, InteractionType type, String subject, String note) {
@@ -128,7 +134,7 @@ public class ClientInteractionService {
                 .build();
 
         clientInteractionRepository.save(interaction);
-        bumpInteractionCount(agentClient, 1);
+        recalcInteractionMetricsForAgentClient(agentClient.getId());
     }
 
     private AgentClient findAgentClient(Long agentClientId) {
@@ -145,8 +151,17 @@ public class ClientInteractionService {
     }
 
     private void bumpInteractionCount(AgentClient agentClient, int delta) {
-        int current = agentClient.getInteractionsCount() != null ? agentClient.getInteractionsCount() : 0;
-        agentClient.setInteractionsCount(Math.max(0, current + delta));
+        recalcInteractionMetricsForAgentClient(agentClient.getId());
+    }
+
+    private void recalcInteractionMetricsForAgentClient(Long agentClientId) {
+        AgentClient agentClient = findAgentClient(agentClientId);
+        ClientInteractionRepository.AgentClientInteractionMetrics metrics =
+                clientInteractionRepository.calculateMetricsByAgentClientId(agentClientId);
+
+        int interactionsCount = metrics != null ? Math.toIntExact(metrics.getInteractionsCount()) : 0;
+        agentClient.setInteractionsCount(interactionsCount);
+        agentClient.setLastContactDate(metrics != null ? metrics.getLastContactAt() : null);
         agentClientRepository.save(agentClient);
     }
 

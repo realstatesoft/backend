@@ -31,6 +31,9 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -73,7 +76,7 @@ class ClientInteractionControllerTest {
     @MockitoBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    private static final String API_BASE = "/api/crm/clients/1/interactions";
+    private static final String API_BASE = "/clients/1/interactions";
 
     @BeforeEach
     void setup() throws Exception {
@@ -177,6 +180,48 @@ class ClientInteractionControllerTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.success").value(false));
         }
+
+        @Test
+        @DisplayName("Crear interacción con fecha futura -> 400")
+        void createWithFutureOccurredAt_returns400() throws Exception {
+            String json = """
+                    {
+                      "type": "NOTE",
+                      "note": "Intento con fecha futura",
+                      "outcome": "INFO_CAPTURED",
+                      "occurredAt": "2099-03-23T10:30:00"
+                    }
+                    """;
+
+            when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(true);
+
+            mockMvc.perform(post(API_BASE)
+                            .with(authentication(getAgentAuth()))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false));
+        }
+
+        @Test
+        @DisplayName("Crear interacción sin acceso al cliente -> 403")
+        void createWithoutAccess_returns403() throws Exception {
+            String json = """
+                    {
+                      "type": "NOTE",
+                      "note": "Cliente prefiere zona norte",
+                      "outcome": "INFO_CAPTURED"
+                    }
+                    """;
+
+            when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(false);
+
+            mockMvc.perform(post(API_BASE)
+                            .with(authentication(getAgentAuth()))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json))
+                    .andExpect(status().isForbidden());
+        }
     }
 
     @Test
@@ -193,6 +238,29 @@ class ClientInteractionControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].agentId").value(7))
                 .andExpect(jsonPath("$.data.content[0].type").value("NOTE"));
+    }
+
+    @Test
+    @DisplayName("GET /api/crm/clients/{id}/interactions sin autenticación -> 401")
+    void list_withoutAuthentication_returns401() throws Exception {
+        mockMvc.perform(get(API_BASE))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("GET /api/crm/clients/{id}/interactions sin filtro usa pageable por defecto -> 200")
+    void list_withoutType_returns200() throws Exception {
+        when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(true);
+        when(clientInteractionService.list(eq(1L), eq(null), any()))
+                .thenReturn(new PageImpl<>(List.of(sampleResponse()), PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get(API_BASE)
+                        .with(authentication(getAgentAuth())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].id").value(10))
+                .andExpect(jsonPath("$.data.content[0].source").value("MANUAL"));
     }
 
     @Test
@@ -228,12 +296,64 @@ class ClientInteractionControllerTest {
     }
 
     @Test
+    @DisplayName("PUT /api/crm/clients/{id}/interactions/{interactionId} con fecha futura -> 400")
+    void updateWithFutureOccurredAt_returns400() throws Exception {
+        String json = """
+                {
+                  "occurredAt": "2099-03-23T10:30:00"
+                }
+                """;
+
+        when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(true);
+
+        mockMvc.perform(put(API_BASE + "/10")
+                        .with(authentication(getAgentAuth()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("PUT /api/crm/clients/{id}/interactions/{interactionId} sin acceso -> 403")
+    void updateWithoutAccess_returns403() throws Exception {
+        String json = """
+                {
+                  "note": "Nota actualizada"
+                }
+                """;
+
+        when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(false);
+
+        mockMvc.perform(put(API_BASE + "/10")
+                        .with(authentication(getAgentAuth()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("DELETE /api/crm/clients/{id}/interactions/{interactionId} elimina -> 204")
     void delete_returns204() throws Exception {
         when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(true);
+        doNothing().when(clientInteractionService).delete(1L, 10L);
 
         mockMvc.perform(delete(API_BASE + "/10")
                         .with(authentication(getAgentAuth())))
                 .andExpect(status().isNoContent());
+
+        verify(clientInteractionService).delete(1L, 10L);
+    }
+
+    @Test
+    @DisplayName("DELETE /api/crm/clients/{id}/interactions/{interactionId} sin acceso -> 403")
+    void deleteWithoutAccess_returns403() throws Exception {
+        when(agentClientSecurity.canAccess(eq(1L), any())).thenReturn(false);
+
+        mockMvc.perform(delete(API_BASE + "/10")
+                        .with(authentication(getAgentAuth())))
+                .andExpect(status().isForbidden());
+
+        verify(clientInteractionService, never()).delete(any(), any());
     }
 }
