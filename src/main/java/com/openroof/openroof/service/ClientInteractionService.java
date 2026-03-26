@@ -155,14 +155,14 @@ public class ClientInteractionService {
     }
 
     private void recalcInteractionMetricsForAgentClient(Long agentClientId) {
-        AgentClient agentClient = findAgentClient(agentClientId);
         ClientInteractionRepository.AgentClientInteractionMetrics metrics =
                 clientInteractionRepository.calculateMetricsByAgentClientId(agentClientId);
 
         int interactionsCount = metrics != null ? Math.toIntExact(metrics.getInteractionsCount()) : 0;
-        agentClient.setInteractionsCount(interactionsCount);
-        agentClient.setLastContactDate(metrics != null ? metrics.getLastContactAt() : null);
-        agentClientRepository.save(agentClient);
+
+        LocalDateTime lastContactAt = metrics != null ? metrics.getLastContactAt() : null;
+        agentClientRepository.updateMetricsById(agentClientId, interactionsCount, lastContactAt);
+
     }
 
     private ClientInteractionResponse toResponse(ClientInteraction interaction) {

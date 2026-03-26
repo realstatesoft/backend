@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +59,7 @@ class ClientInteractionServiceTest {
         });
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(3L, occurredAt));
+        when(agentClientRepository.updateMetricsById(1L, 3, occurredAt)).thenReturn(1);
 
         ClientInteractionResponse response = clientInteractionService.create(
                 1L,
@@ -72,7 +72,7 @@ class ClientInteractionServiceTest {
 
         ArgumentCaptor<ClientInteraction> captor = ArgumentCaptor.forClass(ClientInteraction.class);
         verify(clientInteractionRepository).save(captor.capture());
-        verify(agentClientRepository).save(agentClient);
+        verify(agentClientRepository).updateMetricsById(1L, 3, occurredAt);
 
         ClientInteraction saved = captor.getValue();
         assertThat(saved.getType()).isEqualTo(InteractionType.NOTE);
@@ -82,8 +82,10 @@ class ClientInteractionServiceTest {
         assertThat(response.id()).isEqualTo(55L);
         assertThat(response.agentId()).isEqualTo(7L);
         assertThat(response.type()).isEqualTo("NOTE");
+
         assertThat(agentClient.getInteractionsCount()).isEqualTo(3);
         assertThat(agentClient.getLastContactDate()).isEqualTo(occurredAt);
+
     }
 
     @Test
@@ -96,6 +98,7 @@ class ClientInteractionServiceTest {
         when(clientInteractionRepository.save(any(ClientInteraction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(1L, LocalDateTime.now()));
+        when(agentClientRepository.updateMetricsById(eq(1L), eq(1), any(LocalDateTime.class))).thenReturn(1);
 
         clientInteractionService.create(
                 1L,
@@ -140,6 +143,7 @@ class ClientInteractionServiceTest {
         when(clientInteractionRepository.save(interaction)).thenReturn(interaction);
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(4L, newOccurredAt));
+        when(agentClientRepository.updateMetricsById(1L, 4, newOccurredAt)).thenReturn(1);
 
         ClientInteractionResponse response = clientInteractionService.update(
                 1L,
@@ -154,10 +158,12 @@ class ClientInteractionServiceTest {
         assertThat(interaction.getNote()).isEqualTo("Nota actualizada");
         assertThat(interaction.getOutcome()).isEqualTo("QUALIFIED");
         assertThat(interaction.getOccurredAt()).isEqualTo(newOccurredAt);
+
         assertThat(agentClient.getInteractionsCount()).isEqualTo(4);
         assertThat(agentClient.getLastContactDate()).isEqualTo(newOccurredAt);
+
         assertThat(response.outcome()).isEqualTo("QUALIFIED");
-        verify(agentClientRepository).save(agentClient);
+        verify(agentClientRepository).updateMetricsById(1L, 4, newOccurredAt);
     }
 
     @Test
@@ -172,13 +178,16 @@ class ClientInteractionServiceTest {
         when(clientInteractionRepository.save(interaction)).thenReturn(interaction);
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(2L, remainingLastContact));
+        when(agentClientRepository.updateMetricsById(1L, 2, remainingLastContact)).thenReturn(1);
 
         clientInteractionService.delete(1L, 88L);
 
         assertThat(interaction.getDeletedAt()).isNotNull();
+
         assertThat(agentClient.getInteractionsCount()).isEqualTo(2);
         assertThat(agentClient.getLastContactDate()).isEqualTo(remainingLastContact);
         verify(agentClientRepository).save(agentClient);
+
     }
 
     @Test
@@ -195,7 +204,7 @@ class ClientInteractionServiceTest {
 
         verify(clientInteractionRepository, never()).save(interaction);
         verify(clientInteractionRepository, never()).calculateMetricsByAgentClientId(any());
-        verify(agentClientRepository, never()).save(any(AgentClient.class));
+        verify(agentClientRepository, never()).updateMetricsById(any(), any(), any());
     }
 
     @Test
@@ -205,10 +214,10 @@ class ClientInteractionServiceTest {
         LocalDateTime lastContact = LocalDateTime.of(2026, 3, 25, 15, 0);
 
         when(agentClientRepository.findByAgent_IdAndUser_Id(7L, 20L)).thenReturn(Optional.of(agentClient));
-        when(agentClientRepository.findById(1L)).thenReturn(Optional.of(agentClient));
         when(clientInteractionRepository.save(any(ClientInteraction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(1L, lastContact));
+        when(agentClientRepository.updateMetricsById(1L, 1, lastContact)).thenReturn(1);
 
         boolean recorded = clientInteractionService.recordVisitConfirmed(
                 7L,
@@ -218,15 +227,17 @@ class ClientInteractionServiceTest {
 
         ArgumentCaptor<ClientInteraction> captor = ArgumentCaptor.forClass(ClientInteraction.class);
         verify(clientInteractionRepository).save(captor.capture());
-        verify(agentClientRepository).save(agentClient);
+        verify(agentClientRepository).updateMetricsById(1L, 1, lastContact);
 
         ClientInteraction saved = captor.getValue();
         assertThat(recorded).isTrue();
         assertThat(saved.getType()).isEqualTo(InteractionType.VISIT);
         assertThat(saved.getSource()).isEqualTo(InteractionSource.SYSTEM);
         assertThat(saved.getOutcome()).isEqualTo("CONFIRMED");
+
         assertThat(agentClient.getInteractionsCount()).isEqualTo(1);
         assertThat(agentClient.getLastContactDate()).isEqualTo(lastContact);
+
     }
 
     @Test
@@ -242,7 +253,7 @@ class ClientInteractionServiceTest {
 
         assertThat(recorded).isFalse();
         verify(clientInteractionRepository, never()).save(any(ClientInteraction.class));
-        verify(agentClientRepository, never()).save(any(AgentClient.class));
+        verify(agentClientRepository, never()).updateMetricsById(any(), any(), any());
     }
 
     @Test
@@ -252,10 +263,10 @@ class ClientInteractionServiceTest {
         LocalDateTime lastContact = LocalDateTime.of(2026, 3, 26, 9, 15);
 
         when(agentClientRepository.findByAgent_IdAndUser_Id(7L, 20L)).thenReturn(Optional.of(agentClient));
-        when(agentClientRepository.findById(1L)).thenReturn(Optional.of(agentClient));
         when(clientInteractionRepository.save(any(ClientInteraction.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(clientInteractionRepository.calculateMetricsByAgentClientId(1L))
                 .thenReturn(metrics(5L, lastContact));
+        when(agentClientRepository.updateMetricsById(1L, 5, lastContact)).thenReturn(1);
 
         clientInteractionService.recordMessageSent(
                 7L,
@@ -266,14 +277,16 @@ class ClientInteractionServiceTest {
 
         ArgumentCaptor<ClientInteraction> captor = ArgumentCaptor.forClass(ClientInteraction.class);
         verify(clientInteractionRepository).save(captor.capture());
-        verify(agentClientRepository).save(agentClient);
+        verify(agentClientRepository).updateMetricsById(1L, 5, lastContact);
 
         ClientInteraction saved = captor.getValue();
         assertThat(saved.getType()).isEqualTo(InteractionType.WHATSAPP);
         assertThat(saved.getSource()).isEqualTo(InteractionSource.SYSTEM);
         assertThat(saved.getOutcome()).isEqualTo("SENT");
+
         assertThat(agentClient.getInteractionsCount()).isEqualTo(5);
         assertThat(agentClient.getLastContactDate()).isEqualTo(lastContact);
+
     }
 
     private AgentClient agentClient(Long id, Long agentId, Long userId) {
