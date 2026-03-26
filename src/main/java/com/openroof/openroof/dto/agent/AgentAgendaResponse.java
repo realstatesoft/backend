@@ -16,6 +16,7 @@ public record AgentAgendaResponse(
         LocalDateTime endsAt,
         String location,
         String notes,
+        String clientName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

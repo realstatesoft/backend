@@ -58,10 +58,10 @@ public class DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new AgentDashboardStatsResponse(
-                StatItem.of(activeClients, 0),
-                StatItem.of(totalSales, 0),
-                StatItem.of(scheduledVisits, 0),
-                StatItem.of(commissions.setScale(0, RoundingMode.HALF_UP), 0)
+                CountStatItem.of(activeClients, 0),
+                CountStatItem.of(totalSales, 0),
+                CountStatItem.of(scheduledVisits, 0),
+                MoneyStatItem.of(commissions.setScale(0, RoundingMode.HALF_UP), 0)
         );
     }
 
@@ -77,10 +77,10 @@ public class DashboardService {
         long views = propertyViewRepository.countByPropertyOwnerId(ownerId);
 
         return new OwnerDashboardStatsResponse(
-                StatItem.of(myProperties, 0),
-                StatItem.of(totalVisits, 0),
-                StatItem.of(inquiries, 0),
-                StatItem.of(views, 0)
+                CountStatItem.of(myProperties, 0),
+                CountStatItem.of(totalVisits, 0),
+                CountStatItem.of(inquiries, 0),
+                CountStatItem.of(views, 0)
         );
     }
 
@@ -109,14 +109,15 @@ public class DashboardService {
 
         List<Contract> contracts = contractRepository.findBySeller_Id(user.getId());
 
-        long totalSold = contracts.stream()
+        BigDecimal totalSoldDecimal = contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.SIGNED)
                 .map(Contract::getAmount)
-                .map(BigDecimal::longValue)
-                .reduce(0L, Long::sum);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalSold = totalSoldDecimal.setScale(0, RoundingMode.HALF_UP).longValue();
 
-        long monthlyCommissions = BigDecimal.valueOf(totalSold)
+        long monthlyCommissions = totalSoldDecimal
                 .multiply(BigDecimal.valueOf(0.03))
+                .setScale(0, RoundingMode.HALF_UP)
                 .longValue();
 
         int activeContracts = (int) contracts.stream()
@@ -138,8 +139,9 @@ public class DashboardService {
                     .filter(c -> c.getStartDate().getMonth() == month.getMonth()
                             && c.getStartDate().getYear() == month.getYear())
                     .map(Contract::getAmount)
-                    .map(BigDecimal::longValue)
-                    .reduce(0L, Long::sum);
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .setScale(0, RoundingMode.HALF_UP)
+                    .longValue();
 
             monthlyData.add(new SalesSummaryResponse.MonthlyDataPoint(monthName, monthlySales));
         }
@@ -164,7 +166,7 @@ public class DashboardService {
         // Property distribution by type
         List<ReportsSummaryResponse.TypeDistribution> byType = new ArrayList<>();
         for (PropertyType type : PropertyType.values()) {
-            long count = propertyRepository.countByStatus(PropertyStatus.PUBLISHED);
+            long count = propertyRepository.countByPropertyTypeAndStatus(type, PropertyStatus.PUBLISHED);
             if (count > 0) {
                 byType.add(new ReportsSummaryResponse.TypeDistribution(type.name(), (int) count));
             }

@@ -7,8 +7,8 @@ spring:
   # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
     url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: ${DB_USERNAME:openroof}
-+   password: ${DB_PASSWORD:openroof123}
+    username: postgres.etpxedhtursffyoeapqr
+    password: OpenRoof$!*$up4Bas3#Pl4tf0rm2026*
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -31,7 +31,6 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
-    default-schema: public
 
   # ==================== JACKSON ====================
   jackson:
@@ -56,10 +55,6 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== CORS ====================
-cors:
-  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
-
 # ==================== JWT ====================
 application:
   security:
@@ -77,6 +72,8 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# ==================== SUPABASE STORAGE ====================
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: https://etpxedhtursffyoeapqr.supabase.co
   service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
@@ -92,7 +89,3 @@ upload:
 spring.servlet.multipart:
   max-file-size: 5MB
   max-request-size: 10MB
-
-# =================== TRASHCAN ======================
-trashcan: 
-  retention-days: 10

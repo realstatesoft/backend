@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.agent.AgentAgendaResponse;
@@ -34,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/agent-agenda")
 @RequiredArgsConstructor
+@org.springframework.validation.annotation.Validated
 @Tag(name = "Agent Agenda", description = "Gestión de la agenda personal (agentes y usuarios)")
 public class AgentAgendaController {
 
@@ -79,6 +84,23 @@ public class AgentAgendaController {
         LocalDateTime endOfMonth = month.atEndOfMonth().atTime(java.time.LocalTime.MAX);
 
         List<AgentAgendaResponse> response = agentAgendaService.getAgendaForMonth(principal.getName(), startOfMonth, endOfMonth);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/upcoming")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Listar próximos eventos")
+    public ResponseEntity<ApiResponse<List<AgentAgendaResponse>>> getUpcoming(
+            @Parameter(description = "Límite de eventos a retornar")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit,
+            Principal principal) {
+
+        // Manual validation as requested
+        if (limit < 1 || limit > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El límite debe estar entre 1 y 100");
+        }
+
+        List<AgentAgendaResponse> response = agentAgendaService.getUpcoming(principal.getName(), limit);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

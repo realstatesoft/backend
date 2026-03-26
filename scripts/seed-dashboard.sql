@@ -98,7 +98,10 @@ FROM (VALUES
 JOIN properties p ON p.title = t.prop_title
 JOIN users u ON u.email = t.buyer_email
 JOIN agent_profiles ap ON ap.license_number = t.license_number
-WHERE NOT EXISTS (SELECT 1 FROM visit_requests LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM visit_requests vr
+    WHERE vr.property_id = p.id AND vr.buyer_id = u.id AND vr.proposed_at = t.proposed_at
+);
 
 -- ============================================================
 -- 3. CONTRACTS (ventas y alquileres)
@@ -157,7 +160,10 @@ FROM (VALUES
 JOIN properties p ON p.title = t.prop_title
 JOIN users buyer ON buyer.email = t.buyer_email
 JOIN users seller ON seller.email = t.seller_email
-WHERE NOT EXISTS (SELECT 1 FROM contracts LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM contracts c
+    WHERE c.property_id = p.id AND c.buyer_id = buyer.id AND c.contract_type = t.contract_type
+);
 
 -- ============================================================
 -- 4. PROPERTY VIEWS (vistas de propiedades)
@@ -197,7 +203,10 @@ FROM (VALUES
 ) AS t(prop_title, user_email, ip, ua, viewed_at)
 JOIN properties p ON p.title = t.prop_title
 JOIN users u ON u.email = t.user_email
-WHERE NOT EXISTS (SELECT 1 FROM property_views LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM property_views pv
+    WHERE pv.property_id = p.id AND pv.user_id = u.id AND pv.created_at = t.viewed_at
+);
 
 -- ============================================================
 -- 5. AGENT AGENDA (eventos de agenda para agentes)
@@ -295,7 +304,10 @@ FROM (VALUES
        starts_at, ends_at, location, notes)
 JOIN agent_profiles ap ON ap.license_number = t.license_number
 LEFT JOIN visits v ON FALSE -- visit_id = NULL for all (visits table uses different flow)
-WHERE NOT EXISTS (SELECT 1 FROM agent_agenda LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM agent_agenda aa
+    WHERE aa.agent_id = ap.id AND aa.title = t.title AND aa.starts_at = t.starts_at
+);
 
 -- ============================================================
 -- 6. NOTIFICATIONS
@@ -410,7 +422,10 @@ FROM (VALUES
 
 ) AS t(user_email, ntype, title, message, action_url, data, created)
 JOIN users u ON u.email = t.user_email
-WHERE NOT EXISTS (SELECT 1 FROM notifications LIMIT 1);
+WHERE NOT EXISTS (
+    SELECT 1 FROM notifications n
+    WHERE n.user_id = u.id AND n.type = t.ntype AND n.title = t.title AND n.created_at = t.created
+);
 
 -- ============================================================
 -- 7. MENSAJES ADICIONALES (más conversaciones para dashboard)

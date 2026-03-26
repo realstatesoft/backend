@@ -52,12 +52,14 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     long countByStatus(PropertyStatus status);
 
+    long countByPropertyTypeAndStatus(PropertyType propertyType, PropertyStatus status);
+
     long countByOwner_Id(Long ownerId);
 
     @Query("SELECT COUNT(p) FROM Property p WHERE p.owner.id = :ownerId AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     long countActiveByOwnerId(@Param("ownerId") Long ownerId);
 
-    @Query("SELECT COUNT(p) FROM Property p WHERE p.agent.id = :agentId AND p.status = :status")
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.agent.id = :agentId AND p.status = :status AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     long countByAgentIdAndStatus(@Param("agentId") Long agentId, @Param("status") PropertyStatus status);
 
 

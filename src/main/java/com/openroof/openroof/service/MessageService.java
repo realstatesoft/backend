@@ -39,9 +39,7 @@ public class MessageService {
             String initials = buildInitials(name);
 
             // Count unread in this conversation
-            long unread = messageRepository.findConversation(userId, peer.getId()).stream()
-                    .filter(msg -> msg.getReceiver().getId().equals(userId) && msg.getReadAt() == null)
-                    .count();
+            long unread = messageRepository.countUnreadInConversation(userId, peer.getId());
 
             return new ConversationResponse(
                     peer.getId(),
@@ -58,14 +56,22 @@ public class MessageService {
         User user = findUserByEmail(email);
 
         return messageRepository.findConversation(user.getId(), peerId).stream()
-                .map(m -> new MessageResponse(
-                        m.getId(),
-                        m.getContent(),
-                        m.getSender().getId().equals(user.getId()) ? "agent" : "client",
-                        m.getCreatedAt(),
-                        m.getSender().getId(),
-                        m.getReceiver().getId()
-                ))
+                .map(m -> {
+                    User msgSender = m.getSender();
+                    boolean own = msgSender.getId().equals(user.getId());
+                    String senderName = msgSender.getName() != null ? msgSender.getName() : msgSender.getEmail();
+                    String senderRole = msgSender.getRole() != null ? msgSender.getRole().name().toLowerCase() : "user";
+                    return new MessageResponse(
+                            m.getId(),
+                            m.getContent(),
+                            own,
+                            senderName,
+                            senderRole,
+                            m.getCreatedAt(),
+                            m.getSender().getId(),
+                            m.getReceiver().getId()
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -88,10 +94,15 @@ public class MessageService {
 
         Message saved = messageRepository.save(builder.build());
 
+        String senderName = sender.getName() != null ? sender.getName() : sender.getEmail();
+        String senderRole = sender.getRole() != null ? sender.getRole().name().toLowerCase() : "user";
+
         return new MessageResponse(
                 saved.getId(),
                 saved.getContent(),
-                "agent",
+                true,
+                senderName,
+                senderRole,
                 saved.getCreatedAt(),
                 sender.getId(),
                 receiver.getId()

@@ -1,8 +1,8 @@
 package com.openroof.openroof.dto.dashboard;
 
 public record OwnerDashboardStatsResponse(
-    StatItem myProperties,
-    StatItem totalVisits,
-    StatItem inquiries,
-    StatItem views
+    CountStatItem myProperties,
+    CountStatItem totalVisits,
+    CountStatItem inquiries,
+    CountStatItem views
 ) {}

@@ -35,4 +35,13 @@ public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>,
     java.util.Optional<AgentAgenda> findByIdAndUserId(
             @Param("id") Long id,
             @Param("userId") Long userId);
+
+    /**
+     * Finds upcoming events for a user, ordered by start date.
+     */
+    @Query("SELECT a FROM AgentAgenda a WHERE a.user.id = :userId AND a.startsAt >= :now ORDER BY a.startsAt ASC")
+    List<AgentAgenda> findUpcoming(
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now,
+            org.springframework.data.domain.Pageable pageable);
 }
