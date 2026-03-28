@@ -34,7 +34,7 @@ public interface AgentClientRepository extends JpaRepository<AgentClient, Long>,
     @Query("""
             UPDATE AgentClient ac
             SET ac.interactionsCount = :interactionsCount,
-                ac.lastContactAt = :lastContactAt
+                ac.lastContactDate = :lastContactAt
             WHERE ac.id = :agentClientId
             """)
     int updateMetricsById(
