@@ -71,7 +71,7 @@ INSERT INTO agent_clients (
     is_searching_property, created_at, updated_at, version
 )
 SELECT
-    200, 204, 'LOW', 'INACTIVE', 'SELLER',
+    200, 204, 'LOW', 'ACTIVE', 'SELLER',
     'PHONE', 2, 0, 0,
     300000, 500000, 3, 5, 2, 4,
     'Empresario', 120000, 'Referral',
@@ -164,15 +164,15 @@ WHERE NOT EXISTS (SELECT 1 FROM properties WHERE id = 302);
 
 INSERT INTO property_assignments (id, property_id, agent_id, assigned_by, status, assigned_at, created_at, updated_at, version)
 SELECT 300, 300, 200, 202, 'ACCEPTED', now() - interval '60 days', now() - interval '60 days', now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE id = 300);
+WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE property_id = 300 AND agent_id = 200 AND assigned_at = now() - interval '60 days');
 
 INSERT INTO property_assignments (id, property_id, agent_id, assigned_by, status, assigned_at, created_at, updated_at, version)
 SELECT 301, 301, 200, 202, 'ACCEPTED', now() - interval '30 days', now() - interval '30 days', now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE id = 301);
+WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE property_id = 301 AND agent_id = 200 AND assigned_at = now() - interval '30 days');
 
 INSERT INTO property_assignments (id, property_id, agent_id, assigned_by, status, assigned_at, created_at, updated_at, version)
 SELECT 302, 302, 200, 202, 'ACCEPTED', now() - interval '15 days', now() - interval '15 days', now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE id = 302);
+WHERE NOT EXISTS (SELECT 1 FROM property_assignments WHERE property_id = 302 AND agent_id = 200 AND assigned_at = now() - interval '15 days');
 
 -- ============================================================
 -- 6. CONTRATOS (seller_id=200 = user id del agente)
@@ -242,7 +242,7 @@ COMMIT;
 -- ============================================================
 SELECT 'users creados'           AS check, COUNT(*) FROM users          WHERE id IN (202, 203, 204)
 UNION ALL
-SELECT 'agent_clients del ag200', COUNT(*) FROM agent_clients           WHERE agent_id = 200
+SELECT 'agent_clients activos del ag200', COUNT(*) FROM agent_clients           WHERE agent_id = 200 AND status = 'ACTIVE'
 UNION ALL
 SELECT 'propiedades del ag200',   COUNT(*) FROM properties              WHERE agent_id = 200
 UNION ALL
