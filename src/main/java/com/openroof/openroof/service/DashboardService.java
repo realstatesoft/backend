@@ -61,7 +61,7 @@ public class DashboardService {
                 CountStatItem.of(activeClients, 0),
                 CountStatItem.of(totalSales, 0),
                 CountStatItem.of(scheduledVisits, 0),
-                MoneyStatItem.of(commissions.setScale(0, RoundingMode.HALF_UP), 0)
+                MoneyStatItem.of(roundCommission(commissions), 0)
         );
     }
 
@@ -95,7 +95,7 @@ public class DashboardService {
                         c.getProperty() != null ? c.getProperty().getTitle() : "N/A",
                         c.getBuyer() != null ? c.getBuyer().getName() : "N/A",
                         c.getAmount(),
-                        c.getAmount().multiply(BigDecimal.valueOf(0.03)).setScale(0, RoundingMode.HALF_UP),
+                        roundCommission(c.getAmount().multiply(BigDecimal.valueOf(0.03))),
                         c.getStartDate(),
                         c.getStatus().name().toLowerCase()
                 ))
@@ -115,10 +115,7 @@ public class DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         long totalSold = totalSoldDecimal.setScale(0, RoundingMode.HALF_UP).longValue();
 
-        long monthlyCommissions = totalSoldDecimal
-                .multiply(BigDecimal.valueOf(0.03))
-                .setScale(0, RoundingMode.HALF_UP)
-                .longValue();
+        long monthlyCommissions = roundCommission(totalSoldDecimal.multiply(BigDecimal.valueOf(0.03))).longValue();
 
         int activeContracts = (int) contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.DRAFT
@@ -195,5 +192,9 @@ public class DashboardService {
     private AgentProfile findAgentByUserId(Long userId) {
         return agentProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+    }
+
+    private BigDecimal roundCommission(BigDecimal amount) {
+        return amount.setScale(0, RoundingMode.HALF_UP);
     }
 }

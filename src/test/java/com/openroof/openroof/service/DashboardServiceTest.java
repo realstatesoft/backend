@@ -7,6 +7,7 @@ import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
+import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -161,6 +163,96 @@ class DashboardServiceTest {
                     .filter(d -> d.month().equals(finalCurrentMonth))
                     .findFirst()
                     .get().sales()).isEqualTo(100000L);
+        }
+    }
+
+    @Nested
+    @DisplayName("getSales()")
+    class GetSalesTests {
+
+        @Test
+        @DisplayName("Retorna lista de contratos con comisión calculada al 3%")
+        void getSales_returnsContractsWithCommission() {
+            when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+
+            Property property = new Property();
+            property.setTitle("Casa en Las Mercedes");
+
+            User buyer = User.builder().name("Juan Pérez").build();
+
+            Contract signed = Contract.builder()
+                    .amount(new BigDecimal("250000"))
+                    .status(ContractStatus.SIGNED)
+                    .startDate(LocalDate.of(2026, 1, 15))
+                    .property(property)
+                    .buyer(buyer)
+                    .build();
+
+            Contract draft = Contract.builder()
+                    .amount(new BigDecimal("180000"))
+                    .status(ContractStatus.DRAFT)
+                    .property(property)
+                    .buyer(buyer)
+                    .build();
+
+            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(signed, draft));
+
+            List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
+
+            assertThat(sales).hasSize(2);
+
+            SaleItemResponse first = sales.get(0);
+            assertThat(first.amount()).isEqualByComparingTo(new BigDecimal("250000"));
+            assertThat(first.commission()).isEqualByComparingTo(new BigDecimal("7500")); // 3% de 250000
+            assertThat(first.status()).isEqualTo("signed");
+            assertThat(first.property()).isEqualTo("Casa en Las Mercedes");
+            assertThat(first.client()).isEqualTo("Juan Pérez");
+
+            SaleItemResponse second = sales.get(1);
+            assertThat(second.commission()).isEqualByComparingTo(new BigDecimal("5400")); // 3% de 180000
+            assertThat(second.status()).isEqualTo("draft");
+        }
+
+        @Test
+        @DisplayName("Sin contratos → retorna lista vacía")
+        void getSales_noContracts_returnsEmptyList() {
+            when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of());
+
+            List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
+
+            assertThat(sales).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Propiedad o comprador nulos → usa 'N/A' como fallback")
+        void getSales_nullPropertyAndBuyer_usesNAFallback() {
+            when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+
+            Contract contract = Contract.builder()
+                    .amount(new BigDecimal("100000"))
+                    .status(ContractStatus.DRAFT)
+                    .property(null)
+                    .buyer(null)
+                    .build();
+
+            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(contract));
+
+            List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
+
+            assertThat(sales).hasSize(1);
+            assertThat(sales.get(0).property()).isEqualTo("N/A");
+            assertThat(sales.get(0).client()).isEqualTo("N/A");
+        }
+
+        @Test
+        @DisplayName("Usuario no encontrado → lanza ResourceNotFoundException")
+        void getSales_userNotFound_throwsException() {
+            when(userRepository.findByEmail(testEmail)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> dashboardService.getSales(testEmail))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Usuario no encontrado");
         }
     }
 

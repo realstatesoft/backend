@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +84,82 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.activeClients.value").value(10));
+    }
+
+    @Test
+    @DisplayName("GET /dashboard/owner/stats → 200 con estadísticas de propietario")
+    void getOwnerStats_returns200() throws Exception {
+        OwnerDashboardStatsResponse response = new OwnerDashboardStatsResponse(
+                CountStatItem.of(3, 0),
+                CountStatItem.of(12, 0),
+                CountStatItem.of(4, 0),
+                CountStatItem.of(200, 0)
+        );
+
+        when(dashboardService.getOwnerStats("owner@test.com")).thenReturn(response);
+
+        mockMvc.perform(get("/dashboard/owner/stats")
+                        .with(user("owner@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.myProperties.value").value(3))
+                .andExpect(jsonPath("$.data.totalVisits.value").value(12));
+    }
+
+    @Test
+    @DisplayName("GET /dashboard/sales → 200 con lista de ventas y comisiones")
+    void getSales_returns200() throws Exception {
+        List<SaleItemResponse> sales = List.of(
+                new SaleItemResponse(300L, "Casa en Las Mercedes", "Juan Pérez",
+                        new BigDecimal("250000"), new BigDecimal("7500"),
+                        LocalDate.of(2026, 1, 15), "signed"),
+                new SaleItemResponse(301L, "Apartamento moderno", "María García",
+                        new BigDecimal("180000"), new BigDecimal("5400"),
+                        null, "draft")
+        );
+
+        when(dashboardService.getSales("agent@test.com")).thenReturn(sales);
+
+        mockMvc.perform(get("/dashboard/sales")
+                        .with(user("agent@test.com")))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].amount").value(250000))
+                .andExpect(jsonPath("$.data[0].commission").value(7500))
+                .andExpect(jsonPath("$.data[0].status").value("signed"))
+                .andExpect(jsonPath("$.data[1].status").value("draft"));
+    }
+
+    @Test
+    @DisplayName("GET /dashboard/sales/summary → 200 con totales y datos mensuales")
+    void getSalesSummary_returns200() throws Exception {
+        SalesSummaryResponse summary = new SalesSummaryResponse(
+                250000L, 7500L, 2,
+                List.of(
+                        new SalesSummaryResponse.MonthlyDataPoint("Ene", 0L),
+                        new SalesSummaryResponse.MonthlyDataPoint("Feb", 250000L)
+                )
+        );
+
+        when(dashboardService.getSalesSummary("agent@test.com")).thenReturn(summary);
+
+        mockMvc.perform(get("/dashboard/sales/summary")
+                        .with(user("agent@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalSold").value(250000))
+                .andExpect(jsonPath("$.data.monthlyCommissions").value(7500))
+                .andExpect(jsonPath("$.data.activeContracts").value(2))
+                .andExpect(jsonPath("$.data.monthlyData").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /dashboard/agent/stats sin autenticación → 401")
+    void getAgentStats_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(get("/dashboard/agent/stats"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

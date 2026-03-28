@@ -18,7 +18,9 @@ public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>,
      * Returns events for a given user whose time range overlaps with [start, end].
      * Intersection condition: startsAt <= endOfMonth AND endsAt >= startOfMonth
      */
-    @Query("SELECT a FROM AgentAgenda a WHERE a.user.id = :userId " +
+    @Query("SELECT a FROM AgentAgenda a " +
+           "LEFT JOIN FETCH a.visit v LEFT JOIN FETCH v.buyer " +
+           "WHERE a.user.id = :userId " +
            "AND a.startsAt <= :end AND a.endsAt >= :start " +
            "ORDER BY a.startsAt ASC")
     List<AgentAgenda> findByUserAndMonthOverlap(
@@ -31,7 +33,9 @@ public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>,
      * Returns empty if the event doesn't exist OR belongs to a different user,
      * preventing ID enumeration (callers should always throw 404 on empty).
      */
-    @Query("SELECT a FROM AgentAgenda a WHERE a.id = :id AND a.user.id = :userId")
+    @Query("SELECT a FROM AgentAgenda a " +
+           "LEFT JOIN FETCH a.visit v LEFT JOIN FETCH v.buyer " +
+           "WHERE a.id = :id AND a.user.id = :userId")
     java.util.Optional<AgentAgenda> findByIdAndUserId(
             @Param("id") Long id,
             @Param("userId") Long userId);
@@ -39,7 +43,9 @@ public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>,
     /**
      * Finds upcoming events for a user, ordered by start date.
      */
-    @Query("SELECT a FROM AgentAgenda a WHERE a.user.id = :userId AND a.startsAt >= :now ORDER BY a.startsAt ASC")
+    @Query("SELECT a FROM AgentAgenda a " +
+           "LEFT JOIN FETCH a.visit v LEFT JOIN FETCH v.buyer " +
+           "WHERE a.user.id = :userId AND a.startsAt >= :now ORDER BY a.startsAt ASC")
     List<AgentAgenda> findUpcoming(
             @Param("userId") Long userId,
             @Param("now") LocalDateTime now,

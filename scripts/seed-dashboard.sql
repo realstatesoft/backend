@@ -100,7 +100,7 @@ JOIN users u ON u.email = t.buyer_email
 JOIN agent_profiles ap ON ap.license_number = t.license_number
 WHERE NOT EXISTS (
     SELECT 1 FROM visit_requests vr
-    WHERE vr.property_id = p.id AND vr.buyer_id = u.id AND vr.proposed_at = t.proposed_at
+    WHERE vr.property_id = p.id AND vr.buyer_id = u.id AND vr.agent_id = ap.id
 );
 
 -- ============================================================
@@ -211,10 +211,10 @@ WHERE NOT EXISTS (
 -- ============================================================
 -- 5. AGENT AGENDA (eventos de agenda para agentes)
 -- ============================================================
-INSERT INTO agent_agenda (agent_id, visit_id, event_type, title, description,
+INSERT INTO agent_agenda (user_id, agent_id, visit_id, event_type, title, description,
                           starts_at, ends_at, location, notes,
                           created_at, updated_at, version)
-SELECT ap.id, v.id, t.event_type, t.title, t.description,
+SELECT ap.user_id, ap.id, v.id, t.event_type, t.title, t.description,
        t.starts_at, t.ends_at, t.location, t.notes,
        NOW(), NOW(), 0
 FROM (VALUES
@@ -306,7 +306,7 @@ JOIN agent_profiles ap ON ap.license_number = t.license_number
 LEFT JOIN visits v ON FALSE -- visit_id = NULL for all (visits table uses different flow)
 WHERE NOT EXISTS (
     SELECT 1 FROM agent_agenda aa
-    WHERE aa.agent_id = ap.id AND aa.title = t.title AND aa.starts_at = t.starts_at
+    WHERE aa.user_id = ap.user_id AND aa.agent_id = ap.id AND aa.title = t.title AND aa.starts_at = t.starts_at
 );
 
 -- ============================================================

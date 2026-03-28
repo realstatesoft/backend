@@ -62,12 +62,13 @@ class MessageServiceTest {
 
             when(userRepository.findByEmail(senderEmail)).thenReturn(Optional.of(sender));
             when(messageRepository.findLatestMessagePerConversation(1L)).thenReturn(List.of(m));
-            when(messageRepository.findConversation(1L, 2L)).thenReturn(List.of(m));
+            when(messageRepository.countUnreadInConversation(1L, 2L)).thenReturn(3L);
 
             List<ConversationResponse> result = messageService.getConversations(senderEmail);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).contactName()).isEqualTo("Maria Garcia");
+            assertThat(result.get(0).unread()).isEqualTo(3);
         }
     }
 
