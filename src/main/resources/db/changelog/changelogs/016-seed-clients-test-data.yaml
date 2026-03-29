@@ -3,6 +3,18 @@ databaseChangeLog:
       id: seed-test-client-user-maria
       author: Otto
       context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          and:
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE email = 'maria.garcia@test.com'"
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE id = 202"
       changes:
         - insert:
             tableName: users
@@ -20,6 +32,13 @@ databaseChangeLog:
       id: seed-test-agent-client-maria
       author: Otto
       context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM agent_clients WHERE agent_id = 200 AND user_id = 202"
       changes:
         - insert:
             tableName: agent_clients
@@ -40,9 +59,16 @@ databaseChangeLog:
               - column: {name: version, valueNumeric: 1}
 
   - changeSet:
-      id: seed-test-external-clients-otto
+      id: seed-test-external-client-carlos-otto
       author: Otto
       context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM external_clients WHERE email = 'carlos.ruiz@externo.com'"
       changes:
         - insert:
             tableName: external_clients
@@ -65,6 +91,19 @@ databaseChangeLog:
               - column: {name: created_at, valueComputed: "now()"}
               - column: {name: updated_at, valueComputed: "now()"}
               - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-external-client-ana-otto
+      author: Otto
+      context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM external_clients WHERE email = 'ana.lopez@corporativo.com'"
+      changes:
         - insert:
             tableName: external_clients
             columns:

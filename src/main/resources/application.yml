@@ -7,9 +7,9 @@ spring:
   # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
 
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: ${DB_USERNAME:openroof}
-    password: ${DB_PASSWORD:openroof123}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 
     driver-class-name: org.postgresql.Driver
     hikari:

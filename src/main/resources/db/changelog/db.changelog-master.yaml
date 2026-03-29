@@ -59,7 +59,9 @@ databaseChangeLog:
       file: changelogs/015-add-missing-external-client-columns.yaml
       relativeToChangelogFile: true
   - include:
+      file: changelogs/015-add-client-interaction-api-support.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changelogs/016-seed-clients-test-data.yaml
       relativeToChangelogFile: true
       contextFilter: dev,test
-
