@@ -128,6 +128,6 @@ public class AgentAgendaController {
             Principal principal) {
 
         agentAgendaService.delete(id, principal.getName());
-        return ResponseEntity.<ApiResponse<Void>>status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

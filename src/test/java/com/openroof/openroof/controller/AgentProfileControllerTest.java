@@ -16,7 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -61,6 +61,9 @@ class AgentProfileControllerTest {
     @MockitoBean
     private UserDetailsService userDetailsService;
 
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     private static final String API_BASE = "/agents";
 
     @BeforeEach
@@ -73,6 +76,12 @@ class AgentProfileControllerTest {
             return null;
         }).when(jwtAuthenticationFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
+            res.setStatus(401);
+            return null;
+        }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
     }
 
     private AgentProfileResponse sampleResponse() {
@@ -183,7 +192,7 @@ class AgentProfileControllerTest {
         }
 
         @Test
-        @DisplayName("Crear agente sin token → 403 (URL pública pero método protegido)")
+        @DisplayName("Crear agente sin token → 401 (URL pública pero método protegido)")
         void createAgentWithoutAuth_returns403() throws Exception {
             var request = new CreateAgentProfileRequest(
                     1L, "Company", "Bio", 5, "LIC-001", null, null
@@ -192,7 +201,7 @@ class AgentProfileControllerTest {
             mockMvc.perform(post(API_BASE)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -232,7 +241,7 @@ class AgentProfileControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content", hasSize(1)))
-                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.page.totalElements").value(1))
                     .andExpect(jsonPath("$.data.content[0].userName").value("Test Agent"));
         }
 
@@ -313,7 +322,7 @@ class AgentProfileControllerTest {
         }
 
         @Test
-        @DisplayName("Actualizar agente sin auth → 403 (URL pública pero método protegido)")
+        @DisplayName("Actualizar agente sin auth → 401 (URL pública pero método protegido)")
         void updateAgentWithoutAuth_returns403() throws Exception {
             var request = new UpdateAgentProfileRequest(
                     "New Company", null, null, null, null, null
@@ -322,7 +331,7 @@ class AgentProfileControllerTest {
             mockMvc.perform(put(API_BASE + "/10")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -372,10 +381,10 @@ class AgentProfileControllerTest {
         }
 
         @Test
-        @DisplayName("Eliminar agente sin token → 403 (URL pública pero método protegido)")
+        @DisplayName("Eliminar agente sin token → 401 (URL pública pero método protegido)")
         void deleteAgentWithoutAuth_returns403() throws Exception {
             mockMvc.perform(delete(API_BASE + "/10"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

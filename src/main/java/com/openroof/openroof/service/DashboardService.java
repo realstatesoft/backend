@@ -128,7 +128,7 @@ public class DashboardService {
         LocalDate now = LocalDate.now();
         for (int i = 5; i >= 0; i--) {
             LocalDate month = now.minusMonths(i);
-            String monthName = month.getMonth().getDisplayName(TextStyle.SHORT, new Locale("es"));
+            String monthName = month.getMonth().getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("es"));
             monthName = monthName.substring(0, 1).toUpperCase() + monthName.substring(1);
 
             long monthlySales = contracts.stream()
@@ -174,7 +174,7 @@ public class DashboardService {
         LocalDate now = LocalDate.now();
         for (int i = 5; i >= 0; i--) {
             LocalDate month = now.minusMonths(i);
-            String monthName = month.getMonth().getDisplayName(TextStyle.SHORT, new Locale("es"));
+            String monthName = month.getMonth().getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("es"));
             monthName = monthName.substring(0, 1).toUpperCase() + monthName.substring(1);
             monthlyTrend.add(new ReportsSummaryResponse.MonthlyTrend(monthName, 0, 0));
         }
