@@ -29,6 +29,7 @@ public class AgentAgendaMapper {
                 entity.getEndsAt(),
                 entity.getLocation(),
                 entity.getNotes(),
+                entity.getVisit() != null && entity.getVisit().getBuyer() != null ? entity.getVisit().getBuyer().getName() : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
