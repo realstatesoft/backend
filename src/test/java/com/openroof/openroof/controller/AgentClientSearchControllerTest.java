@@ -121,7 +121,7 @@ class AgentClientSearchControllerTest {
         
         AgentClientSummaryResponse summary = new AgentClientSummaryResponse(
                 1L, 20L, "Client Name", "client@email.com", null,
-                "ACTIVE", "MEDIUM", "INDIVIDUAL", null, LocalDateTime.now());
+                "ACTIVE", "MEDIUM", "BUYER", null, LocalDateTime.now());
         
         Page<AgentClientSummaryResponse> page = new PageImpl<>(List.of(summary));
         
@@ -131,17 +131,17 @@ class AgentClientSearchControllerTest {
                 .with(authentication(getAgentAuth()))
                 .param("q", "Client")
                 .param("status", "ACTIVE")
-                .param("clientType", "INDIVIDUAL"))
+                .param("clientType", "BUYER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].userName").value("Client Name"))
-                .andExpect(jsonPath("$.data.content[0].clientType").value("INDIVIDUAL"));
+                .andExpect(jsonPath("$.data.content[0].clientType").value("BUYER"));
 
-        verify(agentClientService).searchClients(eq(10L), argThat(req -> 
+        verify(agentClientService).searchClients(eq(10L), argThat(req ->
             req != null &&
-            "Client".equals(req.q()) && 
-            req.status() != null && "ACTIVE".equals(req.status().name()) && 
-            req.clientType() != null && "INDIVIDUAL".equals(req.clientType().name())
+            "Client".equals(req.q()) &&
+            req.status() != null && "ACTIVE".equals(req.status().name()) &&
+            req.clientType() != null && "BUYER".equals(req.clientType().name())
         ), any());
     }
 
@@ -160,17 +160,17 @@ class AgentClientSearchControllerTest {
                 .with(authentication(getAgentAuth()))
                 .param("q", "Client")
                 .param("status", "ACTIVE")
-                .param("clientType", "INDIVIDUAL"))
+                .param("clientType", "BUYER"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", "attachment; filename=clients.csv"))
                 .andExpect(content().contentType("text/csv;charset=UTF-8"))
                 .andExpect(content().string(csvContent));
 
-        verify(agentClientService).exportClientsToCsv(eq(10L), argThat(req -> 
+        verify(agentClientService).exportClientsToCsv(eq(10L), argThat(req ->
             req != null &&
-            "Client".equals(req.q()) && 
-            req.status() != null && "ACTIVE".equals(req.status().name()) && 
-            req.clientType() != null && "INDIVIDUAL".equals(req.clientType().name())
+            "Client".equals(req.q()) &&
+            req.status() != null && "ACTIVE".equals(req.status().name()) &&
+            req.clientType() != null && "BUYER".equals(req.clientType().name())
         ));
     }
 

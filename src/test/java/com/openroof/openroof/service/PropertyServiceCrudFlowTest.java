@@ -6,6 +6,7 @@ import com.openroof.openroof.dto.property.UpdatePropertyRequest;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.PropertyType;
+import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -186,11 +187,11 @@ class PropertyServiceCrudFlowTest {
         assertNotNull(created);
         assertNotNull(created.id());
 
-        PropertyResponse updated = propertyService.update(propertyId, updateRequest);
+        PropertyResponse updated = propertyService.update(propertyId, updateRequest, ownerId, UserRole.USER);
         assertNotNull(updated);
         assertTrue(updated.title().contains("modificada"));
 
-        propertyService.delete(propertyId);
+        propertyService.delete(propertyId, ownerId, UserRole.USER);
         assertNotNull(property.getDeletedAt());
 
         verify(propertyRepository, times(4)).save(any(Property.class));
