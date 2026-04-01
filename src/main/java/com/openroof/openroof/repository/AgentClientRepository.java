@@ -20,6 +20,8 @@ public interface AgentClientRepository extends JpaRepository<AgentClient, Long>,
 
     Page<AgentClient> findByUser_Id(Long userId, Pageable pageable);
 
+    long countByAgent_Id(Long agentId);
+
     Optional<AgentClient> findByAgent_IdAndUser_Id(Long agentId, Long userId);
 
     boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
