@@ -1,14 +1,16 @@
 spring:
   application:
     name: OpenRoof
+  config:
+    import: optional:file:.env[.properties]
 
   # ==================== DATASOURCE ====================
-  # Para Supabase activar perfil: --spring.profiles.active=supabase
-  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  # Desarrollo local por defecto con docker-compose.
+  # Si querés usar otra base, sobreescribí DB_URL / DB_USERNAME / DB_PASSWORD.
   datasource:
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/openroof_db}
     username: ${DB_USERNAME:openroof}
-+   password: ${DB_PASSWORD:openroof123}
+    password: ${DB_PASSWORD:openroof123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -40,7 +42,7 @@ spring:
 
 # ==================== SERVER ====================
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
@@ -58,13 +60,13 @@ springdoc:
 
 # ==================== CORS ====================
 cors:
-  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
 
 # ==================== JWT ====================
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
+      secret-key: ${JWT_SECRET:REPLACE_WITH_A_SECURE_BASE64_SECRET}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -78,21 +80,21 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 supabase:
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL:https://YOUR-PROJECT-REF.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
-    bucket: openroof-images
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
 # ==================== UPLOAD ====================
 upload:
-  max-file-size: 5MB
-  allowed-types: image/jpeg,image/png,image/webp
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:10MB}
 
 # =================== TRASHCAN ======================
-trashcan: 
+trashcan:
   retention-days: 10
