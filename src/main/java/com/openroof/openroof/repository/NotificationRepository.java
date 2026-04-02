@@ -1,6 +1,8 @@
 package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.notification.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +17,10 @@ import java.util.Optional;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByUser_IdOrderByCreatedAtDesc(Long userId);
+
+    Page<Notification> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    List<Notification> findByUser_IdAndReadAtIsNullOrderByCreatedAtDesc(Long userId);
 
     Optional<Notification> findByIdAndUser_Id(Long id, Long userId);
 

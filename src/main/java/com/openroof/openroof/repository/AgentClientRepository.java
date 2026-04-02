@@ -20,6 +20,8 @@ public interface AgentClientRepository extends JpaRepository<AgentClient, Long>,
 
     boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
 
+    long countByAgent_Id(Long agentId);
+
     @org.springframework.data.jpa.repository.Query("SELECT ac FROM AgentClient ac " +
             "JOIN FETCH ac.agent a " +
             "JOIN FETCH a.user " +

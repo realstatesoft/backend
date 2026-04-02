@@ -55,7 +55,7 @@ public class ExternalClient extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "client_type", length = 20)
     @Builder.Default
-    private ClientType clientType = ClientType.INDIVIDUAL;
+    private ClientType clientType = ClientType.BUYER;
 
     @Column(name = "last_contact_date")
     private LocalDateTime lastContactDate;
