@@ -205,7 +205,7 @@ Tests:
 
 Datos de prueba:
 
-- [`004-notifications-test-data.sql`](../seeds/004-notifications-test-data.sql)
+- [`004-notifications-test-data.sql`](../scripts/004-notifications-test-data.sql)
 
 Postman:
 
@@ -248,7 +248,7 @@ Implementacion actual:
 Esto evita errores de binding al ejecutar `DELETE`.
 
 ## 12. Donde ver este flujo visualmente
-
+›
 Opciones simples:
 
 - Abrir este archivo en VS Code o Cursor con Markdown Preview

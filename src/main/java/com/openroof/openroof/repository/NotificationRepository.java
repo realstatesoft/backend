@@ -29,7 +29,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE Notification n
-               SET n.readAt = :readAt
+               SET n.readAt = :readAt,
+                   n.version = n.version + 1
              WHERE n.user.id = :userId
                AND n.readAt IS NULL
                AND n.deletedAt IS NULL
