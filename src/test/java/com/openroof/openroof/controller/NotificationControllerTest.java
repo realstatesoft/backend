@@ -7,6 +7,7 @@ import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.notification.NotificationResponse;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
+import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
@@ -138,6 +139,25 @@ class NotificationControllerTest {
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.message", containsString("ADMIN")));
         }
+
+        @Test
+        @DisplayName("Valida campos obligatorios y devuelve 400")
+        void createInvalidPayload_returns400() throws Exception {
+            String invalidJson = """
+                    {
+                      "message": "Sin tipo ni título"
+                    }
+                    """;
+
+            mockMvc.perform(post(BASE)
+                            .with(user("user@test.com").roles("USER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(invalidJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.message").value("Error de validación"));
+        }
+
     }
 
     @Nested
@@ -156,6 +176,7 @@ class NotificationControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data", hasSize(2)));
         }
+
     }
 
     @Nested
@@ -169,9 +190,22 @@ class NotificationControllerTest {
                     .thenReturn(sampleResponse(1L));
 
             mockMvc.perform(get(BASE + "/1")
-                            .with(user("user@test.com").roles("USER")))
+                    .with(user("user@test.com").roles("USER")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.id").value(1));
+        }
+
+        @Test
+        @DisplayName("Retorna 404 cuando la notificación no existe o no pertenece al usuario")
+        void getByIdMissing_returns404() throws Exception {
+            when(notificationService.getByIdForCurrentUser(999L, "user@test.com"))
+                    .thenThrow(new ResourceNotFoundException("Notificación no encontrada con ID: 999"));
+
+            mockMvc.perform(get(BASE + "/999")
+                            .with(user("user@test.com").roles("USER")))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.message", containsString("999")));
         }
     }
 
@@ -198,9 +232,21 @@ class NotificationControllerTest {
             when(notificationService.markAsRead(1L, "user@test.com")).thenReturn(response);
 
             mockMvc.perform(put(BASE + "/1/read")
-                            .with(user("user@test.com").roles("USER")))
+                    .with(user("user@test.com").roles("USER")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.read").value(true));
+        }
+
+        @Test
+        @DisplayName("Retorna 404 si la notificación no existe")
+        void markAsReadMissing_returns404() throws Exception {
+            when(notificationService.markAsRead(999L, "user@test.com"))
+                    .thenThrow(new ResourceNotFoundException("Notificación no encontrada con ID: 999"));
+
+            mockMvc.perform(put(BASE + "/999/read")
+                            .with(user("user@test.com").roles("USER")))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message", containsString("999")));
         }
     }
 
@@ -248,6 +294,18 @@ class NotificationControllerTest {
             mockMvc.perform(delete(BASE + "/1")
                             .with(user("user@test.com").roles("USER")))
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("Retorna 404 al eliminar una notificación inexistente")
+        void deleteMissing_returns404() throws Exception {
+            org.mockito.Mockito.doThrow(new ResourceNotFoundException("Notificación no encontrada con ID: 999"))
+                    .when(notificationService).delete(999L, "user@test.com");
+
+            mockMvc.perform(delete(BASE + "/999")
+                            .with(user("user@test.com").roles("USER")))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message", containsString("999")));
         }
     }
 

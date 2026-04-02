@@ -1,6 +1,14 @@
-# Notifications CRUD - Flujo y alcance sugerido
+# Notifications CRUD - Flujo y estado actual
 
 Documentacion de referencia para la tarea `[Backend] CRUD de Notifications` en OpenRoof.
+
+Estado actual:
+
+- backend implementado
+- endpoints operativos
+- tests de servicio y controller agregados
+- seed SQL de prueba agregado
+- colección Postman agregada
 
 ## 1. Objetivo del modulo
 
@@ -11,7 +19,7 @@ El modulo de notificaciones sirve para registrar eventos importantes del sistema
 - marcar todas como leidas
 - eliminar una notificacion de su bandeja
 
-En este proyecto, la entidad base ya existe en [`Notification.java`](../src/main/java/com/openroof/openroof/model/notification/Notification.java) y soporta:
+La entidad base esta en [`Notification.java`](../src/main/java/com/openroof/openroof/model/notification/Notification.java) y soporta:
 
 - `user`
 - `type`
@@ -20,6 +28,12 @@ En este proyecto, la entidad base ya existe en [`Notification.java`](../src/main
 - `data` (JSONB)
 - `actionUrl`
 - `readAt`
+
+Ademas:
+
+- usa `soft delete`
+- hereda `version` desde `BaseEntity`
+- filtra automaticamente registros con `deleted_at IS NULL`
 
 ## 2. Flujo general
 
@@ -36,7 +50,7 @@ flowchart TD
     G --> J["Redireccion opcional usando actionUrl"]
 ```
 
-## 3. Flujo CRUD
+## 3. Flujo CRUD implementado
 
 ```mermaid
 flowchart LR
@@ -54,11 +68,17 @@ flowchart LR
 flowchart TD
     A["Request autenticada"] --> B{"La notificacion pertenece al usuario?"}
     B -- "Si" --> C["Permitir ver / marcar leida / eliminar"]
-    B -- "No" --> D["403 Forbidden"]
-    E["Admin"] --> F{"Se habilita crear para otros usuarios?"}
-    F -- "Si" --> G["POST /notifications con userId"]
-    F -- "No" --> H["POST solo interno o fuera del alcance inicial"]
+    B -- "No" --> D["404 Not Found para recurso ajeno o inexistente"]
+    E["Admin"] --> F["Puede crear para otro usuario con userId"]
+    G["Usuario comun"] --> H["Solo puede crear para si mismo"]
 ```
+
+Reglas actuales del backend:
+
+- cualquier usuario autenticado puede crear una notificacion para si mismo
+- solo `ADMIN` puede crear una notificacion para otro usuario usando `userId`
+- cada usuario solo puede ver, leer o eliminar sus propias notificaciones
+- `DELETE` realiza borrado logico
 
 ## 5. Tipos de notificaciones sugeridos
 
@@ -129,17 +149,27 @@ sequenceDiagram
     User->>NS: Abre actionUrl
 ```
 
-## 7. Endpoints recomendados
+## 7. Endpoints implementados
 
 | Metodo | Endpoint | Uso |
 |--------|----------|-----|
 | `POST` | `/notifications` | Crear notificacion |
 | `GET` | `/notifications/me` | Listar mis notificaciones |
+| `GET` | `/notifications/me/unread-count` | Contar no leidas |
 | `GET` | `/notifications/{id}` | Ver una notificacion propia |
 | `PUT` | `/notifications/{id}/read` | Marcar una como leida |
 | `PUT` | `/notifications/me/read-all` | Marcar todas como leidas |
-| `DELETE` | `/notifications/{id}` | Eliminar una notificacion |
-| `GET` | `/notifications/me/unread-count` | Contar no leidas |
+| `DELETE` | `/notifications/{id}` | Eliminar logicamente una notificacion |
+
+### Resumen de respuestas esperadas
+
+- `POST /notifications` -> `201 Created`
+- `GET /notifications/me` -> `200 OK`
+- `GET /notifications/me/unread-count` -> `200 OK`
+- `GET /notifications/{id}` -> `200 OK` o `404`
+- `PUT /notifications/{id}/read` -> `200 OK` o `404`
+- `PUT /notifications/me/read-all` -> `200 OK`
+- `DELETE /notifications/{id}` -> `204 No Content` o `404`
 
 ## 8. Modelo mental del frontend futuro
 
@@ -158,23 +188,66 @@ flowchart TD
     E --> F["Filtro: todas / no leidas / por tipo"]
 ```
 
-## 9. Alcance recomendado para la tarea actual
+## 9. Artefactos entregados
 
-Si la tarea dice solo backend, el MVP mas razonable seria:
+Implementacion backend:
 
-1. CRUD basico con seguridad por usuario
-2. `mark as read`
-3. `mark all as read`
-4. `unread count`
-5. tests de servicio y controller
+- [`NotificationController.java`](../src/main/java/com/openroof/openroof/controller/NotificationController.java)
+- [`NotificationService.java`](../src/main/java/com/openroof/openroof/service/NotificationService.java)
+- [`NotificationRepository.java`](../src/main/java/com/openroof/openroof/repository/NotificationRepository.java)
+- [`CreateNotificationRequest.java`](../src/main/java/com/openroof/openroof/dto/notification/CreateNotificationRequest.java)
+- [`NotificationResponse.java`](../src/main/java/com/openroof/openroof/dto/notification/NotificationResponse.java)
 
-No parece necesario en esta primera entrega:
+Tests:
 
-- websocket o notificaciones en tiempo real
-- preferencias avanzadas
-- edicion libre del contenido de una notificacion desde frontend
+- [`NotificationServiceTest.java`](../src/test/java/com/openroof/openroof/service/NotificationServiceTest.java)
+- [`NotificationControllerTest.java`](../src/test/java/com/openroof/openroof/controller/NotificationControllerTest.java)
 
-## 10. Donde ver este flujo visualmente
+Datos de prueba:
+
+- [`004-notifications-test-data.sql`](../seeds/004-notifications-test-data.sql)
+
+Postman:
+
+- [`notifications-crud.postman_collection.json`](./postman/notifications-crud.postman_collection.json)
+
+## 10. Estado de cobertura
+
+La suite actual cubre:
+
+- creacion propia
+- creacion para otro usuario por `ADMIN`
+- rechazo para usuario comun creando a terceros
+- listado de notificaciones
+- obtencion por `id`
+- marcado individual como leida
+- marcado masivo como leidas
+- conteo de no leidas
+- borrado logico
+- `400` de validacion
+- `404` en escenarios principales de recurso faltante
+
+No cubre completamente:
+
+- integracion real con base de datos
+- JWT end-to-end real
+- concurrencia con `@Version`
+- tiempo real o websockets
+
+## 11. Nota tecnica importante
+
+La entidad `Notification` usa `@SQLDelete` y hereda `@Version` desde `BaseEntity`.
+Por eso el borrado logico debe contemplar `id` y `version`.
+
+Implementacion actual:
+
+```java
+@SQLDelete(sql = "UPDATE notifications SET deleted_at = CURRENT_TIMESTAMP, version = version + 1 WHERE id = ? AND version = ?")
+```
+
+Esto evita errores de binding al ejecutar `DELETE`.
+
+## 12. Donde ver este flujo visualmente
 
 Opciones simples:
 

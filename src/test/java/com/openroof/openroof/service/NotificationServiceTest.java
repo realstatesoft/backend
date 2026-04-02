@@ -130,6 +130,28 @@ class NotificationServiceTest {
                     .hasMessageContaining("ADMIN");
             verify(notificationRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("ADMIN recibe 404 si el usuario destino no existe")
+        void createForMissingTargetUser_throwsNotFound() {
+            User admin = user(1L, "admin@test.com", UserRole.ADMIN);
+            when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+            CreateNotificationRequest request = new CreateNotificationRequest(
+                    999L,
+                    NotificationType.SYSTEM,
+                    "Perfil actualizado",
+                    "Tus datos se actualizaron correctamente",
+                    null,
+                    "/profile"
+            );
+
+            assertThatThrownBy(() -> notificationService.create(request, "admin@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
+            verify(notificationRepository, never()).save(any());
+        }
     }
 
     @Nested
@@ -151,6 +173,49 @@ class NotificationServiceTest {
             assertThat(responses).hasSize(2);
             assertThat(responses.getFirst().read()).isFalse();
             assertThat(responses.get(1).read()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Lanza 404 si el usuario autenticado no existe")
+        void getMyNotificationsMissingUser_throwsNotFound() {
+            when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> notificationService.getMyNotifications("ghost@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("ghost@test.com");
+        }
+    }
+
+    @Nested
+    @DisplayName("getByIdForCurrentUser()")
+    class GetByIdForCurrentUserTests {
+
+        @Test
+        @DisplayName("Obtiene una notificación propia")
+        void getByIdForCurrentUser_returnsResponse() {
+            User currentUser = user(10L, "user@test.com", UserRole.USER);
+            Notification notification = notification(1L, currentUser, NotificationType.VISIT, null);
+
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(currentUser));
+            when(notificationRepository.findByIdAndUser_Id(1L, 10L)).thenReturn(Optional.of(notification));
+
+            NotificationResponse response = notificationService.getByIdForCurrentUser(1L, "user@test.com");
+
+            assertThat(response.id()).isEqualTo(1L);
+            assertThat(response.userId()).isEqualTo(10L);
+        }
+
+        @Test
+        @DisplayName("Lanza 404 si la notificación no existe")
+        void getByIdForCurrentUserMissing_throwsNotFound() {
+            User currentUser = user(10L, "user@test.com", UserRole.USER);
+
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(currentUser));
+            when(notificationRepository.findByIdAndUser_Id(999L, 10L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> notificationService.getByIdForCurrentUser(999L, "user@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
         }
     }
 
@@ -188,6 +253,19 @@ class NotificationServiceTest {
 
             assertThat(response.read()).isTrue();
             verify(notificationRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Lanza 404 si la notificación no existe")
+        void markAsReadMissing_throwsNotFound() {
+            User currentUser = user(10L, "user@test.com", UserRole.USER);
+
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(currentUser));
+            when(notificationRepository.findByIdAndUser_Id(999L, 10L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> notificationService.markAsRead(999L, "user@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("999");
         }
     }
 
