@@ -61,3 +61,9 @@ databaseChangeLog:
       file: changelogs/016-seed-clients-test-data.yaml
       relativeToChangelogFile: true
       contextFilter: dev,test
+  - include:
+      file: changelogs/017-add-commission-fields-to-contracts.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/018-add-listing-agent-to-contracts.yaml
+      relativeToChangelogFile: true

@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-listing-agent-to-contracts
+      author: openroof-dev
+      comment: >
+        Agrega FK listing_agent_id a la tabla contracts para representar
+        al agente del vendedor/propietario (agente listador).
+        Complementa buyer_agent_id (ya existente) para cubrir el modelo
+        dual-agency: agente listador + agente del comprador/inquilino.
+      changes:
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: listing_agent_id
+                  type: BIGINT
+                  remarks: "FK opcional al agente que lista/representa al vendedor o propietario"
+                  constraints:
+                    nullable: true
+
+        - addForeignKeyConstraint:
+            baseTableName: contracts
+            baseColumnNames: listing_agent_id
+            referencedTableName: agent_profiles
+            referencedColumnNames: id
+            constraintName: fk_contracts_listing_agent
+            onDelete: SET NULL
+
+        - createIndex:
+            tableName: contracts
+            indexName: idx_contracts_listing_agent
+            columns:
+              - column:
+                  name: listing_agent_id

@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-add-commission-fields-to-contracts
+      author: openroof-dev
+      comment: >
+        Extiende la tabla contracts con campos de comisión por porcentaje:
+        comisión total, comisión del agente listador y comisión del agente
+        comprador/inquilino. También agrega FK opcional al agente del comprador.
+        Defaults retrocompatibles con el 3% hardcodeado previo en DashboardService.
+      changes:
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: commission_pct
+                  type: NUMERIC(5,2)
+                  defaultValueNumeric: 3.00
+                  remarks: "Comisión total de la operación en porcentaje (ej: 6.00 = 6%)"
+                  constraints:
+                    nullable: true
+              - column:
+                  name: listing_agent_commission_pct
+                  type: NUMERIC(5,2)
+                  defaultValueNumeric: 3.00
+                  remarks: "Porcentaje que corresponde al agente listador (vendedor/propietario)"
+                  constraints:
+                    nullable: true
+              - column:
+                  name: buyer_agent_commission_pct
+                  type: NUMERIC(5,2)
+                  defaultValueNumeric: 0.00
+                  remarks: "Porcentaje que corresponde al agente del comprador/inquilino"
+                  constraints:
+                    nullable: true
+              - column:
+                  name: buyer_agent_id
+                  type: BIGINT
+                  remarks: "FK opcional al agente que representa al comprador o inquilino"
+                  constraints:
+                    nullable: true
+
+        - addForeignKeyConstraint:
+            baseTableName: contracts
+            baseColumnNames: buyer_agent_id
+            referencedTableName: agent_profiles
+            referencedColumnNames: id
+            constraintName: fk_contracts_buyer_agent
+            onDelete: SET NULL
+
+        - createIndex:
+            tableName: contracts
+            indexName: idx_contracts_buyer_agent
+            columns:
+              - column:
+                  name: buyer_agent_id
