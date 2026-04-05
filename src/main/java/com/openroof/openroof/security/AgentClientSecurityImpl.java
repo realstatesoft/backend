@@ -2,8 +2,6 @@ package com.openroof.openroof.security;
 
 import org.springframework.stereotype.Component;
 
-import com.openroof.openroof.model.agent.AgentClient;
-import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentClientRepository;

@@ -78,7 +78,7 @@ public class AgentClientController {
     @Operation(summary = "Buscar clientes del agente autenticado (paginado) - Incluye Agente y Externos")
     public ResponseEntity<ApiResponse<Page<UnifiedClientSummaryResponse>>> search(
             AgentClientSearchRequest criteria,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = 10, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable,
             @org.springframework.security.core.annotation.AuthenticationPrincipal User currentUser) {
 
         Long agentId = getAgentIdFromUser(currentUser);

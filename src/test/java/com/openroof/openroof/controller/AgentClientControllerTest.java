@@ -1,32 +1,22 @@
 package com.openroof.openroof.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.exception.ResourceNotFoundException;
-import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.security.AgentClientSecurity;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentClientService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -63,11 +53,11 @@ class AgentClientControllerTest {
         @MockitoBean(name = "agentClientSecurity")
         private AgentClientSecurity agentClientSecurity;
 
-        private final ObjectMapper objectMapper = new ObjectMapper()
-                        .registerModule(new JavaTimeModule());
-
         @MockitoBean
         private AgentClientService agentClientService;
+
+        @MockitoBean
+        private com.openroof.openroof.service.ExternalClientService externalClientService;
 
         @MockitoBean
         private JwtAuthenticationFilter jwtAuthenticationFilter;
