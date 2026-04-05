@@ -1,6 +1,5 @@
 package com.openroof.openroof.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -129,11 +127,15 @@ class DashboardControllerTest {
     void getSales_returns200() throws Exception {
         List<SaleItemResponse> sales = List.of(
                 new SaleItemResponse(300L, "Casa en Las Mercedes", "Juan Pérez",
+                        "Propietario Test", "SALE",
                         new BigDecimal("250000"), new BigDecimal("7500"),
-                        LocalDate.of(2026, 1, 15), "signed"),
+                        new BigDecimal("3500"), "LISTING_AGENT",
+                        LocalDate.of(2026, 1, 15), "SIGNED"),
                 new SaleItemResponse(301L, "Apartamento moderno", "María García",
+                        "Propietario Test", "RENT",
                         new BigDecimal("180000"), new BigDecimal("5400"),
-                        null, "draft")
+                        new BigDecimal("0"), "BUYER_AGENT",
+                        null, "DRAFT")
         );
 
         when(dashboardService.getSales("agent@test.com")).thenReturn(sales);
@@ -145,19 +147,22 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].amount").value(250000))
-                .andExpect(jsonPath("$.data[0].commission").value(7500))
-                .andExpect(jsonPath("$.data[0].status").value("signed"))
-                .andExpect(jsonPath("$.data[1].status").value("draft"));
+                .andExpect(jsonPath("$.data[0].totalCommission").value(7500))
+                .andExpect(jsonPath("$.data[0].myCommission").value(3500))
+                .andExpect(jsonPath("$.data[0].myRole").value("LISTING_AGENT"))
+                .andExpect(jsonPath("$.data[0].buyer").value("Juan Pérez"))
+                .andExpect(jsonPath("$.data[0].status").value("SIGNED"))
+                .andExpect(jsonPath("$.data[1].status").value("DRAFT"));
     }
 
     @Test
     @DisplayName("GET /dashboard/sales/summary → 200 con totales y datos mensuales")
     void getSalesSummary_returns200() throws Exception {
         SalesSummaryResponse summary = new SalesSummaryResponse(
-                250000L, 7500L, 2,
+                250000L, 7500L, 1, 2,
                 List.of(
-                        new SalesSummaryResponse.MonthlyDataPoint("Ene", 0L),
-                        new SalesSummaryResponse.MonthlyDataPoint("Feb", 250000L)
+                        new SalesSummaryResponse.MonthlyDataPoint("Ene", 0L, 0L),
+                        new SalesSummaryResponse.MonthlyDataPoint("Feb", 250000L, 7500L)
                 )
         );
 
@@ -168,7 +173,8 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalSold").value(250000))
-                .andExpect(jsonPath("$.data.monthlyCommissions").value(7500))
+                .andExpect(jsonPath("$.data.totalCommissions").value(7500))
+                .andExpect(jsonPath("$.data.signedContracts").value(1))
                 .andExpect(jsonPath("$.data.activeContracts").value(2))
                 .andExpect(jsonPath("$.data.monthlyData").isArray());
     }

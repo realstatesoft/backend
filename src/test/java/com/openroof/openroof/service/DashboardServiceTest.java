@@ -5,6 +5,7 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.enums.ContractStatus;
+import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.property.Property;
@@ -76,11 +77,13 @@ class DashboardServiceTest {
             when(visitRequestRepository.countByAgentIdAndStatus(10L, VisitRequestStatus.PENDING)).thenReturn(2L);
             when(visitRequestRepository.countByAgentIdAndStatus(10L, VisitRequestStatus.ACCEPTED)).thenReturn(1L);
 
+            // listingAgent = testAgent so computeMyCommission uses listingAgentCommissionPct (3% por @Builder.Default)
             Contract contract = Contract.builder()
                     .amount(new BigDecimal("100000"))
                     .status(ContractStatus.SIGNED)
+                    .listingAgent(testAgent)
                     .build();
-            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(contract));
+            when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of(contract));
 
             AgentDashboardStatsResponse stats = dashboardService.getAgentStats(testEmail);
 
@@ -88,7 +91,7 @@ class DashboardServiceTest {
             assertThat(stats.activeClients().value()).isEqualTo(5L);
             assertThat(stats.totalSales().value()).isEqualTo(3L);
             assertThat(stats.scheduledVisits().value()).isEqualTo(3L); // 2 pending + 1 accepted
-            assertThat(stats.commissions().value()).isEqualTo(new BigDecimal("3000")); // 3% of 100000
+            assertThat(stats.commissions().value()).isEqualTo(new BigDecimal("3000")); // 3% de 100000 (listingAgentCommissionPct @Builder.Default)
         }
 
         @Test
@@ -132,30 +135,34 @@ class DashboardServiceTest {
         @DisplayName("Obtener resumen de ventas → calcula totales y datos mensuales")
         void getSalesSummary_returnsCorrectAggregates() {
             when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+            when(agentProfileRepository.findByUser_Id(1L)).thenReturn(Optional.of(testAgent));
 
+            // listingAgent = testAgent para que computeMyCommission calcule 3% = 3000
             Contract c1 = Contract.builder()
                     .amount(new BigDecimal("100000"))
                     .status(ContractStatus.SIGNED)
                     .startDate(java.time.LocalDate.now())
+                    .listingAgent(testAgent)
                     .build();
             Contract c2 = Contract.builder()
                     .amount(new BigDecimal("200000"))
                     .status(ContractStatus.DRAFT)
                     .build();
 
-            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(c1, c2));
+            when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of(c1, c2));
 
             SalesSummaryResponse summary = dashboardService.getSalesSummary(testEmail);
 
             assertThat(summary).isNotNull();
             assertThat(summary.totalSold()).isEqualTo(100000L);
-            assertThat(summary.monthlyCommissions()).isEqualTo(3000L);
-            assertThat(summary.activeContracts()).isEqualTo(1);
+            assertThat(summary.totalCommissions()).isEqualTo(3000L); // 3% de 100000 (listingAgentCommissionPct @Builder.Default)
+            assertThat(summary.signedContracts()).isEqualTo(1);
+            assertThat(summary.activeContracts()).isEqualTo(1); // c2 en DRAFT
             assertThat(summary.monthlyData()).hasSize(6);
             
             // Check current month data
             String currentMonth = java.time.LocalDate.now().getMonth()
-                    .getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es"));
+                    .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.of("es"));
             currentMonth = currentMonth.substring(0, 1).toUpperCase() + currentMonth.substring(1);
             
             String finalCurrentMonth = currentMonth;
@@ -174,28 +181,37 @@ class DashboardServiceTest {
         @DisplayName("Retorna lista de contratos con comisión calculada al 3%")
         void getSales_returnsContractsWithCommission() {
             when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+            when(agentProfileRepository.findByUser_Id(1L)).thenReturn(Optional.of(testAgent));
 
             Property property = new Property();
             property.setTitle("Casa en Las Mercedes");
 
             User buyer = User.builder().name("Juan Pérez").build();
+            User seller = User.builder().name("Propietario Test").build();
 
+            // listingAgent = testAgent → myCommission = listingAgentCommissionPct (3% @Builder.Default)
             Contract signed = Contract.builder()
                     .amount(new BigDecimal("250000"))
                     .status(ContractStatus.SIGNED)
+                    .contractType(ContractType.SALE)
                     .startDate(LocalDate.of(2026, 1, 15))
                     .property(property)
                     .buyer(buyer)
+                    .seller(seller)
+                    .listingAgent(testAgent)
                     .build();
 
             Contract draft = Contract.builder()
                     .amount(new BigDecimal("180000"))
                     .status(ContractStatus.DRAFT)
+                    .contractType(ContractType.RENT)
                     .property(property)
                     .buyer(buyer)
+                    .seller(seller)
+                    .listingAgent(testAgent)
                     .build();
 
-            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(signed, draft));
+            when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of(signed, draft));
 
             List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
 
@@ -203,21 +219,24 @@ class DashboardServiceTest {
 
             SaleItemResponse first = sales.get(0);
             assertThat(first.amount()).isEqualByComparingTo(new BigDecimal("250000"));
-            assertThat(first.commission()).isEqualByComparingTo(new BigDecimal("7500")); // 3% de 250000
-            assertThat(first.status()).isEqualTo("signed");
+            assertThat(first.totalCommission()).isEqualByComparingTo(new BigDecimal("7500")); // 3% de 250000
+            assertThat(first.myCommission()).isEqualByComparingTo(new BigDecimal("7500")); // listing agent 3%
+            assertThat(first.myRole()).isEqualTo("LISTING_AGENT");
+            assertThat(first.status()).isEqualTo("SIGNED");
             assertThat(first.property()).isEqualTo("Casa en Las Mercedes");
-            assertThat(first.client()).isEqualTo("Juan Pérez");
+            assertThat(first.buyer()).isEqualTo("Juan Pérez");
 
             SaleItemResponse second = sales.get(1);
-            assertThat(second.commission()).isEqualByComparingTo(new BigDecimal("5400")); // 3% de 180000
-            assertThat(second.status()).isEqualTo("draft");
+            assertThat(second.totalCommission()).isEqualByComparingTo(new BigDecimal("5400")); // 3% de 180000
+            assertThat(second.status()).isEqualTo("DRAFT");
         }
 
         @Test
         @DisplayName("Sin contratos → retorna lista vacía")
         void getSales_noContracts_returnsEmptyList() {
             when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of());
+            when(agentProfileRepository.findByUser_Id(1L)).thenReturn(Optional.of(testAgent));
+            when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of());
 
             List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
 
@@ -228,21 +247,25 @@ class DashboardServiceTest {
         @DisplayName("Propiedad o comprador nulos → usa 'N/A' como fallback")
         void getSales_nullPropertyAndBuyer_usesNAFallback() {
             when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+            when(agentProfileRepository.findByUser_Id(1L)).thenReturn(Optional.of(testAgent));
 
             Contract contract = Contract.builder()
                     .amount(new BigDecimal("100000"))
                     .status(ContractStatus.DRAFT)
+                    .contractType(ContractType.SALE) // requerido: service llama .name() sobre contractType
                     .property(null)
                     .buyer(null)
+                    .seller(null)
                     .build();
 
-            when(contractRepository.findBySeller_Id(1L)).thenReturn(List.of(contract));
+            when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of(contract));
 
             List<SaleItemResponse> sales = dashboardService.getSales(testEmail);
 
             assertThat(sales).hasSize(1);
             assertThat(sales.get(0).property()).isEqualTo("N/A");
-            assertThat(sales.get(0).client()).isEqualTo("N/A");
+            assertThat(sales.get(0).buyer()).isEqualTo("N/A");   // campo renombrado: client() → buyer()
+            assertThat(sales.get(0).seller()).isEqualTo("N/A");
         }
 
         @Test

@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,11 +49,12 @@ public class DashboardService {
         long scheduledVisits = visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.PENDING)
                 + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.ACCEPTED);
 
-        List<Contract> signedContracts = contractRepository.findBySeller_Id(user.getId()).stream()
+        List<Contract> signedContracts = contractRepository
+                .findAllByParticipant(user.getId(), agentId).stream()
                 .filter(c -> c.getStatus() == ContractStatus.SIGNED)
                 .collect(Collectors.toList());
         BigDecimal commissions = signedContracts.stream()
-                .map(c -> c.getAmount().multiply(BigDecimal.valueOf(0.03)))
+                .map(c -> computeMyCommission(c, user.getId(), agentId))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new AgentDashboardStatsResponse(
@@ -88,17 +88,29 @@ public class DashboardService {
 
     public List<SaleItemResponse> getSales(String email) {
         User user = findUserByEmail(email);
+        Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
+                .map(AgentProfile::getId).orElse(-1L);
 
-        return contractRepository.findBySeller_Id(user.getId()).stream()
-                .map(c -> new SaleItemResponse(
-                        c.getId(),
-                        c.getProperty() != null ? c.getProperty().getTitle() : "N/A",
-                        c.getBuyer() != null ? c.getBuyer().getName() : "N/A",
-                        c.getAmount(),
-                        roundCommission(c.getAmount().multiply(BigDecimal.valueOf(0.03))),
-                        c.getStartDate(),
-                        c.getStatus().name().toLowerCase()
-                ))
+        return contractRepository.findAllByParticipant(user.getId(), agentProfileId).stream()
+                .map(c -> {
+                    String myRole = resolveRole(c, user.getId(), agentProfileId);
+                    BigDecimal myComm = computeMyCommission(c, user.getId(), agentProfileId);
+                    BigDecimal totalComm = roundCommission(c.getAmount().multiply(
+                            commissionPct(c.getCommissionPct())));
+                    return new SaleItemResponse(
+                            c.getId(),
+                            c.getProperty() != null ? c.getProperty().getTitle() : "N/A",
+                            c.getBuyer() != null ? c.getBuyer().getName() : "N/A",
+                            c.getSeller() != null ? c.getSeller().getName() : "N/A",
+                            c.getContractType().name(),
+                            c.getAmount(),
+                            totalComm,
+                            myComm,
+                            myRole,
+                            c.getStartDate(),
+                            c.getStatus().name()
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -106,16 +118,26 @@ public class DashboardService {
 
     public SalesSummaryResponse getSalesSummary(String email) {
         User user = findUserByEmail(email);
+        Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
+                .map(AgentProfile::getId).orElse(-1L);
 
-        List<Contract> contracts = contractRepository.findBySeller_Id(user.getId());
+        List<Contract> contracts = contractRepository.findAllByParticipant(user.getId(), agentProfileId);
 
-        BigDecimal totalSoldDecimal = contracts.stream()
+        List<Contract> signed = contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.SIGNED)
-                .map(Contract::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long totalSold = totalSoldDecimal.setScale(0, RoundingMode.HALF_UP).longValue();
+                .collect(Collectors.toList());
 
-        long monthlyCommissions = roundCommission(totalSoldDecimal.multiply(BigDecimal.valueOf(0.03))).longValue();
+        long totalSold = signed.stream()
+                .map(Contract::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(0, RoundingMode.HALF_UP).longValue();
+
+        long totalCommissions = signed.stream()
+                .map(c -> computeMyCommission(c, user.getId(), agentProfileId))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(0, RoundingMode.HALF_UP).longValue();
+
+        int signedCount = signed.size();
 
         int activeContracts = (int) contracts.stream()
                 .filter(c -> c.getStatus() == ContractStatus.DRAFT
@@ -131,19 +153,27 @@ public class DashboardService {
             String monthName = month.getMonth().getDisplayName(TextStyle.SHORT, Locale.forLanguageTag("es"));
             monthName = monthName.substring(0, 1).toUpperCase() + monthName.substring(1);
 
-            long monthlySales = contracts.stream()
-                    .filter(c -> c.getStatus() == ContractStatus.SIGNED && c.getStartDate() != null)
-                    .filter(c -> c.getStartDate().getMonth() == month.getMonth()
-                            && c.getStartDate().getYear() == month.getYear())
+            final LocalDate m = month;
+            List<Contract> monthSigned = signed.stream()
+                    .filter(c -> c.getStartDate() != null
+                            && c.getStartDate().getMonth() == m.getMonth()
+                            && c.getStartDate().getYear() == m.getYear())
+                    .collect(Collectors.toList());
+
+            long monthlySales = monthSigned.stream()
                     .map(Contract::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
-                    .setScale(0, RoundingMode.HALF_UP)
-                    .longValue();
+                    .setScale(0, RoundingMode.HALF_UP).longValue();
 
-            monthlyData.add(new SalesSummaryResponse.MonthlyDataPoint(monthName, monthlySales));
+            long monthlyComm = monthSigned.stream()
+                    .map(c -> computeMyCommission(c, user.getId(), agentProfileId))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .setScale(0, RoundingMode.HALF_UP).longValue();
+
+            monthlyData.add(new SalesSummaryResponse.MonthlyDataPoint(monthName, monthlySales, monthlyComm));
         }
 
-        return new SalesSummaryResponse(totalSold, monthlyCommissions, activeContracts, monthlyData);
+        return new SalesSummaryResponse(totalSold, totalCommissions, signedCount, activeContracts, monthlyData);
     }
 
     // ─── Reports Summary ──────────────────────────────────────────────────────
@@ -196,5 +226,43 @@ public class DashboardService {
 
     private BigDecimal roundCommission(BigDecimal amount) {
         return amount.setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal commissionPct(BigDecimal pct) {
+        return (pct != null ? pct : new BigDecimal("3.00"))
+                .divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula la comisión que le corresponde al usuario de acuerdo a su rol en el contrato.
+     * - Listing agent → listingAgentCommissionPct
+     * - Buyer agent → buyerAgentCommissionPct
+     * - Seller/Buyer (no agente) → 0 (las comisiones se las lleva el agente)
+     */
+    private BigDecimal computeMyCommission(Contract c, Long userId, Long agentProfileId) {
+        BigDecimal pct = BigDecimal.ZERO;
+        if (c.getListingAgent() != null && c.getListingAgent().getId().equals(agentProfileId)) {
+            pct = c.getListingAgentCommissionPct() != null ? c.getListingAgentCommissionPct() : BigDecimal.ZERO;
+        } else if (c.getBuyerAgent() != null && c.getBuyerAgent().getId().equals(agentProfileId)) {
+            pct = c.getBuyerAgentCommissionPct() != null ? c.getBuyerAgentCommissionPct() : BigDecimal.ZERO;
+        }
+        return roundCommission(c.getAmount().multiply(
+                pct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)));
+    }
+
+    /**
+     * Devuelve el rol principal del usuario en el contrato, con prioridad:
+     * Agente Listador > Agente Comprador > Vendedor > Comprador
+     */
+    private String resolveRole(Contract c, Long userId, Long agentProfileId) {
+        if (c.getListingAgent() != null && c.getListingAgent().getId().equals(agentProfileId))
+            return "LISTING_AGENT";
+        if (c.getBuyerAgent() != null && c.getBuyerAgent().getId().equals(agentProfileId))
+            return "BUYER_AGENT";
+        if (c.getSeller() != null && c.getSeller().getId().equals(userId))
+            return "SELLER";
+        if (c.getBuyer() != null && c.getBuyer().getId().equals(userId))
+            return "BUYER";
+        return "PARTICIPANT";
     }
 }
