@@ -2,10 +2,12 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.PropertyStatus;
+import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.*;
 import com.openroof.openroof.model.search.PropertySpecification;
 import com.openroof.openroof.model.user.User;
@@ -153,8 +155,10 @@ public class PropertyService {
 
     // ─── UPDATE ───────────────────────────────────────────────────
 
-    public PropertyResponse update(Long id, UpdatePropertyRequest request) {
+    public PropertyResponse update(Long id, UpdatePropertyRequest request, Long callerId, UserRole callerRole) {
+        checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
+
 
         // Actualizar campos básicos via mapper
         propertyMapper.updateEntity(property, request);
@@ -207,13 +211,15 @@ public class PropertyService {
 
     // ─── DELETE (Soft) ────────────────────────────────────────────
 
-    public void delete(Long id) {
+    public void delete(Long id, Long callerId, UserRole callerRole) {
+        checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
         property.softDelete();
         propertyRepository.save(property);
     }
 
-    public PropertyResponse trash(Long id) {
+    public PropertyResponse trash(Long id, Long callerId, UserRole callerRole) {
+        checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
 
         // check if property is already deleted or in trashcan
@@ -228,7 +234,8 @@ public class PropertyService {
         return propertyMapper.toResponse(property);
     }
 
-    public PropertyResponse restoreFromTrashcan(Long id) {
+    public PropertyResponse restoreFromTrashcan(Long id, Long callerId, UserRole callerRole) {
+        checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
 
         // check if property is already deleted or in trashcan
@@ -250,7 +257,12 @@ public class PropertyService {
     }
 
     // clear trashcan of a given user, returns deleted count
-    public int clearTrashcanForUser(Long ownerId) {
+    public int clearTrashcanForUser(Long ownerId, Long callerId, UserRole callerRole) {
+        // ADMIN puede vaciar la papelera de cualquier usuario.
+        // USER solo puede vaciar la suya propia.
+        if (callerRole != UserRole.ADMIN && !callerId.equals(ownerId)) {
+            throw new ForbiddenException("Solo puedes vaciar tu propia papelera");
+        }
         return propertyRepository.clearTrashcanByOwner(ownerId, LocalDateTime.now());
     }
 
@@ -262,7 +274,10 @@ public class PropertyService {
 
     // ─── CHANGE STATUS ────────────────────────────────────────────
 
-    public PropertyResponse changeStatus(Long id, PropertyStatus newStatus) {
+    public PropertyResponse changeStatus(Long id, PropertyStatus newStatus, UserRole callerRole) {
+        if (callerRole != UserRole.ADMIN) {
+            throw new ForbiddenException("Solo el administrador puede cambiar el estado de una propiedad");
+        }
         Property property = findPropertyOrThrow(id);
         PropertyStatus currentStatus = property.getStatus();
 
@@ -498,6 +513,24 @@ public class PropertyService {
         return propertyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Propiedad no encontrada con ID: " + id));
+    }
+
+    /**
+     * Verifica que el llamante tenga permiso para operar sobre la propiedad dada.
+     * - ADMIN: acceso irrestricto.
+     * - USER / AGENT: solo si es el propietario (owner) de la propiedad.
+     *
+     * @throws ResourceNotFoundException si la propiedad no existe.
+     * @throws ForbiddenException        si el llamante no es el propietario.
+     */
+    private void checkOwnership(Long propertyId, Long callerId, UserRole callerRole) {
+        if (callerRole == UserRole.ADMIN) return;   // ADMIN siempre puede
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Propiedad no encontrada con ID: " + propertyId));
+        if (!property.getOwner().getId().equals(callerId)) {
+            throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
+        }
     }
 
     private List<PropertyRoom> buildRooms(List<PropertyRoomDto> roomDtos, Property property) {

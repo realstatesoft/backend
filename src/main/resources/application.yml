@@ -3,12 +3,12 @@ spring:
     name: OpenRoof
 
   # ==================== DATASOURCE ====================
-  # Para Supabase activar perfil: --spring.profiles.active=supabase
-  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
+  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: ${DB_USERNAME:openroof}
-    password: ${DB_PASSWORD:openroof123}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -31,7 +31,6 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
-    default-schema: public
 
   # ==================== JACKSON ====================
   jackson:
@@ -56,15 +55,11 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== CORS ====================
-cors:
-  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
-
 # ==================== JWT ====================
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
+      secret-key: ${JWT_SECRET}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -77,9 +72,12 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
     bucket: openroof-images
 
@@ -92,7 +90,3 @@ upload:
 spring.servlet.multipart:
   max-file-size: 5MB
   max-request-size: 10MB
-
-# =================== TRASHCAN ======================
-trashcan: 
-  retention-days: 10

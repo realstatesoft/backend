@@ -4,6 +4,7 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.service.AgentClientService;
+import com.openroof.openroof.service.ExternalClientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +28,7 @@ import org.springframework.security.core.parameters.P;
 public class AgentClientController {
 
     private final AgentClientService agentClientService;
+    private final ExternalClientService externalClientService;
 
     // ─── CREATE ───────────────────────────────────────────────────
 
@@ -73,23 +75,19 @@ public class AgentClientController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(authentication.principal)")
-    @Operation(summary = "Buscar clientes del agente autenticado (paginado)")
-    public ResponseEntity<ApiResponse<Page<AgentClientSummaryResponse>>> search(
+    @Operation(summary = "Buscar clientes del agente autenticado (paginado) - Incluye Agente y Externos")
+    public ResponseEntity<ApiResponse<Page<UnifiedClientSummaryResponse>>> search(
             AgentClientSearchRequest criteria,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @org.springframework.security.core.annotation.AuthenticationPrincipal User currentUser) {
 
-        // Extraer Agent ID del usuario autenticado. 
-        // Asumimos que el usuario tiene un perfil de agente asociado.
-        // Si no, el servicio fallará o devolverá vacío. 
-        // Nota: El plan pide sacar el ID internamente.
         Long agentId = getAgentIdFromUser(currentUser);
 
         int size = Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
         PageRequest clampedPageable = PageRequest.of(
                 pageable.getPageNumber(), size, pageable.getSort());
 
-        Page<AgentClientSummaryResponse> page = agentClientService.searchClients(agentId, criteria, clampedPageable);
+        Page<UnifiedClientSummaryResponse> page = externalClientService.searchUnified(agentId, criteria, clampedPageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

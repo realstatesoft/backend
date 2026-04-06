@@ -43,8 +43,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class SecurityEndpointsTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
+
+        @Autowired
+        private org.springframework.web.context.WebApplicationContext context;
 
     @MockitoBean
     private AuthService authService;
@@ -65,6 +68,8 @@ class SecurityEndpointsTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockitoBean
     private UserDetailsService userDetailsService;
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -76,22 +81,34 @@ class SecurityEndpointsTest {
             chain.doFilter(request, response);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
+            res.setStatus(401);
+            return null;
+        }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
+
+                // Ensure security filters are registered with MockMvc in this @WebMvcTest slice
+                mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                                .webAppContextSetup(context)
+                                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                                .build();
     }
 
     @Test
     void authProtectedEndpoints_requireLogin() throws Exception {
-        mockMvc.perform(post("/auth/logout")).andExpect(status().isForbidden());
-        mockMvc.perform(post("/auth/logout-all")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/auth/logout")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/auth/logout-all")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void userEndpoints_requireLogin() throws Exception {
-        mockMvc.perform(get("/users/me")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/users/me")).andExpect(status().isUnauthorized());
 
         mockMvc.perform(put("/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"John Doe\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -109,38 +126,38 @@ class SecurityEndpointsTest {
         mockMvc.perform(post("/properties")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(put("/properties/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(delete("/properties/1"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(patch("/properties/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"newStatus\":\"PUBLISHED\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void propertyImageWriteEndpoints_requireLogin() throws Exception {
         mockMvc.perform(multipartPost("/properties/1/images"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(patch("/properties/1/images/10/primary"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(delete("/properties/1/images/10"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void imageUpload_requiresLogin() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.multipart("/images/upload"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     private MockMultipartHttpServletRequestBuilder multipartPost(String url) {
