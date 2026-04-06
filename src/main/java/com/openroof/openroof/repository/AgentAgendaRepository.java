@@ -41,6 +41,19 @@ public interface AgentAgendaRepository extends JpaRepository<AgentAgenda, Long>,
             @Param("userId") Long userId);
 
     /**
+     * Returns events for a given agent (by agent profile ID) whose time range overlaps with [start, end].
+     * Used for public availability checks.
+     */
+    @Query("SELECT a FROM AgentAgenda a " +
+           "WHERE a.agent.id = :agentId " +
+           "AND a.startsAt < :end AND a.endsAt > :start " +
+           "ORDER BY a.startsAt ASC")
+    List<AgentAgenda> findByAgentIdAndDateOverlap(
+            @Param("agentId") Long agentId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
+    /**
      * Finds upcoming events for a user, ordered by start date.
      */
     @Query("SELECT a FROM AgentAgenda a " +

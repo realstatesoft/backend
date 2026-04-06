@@ -4,17 +4,23 @@ import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.notification.NotificationResponse;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.notification.Notification;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.NotificationRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
+import com.openroof.openroof.model.property.Property;
 
 @Service
 @RequiredArgsConstructor
@@ -41,12 +47,23 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getMyNotifications(String currentUserEmail) {
+    public Page<NotificationResponse> getMyNotifications(String currentUserEmail, String filter, Pageable pageable) {
         User currentUser = getUserByEmail(currentUserEmail);
-        return notificationRepository.findByUser_IdOrderByCreatedAtDesc(currentUser.getId())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        Long userId = currentUser.getId();
+
+        if ("UNREAD".equalsIgnoreCase(filter)) {
+            return notificationRepository.findByUser_IdAndReadAtIsNullOrderByCreatedAtDesc(userId, pageable)
+                    .map(this::toResponse);
+        } else if ("READ".equalsIgnoreCase(filter)) {
+            return notificationRepository.findByUser_IdAndReadAtIsNotNullOrderByCreatedAtDesc(userId, pageable)
+                    .map(this::toResponse);
+        } else if ("PROPERTY".equalsIgnoreCase(filter)) {
+            return notificationRepository.findByUser_IdAndTypeOrderByCreatedAtDesc(userId, NotificationType.PROPERTY, pageable)
+                    .map(this::toResponse);
+        } else {
+            return notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
+                    .map(this::toResponse);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +99,23 @@ public class NotificationService {
         User currentUser = getUserByEmail(currentUserEmail);
         Notification notification = getOwnedNotification(notificationId, currentUser.getId());
         notificationRepository.delete(notification);
+    }
+
+    public void createPropertyPendingNotification(Property property) {
+        List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+
+        for (User admin : admins) {
+            Notification notification = Notification.builder()
+                    .user(admin)
+                    .type(com.openroof.openroof.model.enums.NotificationType.PROPERTY)
+                    .title("Nueva propiedad pendiente")
+                    .message(String.format("La propiedad '%s' (ID: %d) ha sido creada y está pendiente de revisión.",
+                            property.getTitle(), property.getId()))
+                    .data(Map.of("propertyId", property.getId()))
+                    .actionUrl("/admin/properties/" + property.getId())
+                    .build();
+            notificationRepository.save(notification);
+        }
     }
 
     private User resolveTargetUser(User currentUser, Long requestedUserId) {

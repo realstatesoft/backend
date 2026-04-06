@@ -53,6 +53,7 @@ public class PropertyService {
     private final ExteriorFeatureRepository exteriorFeatureRepository;
     private final InteriorFeatureRepository interiorFeatureRepository;
     private final PropertyMapper propertyMapper;
+    private final NotificationService notificationService;
 
     private static final double EARTH_RADIUS = 6371;
 
@@ -119,6 +120,14 @@ public class PropertyService {
         }
 
         property = propertyRepository.save(property);
+
+        // Notificar a los administradores sobre la nueva propiedad pendiente
+        try {
+            notificationService.createPropertyPendingNotification(property);
+        } catch (Exception e) {
+            log.warn("Error al crear notificación para la propiedad ID {}: {}", property.getId(), e.getMessage());
+        }
+
         return propertyMapper.toResponse(property);
     }
 
