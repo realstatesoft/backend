@@ -1,11 +1,13 @@
 package com.openroof.openroof.service;
 
+import com.openroof.openroof.dto.contract.ContractRequest;
 import com.openroof.openroof.dto.contract.ContractSummaryResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.ContractMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
+import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.enums.UserRole;
@@ -23,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -140,6 +143,91 @@ class ContractServiceTest {
                     .hasMessageContaining("Propiedad no encontrada");
         }
     }
+
+        @Nested
+        @DisplayName("create()")
+        class CreateTests {
+
+        @Test
+        @DisplayName("Rechaza commissionPct negativo")
+        void create_negativeCommissionPctThrows() {
+            Property property = Property.builder().build();
+            property.setId(100L);
+
+            User buyer = User.builder().email("buyer@test.com").build();
+            buyer.setId(200L);
+
+            User seller = User.builder().email("seller@test.com").build();
+            seller.setId(300L);
+
+            ContractRequest request = new ContractRequest(
+                100L,
+                200L,
+                300L,
+                null,
+                null,
+                ContractType.SALE,
+                new BigDecimal("100000"),
+                new BigDecimal("-1.00"),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                null,
+                null,
+                null,
+                null
+            );
+
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
+            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
+
+            assertThatThrownBy(() -> contractService.create(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("commissionPct debe estar entre 0 y 100");
+        }
+
+        @Test
+        @DisplayName("Rechaza listingAgentCommissionPct mayor a 100")
+        void create_listingPctGreaterThanHundredThrows() {
+            Property property = Property.builder().build();
+            property.setId(100L);
+
+            User buyer = User.builder().email("buyer@test.com").build();
+            buyer.setId(200L);
+
+            User seller = User.builder().email("seller@test.com").build();
+            seller.setId(300L);
+
+            AgentProfile listingAgent = AgentProfile.builder().build();
+            listingAgent.setId(400L);
+
+            ContractRequest request = new ContractRequest(
+                100L,
+                200L,
+                300L,
+                400L,
+                null,
+                ContractType.SALE,
+                new BigDecimal("100000"),
+                    new BigDecimal("100.00"),
+                new BigDecimal("101.00"),
+                BigDecimal.ZERO,
+                null,
+                null,
+                null,
+                null
+            );
+
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
+            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
+            when(agentProfileRepository.findById(400L)).thenReturn(Optional.of(listingAgent));
+
+            assertThatThrownBy(() -> contractService.create(request))
+                .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("listingAgentCommissionPct debe estar entre 0 y 100");
+        }
+        }
 
     @Nested
     @DisplayName("delete()")

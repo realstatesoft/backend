@@ -25,6 +25,9 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ContractService {
 
+    private static final BigDecimal MAX_PERCENTAGE = BigDecimal.valueOf(100);
+    private static final BigDecimal PERCENTAGE_TOLERANCE = BigDecimal.valueOf(0.01);
+
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
@@ -199,6 +202,10 @@ public class ContractService {
      */
     private void validateCommissionRules(AgentProfile listingAgent, AgentProfile buyerAgent,
                                          BigDecimal commissionPct, BigDecimal listingPct, BigDecimal buyerPct) {
+        validatePercentageRange("commissionPct", commissionPct);
+        validatePercentageRange("listingAgentCommissionPct", listingPct);
+        validatePercentageRange("buyerAgentCommissionPct", buyerPct);
+
         if (listingAgent == null && listingPct.compareTo(BigDecimal.ZERO) != 0) {
             throw new BadRequestException(
                     "El porcentaje del agente listador debe ser 0 cuando no hay agente listador");
@@ -214,11 +221,17 @@ public class ContractService {
 
         BigDecimal sumPct = listingPct.add(buyerPct);
         // Usar comparación con escala para evitar problemas de redondeo (tolerancia: 0.01%)
-        if (commissionPct.subtract(sumPct).abs().compareTo(BigDecimal.valueOf(0.01)) > 0) {
+        if (commissionPct.subtract(sumPct).abs().compareTo(PERCENTAGE_TOLERANCE) > 0) {
             throw new BadRequestException(
                     "commissionPct (" + commissionPct + "%) debe ser igual a la suma de " +
                     "listingAgentCommissionPct (" + listingPct + "%) + " +
                     "buyerAgentCommissionPct (" + buyerPct + "%)");
+        }
+    }
+
+    private void validatePercentageRange(String fieldName, BigDecimal value) {
+        if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(MAX_PERCENTAGE) > 0) {
+            throw new BadRequestException(fieldName + " debe estar entre 0 y 100");
         }
     }
 
