@@ -53,6 +53,9 @@ class AgentSpecialtyControllerTest {
     @MockitoBean
     private UserDetailsService userDetailsService;
 
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     private static final String BASE = "/agents/specialties";
 
     @BeforeEach

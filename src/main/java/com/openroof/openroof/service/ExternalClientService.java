@@ -55,7 +55,7 @@ public class ExternalClientService {
                 .phone(request.phone())
                 .status(request.status() != null ? request.status() : ClientStatus.ACTIVE)
                 .priority(request.priority() != null ? request.priority() : Priority.MEDIUM)
-                .clientType(request.clientType() != null ? request.clientType() : ClientType.INDIVIDUAL)
+                .clientType(request.clientType() != null ? request.clientType() : ClientType.BUYER)
                 .origin(request.sourceChannel()) // Using sourceChannel as origin
                 .tags(new ArrayList<>())
                 .notes(request.notes())

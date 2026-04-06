@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,15 @@ public class AgentAgendaService {
     public List<AgentAgendaResponse> getAgendaForMonth(String username, LocalDateTime startOfMonth, LocalDateTime endOfMonth) {
         User user = findUserByEmail(username);
         return agentAgendaRepository.findByUserAndMonthOverlap(user.getId(), startOfMonth, endOfMonth)
+                .stream()
+                .map(agentAgendaMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgentAgendaResponse> getUpcoming(String username, int limit) {
+        User user = findUserByEmail(username);
+        return agentAgendaRepository.findUpcoming(user.getId(), LocalDateTime.now(), PageRequest.of(0, limit))
                 .stream()
                 .map(agentAgendaMapper::toResponse)
                 .collect(Collectors.toList());
