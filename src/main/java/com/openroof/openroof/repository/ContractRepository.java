@@ -38,11 +38,13 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByBuyerAgentIdAndStatus(@Param("agentId") Long agentId, @Param("status") ContractStatus status);
 
     @Query("""
-        SELECT DISTINCT c FROM Contract c
-        WHERE c.seller.id = :userId
-           OR c.buyer.id = :userId
-           OR c.listingAgent.id = :agentProfileId
-           OR c.buyerAgent.id = :agentProfileId
+          SELECT DISTINCT c FROM Contract c
+          LEFT JOIN c.listingAgent la
+          LEFT JOIN c.buyerAgent ba
+          WHERE c.seller.id = :userId
+              OR c.buyer.id = :userId
+              OR la.id = :agentProfileId
+              OR ba.id = :agentProfileId
     """)
     List<Contract> findAllByParticipant(@Param("userId") Long userId,
                                         @Param("agentProfileId") Long agentProfileId);

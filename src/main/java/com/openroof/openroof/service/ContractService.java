@@ -154,6 +154,10 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
+        if (!canAccess(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para modificar este contrato");
+        }
+
         validateStatusTransition(contract.getStatus(), request.status(), requester);
 
         contract.setStatus(request.status());

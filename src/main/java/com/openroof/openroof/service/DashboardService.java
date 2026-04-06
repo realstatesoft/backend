@@ -91,10 +91,13 @@ public class DashboardService {
         Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
                 .map(AgentProfile::getId).orElse(-1L);
 
-        return contractRepository.findAllByParticipant(user.getId(), agentProfileId).stream()
+                return contractRepository.findAllByParticipant(user.getId(), agentProfileId).stream()
                 .map(c -> {
                     String myRole = resolveRole(c, user.getId(), agentProfileId);
-                    BigDecimal myComm = computeMyCommission(c, user.getId(), agentProfileId);
+                                        BigDecimal myComm = computeMyCommission(c, user.getId(), agentProfileId);
+                    if (c.getCommissionPct() == null) {
+                        throw new IllegalArgumentException("Contrato " + c.getId() + " tiene commission_pct nulo");
+                    }
                     BigDecimal totalComm = roundCommission(c.getAmount().multiply(
                             commissionPct(c.getCommissionPct())));
                     return new SaleItemResponse(
@@ -229,8 +232,10 @@ public class DashboardService {
     }
 
     private BigDecimal commissionPct(BigDecimal pct) {
-        return (pct != null ? pct : new BigDecimal("3.00"))
-                .divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
+                if (pct == null) {
+                        throw new IllegalArgumentException("commission_pct es nulo; datos de comisión incompletos");
+                }
+                return pct.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
     }
 
     /**

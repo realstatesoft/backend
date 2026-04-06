@@ -268,6 +268,27 @@ class DashboardServiceTest {
             assertThat(sales.get(0).seller()).isEqualTo("N/A");
         }
 
+            @Test
+            @DisplayName("commission_pct nulo → lanza IllegalArgumentException")
+            void getSales_nullCommissionPct_throwsException() {
+                when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+                when(agentProfileRepository.findByUser_Id(1L)).thenReturn(Optional.of(testAgent));
+
+                Contract contract = Contract.builder()
+                    .amount(new BigDecimal("100000"))
+                    .status(ContractStatus.DRAFT)
+                    .contractType(ContractType.SALE)
+                    .listingAgent(testAgent)
+                    .commissionPct(null)
+                    .build();
+
+                when(contractRepository.findAllByParticipant(1L, 10L)).thenReturn(List.of(contract));
+
+                assertThatThrownBy(() -> dashboardService.getSales(testEmail))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("commission_pct nulo");
+            }
+
         @Test
         @DisplayName("Usuario no encontrado → lanza ResourceNotFoundException")
         void getSales_userNotFound_throwsException() {
