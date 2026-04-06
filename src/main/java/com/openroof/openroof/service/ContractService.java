@@ -175,8 +175,14 @@ public class ContractService {
     // ─── DELETE (soft) ────────────────────────────────────────────────────────
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String requesterEmail) {
         Contract contract = findOrThrow(id);
+        User requester = findUserByEmail(requesterEmail);
+
+        if (!canAccess(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para modificar este contrato");
+        }
+
         contract.setDeletedAt(LocalDateTime.now());
         contractRepository.save(contract);
     }

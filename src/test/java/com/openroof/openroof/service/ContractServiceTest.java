@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -137,6 +138,57 @@ class ContractServiceTest {
             assertThatThrownBy(() -> contractService.getByProperty(100L, "user@test.com"))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Propiedad no encontrada");
+        }
+    }
+
+    @Nested
+    @DisplayName("delete()")
+    class DeleteTests {
+
+        @Test
+        @DisplayName("Participante puede hacer soft delete")
+        void delete_participantCanSoftDelete() {
+            User agentUser = User.builder().email("agent@test.com").role(UserRole.AGENT).build();
+            agentUser.setId(2L);
+
+            AgentProfile agentProfile = AgentProfile.builder().user(agentUser).build();
+            agentProfile.setId(20L);
+
+            Contract contract = Contract.builder().listingAgent(agentProfile).build();
+            contract.setId(10L);
+
+            when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+            when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agentUser));
+            when(agentProfileRepository.findByUser_Id(2L)).thenReturn(Optional.of(agentProfile));
+
+            contractService.delete(10L, "agent@test.com");
+
+            assertThat(contract.getDeletedAt()).isNotNull();
+            verify(contractRepository).save(contract);
+        }
+
+        @Test
+        @DisplayName("Usuario sin acceso no puede borrar contrato")
+        void delete_nonParticipantThrows() {
+            User user = User.builder().email("user@test.com").role(UserRole.AGENT).build();
+            user.setId(3L);
+
+            AgentProfile otherAgent = AgentProfile.builder().build();
+            otherAgent.setId(30L);
+
+            AgentProfile requesterAgent = AgentProfile.builder().user(user).build();
+            requesterAgent.setId(31L);
+
+            Contract contract = Contract.builder().listingAgent(otherAgent).build();
+            contract.setId(10L);
+
+            when(contractRepository.findById(10L)).thenReturn(Optional.of(contract));
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(agentProfileRepository.findByUser_Id(3L)).thenReturn(Optional.of(requesterAgent));
+
+            assertThatThrownBy(() -> contractService.delete(10L, "user@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("No tiene permiso para modificar este contrato");
         }
     }
 }

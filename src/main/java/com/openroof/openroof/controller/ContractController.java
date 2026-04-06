@@ -134,9 +134,10 @@ public class ContractController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Eliminar (soft delete) un contrato (solo ADMIN)")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @Parameter(description = "ID del contrato") @PathVariable Long id) {
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            Authentication auth) {
 
-        contractService.delete(id);
+        contractService.delete(id, auth.getName());
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body(ApiResponse.ok(null, "Contrato eliminado"));
