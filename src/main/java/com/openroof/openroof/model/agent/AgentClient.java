@@ -98,6 +98,7 @@ public class AgentClient extends BaseEntity {
     private ContactMethod preferredContactMethod = ContactMethod.EMAIL;
 
     @Column(name = "last_contact_at")
+
     private LocalDateTime lastContactDate;
 
     @Enumerated(EnumType.STRING)

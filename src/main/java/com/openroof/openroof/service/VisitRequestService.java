@@ -6,6 +6,7 @@ import com.openroof.openroof.dto.visit.VisitRequestResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.agent.AgentClient;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.enums.VisitStatus;
@@ -14,6 +15,7 @@ import com.openroof.openroof.model.interaction.VisitRequest;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.AgentClientRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.VisitRepository;
@@ -36,6 +38,8 @@ public class VisitRequestService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final AgentClientRepository agentClientRepository;
+    private final ClientInteractionService clientInteractionService;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -90,6 +94,23 @@ public class VisitRequestService {
 
         visitRequest.setStatus(VisitRequestStatus.ACCEPTED);
         visitRequest.setVisit(visit);
+
+        if (visitRequest.getAgent() != null) {
+            boolean interactionRecorded = clientInteractionService.recordVisitConfirmed(
+                    visitRequest.getAgent().getId(),
+                    visitRequest.getBuyer().getId(),
+                    visitRequest.getProperty().getId(),
+                    visit.getScheduledAt());
+
+            if (!interactionRecorded) {
+                ensureAgentClientExists(visitRequest.getAgent(), visitRequest.getBuyer());
+                clientInteractionService.recordVisitConfirmed(
+                        visitRequest.getAgent().getId(),
+                        visitRequest.getBuyer().getId(),
+                        visitRequest.getProperty().getId(),
+                        visit.getScheduledAt());
+            }
+        }
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -211,6 +232,14 @@ public class VisitRequestService {
         return visitRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Solicitud de visita no encontrada con ID: " + id));
+    }
+
+    private AgentClient ensureAgentClientExists(AgentProfile agent, User buyer) {
+        return agentClientRepository.findByAgent_IdAndUser_Id(agent.getId(), buyer.getId())
+                .orElseGet(() -> agentClientRepository.save(AgentClient.builder()
+                        .agent(agent)
+                        .user(buyer)
+                        .build()));
     }
 
     private void validateIsAssignedAgent(VisitRequest visitRequest, User currentUser) {
