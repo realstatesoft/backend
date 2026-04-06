@@ -46,13 +46,15 @@ public class SecurityConfig {
         private final com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
         /** Rutas que NO requieren autenticación */
+        // Only allow explicitly public auth endpoints — keep logout endpoints protected.
         private static final String[] PUBLIC_URLS = {
-                        "/auth/**",
+                        "/auth/login",
+                        "/auth/register",
+                        "/auth/refresh-token",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
-                        
         };
 
         @Bean

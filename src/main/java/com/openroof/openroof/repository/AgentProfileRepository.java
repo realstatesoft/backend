@@ -15,6 +15,8 @@ import java.util.Optional;
 public interface AgentProfileRepository extends JpaRepository<AgentProfile, Long> {
 
     Optional<AgentProfile> findByUser_Id(Long userId);
+    
+    Optional<AgentProfile> findByUser_Email(String email);
 
     boolean existsByUser_Id(Long userId);
 
