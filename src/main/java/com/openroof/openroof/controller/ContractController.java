@@ -100,9 +100,10 @@ public class ContractController {
     @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @Operation(summary = "Todos los contratos de una propiedad (AGENT o ADMIN)")
     public ResponseEntity<ApiResponse<List<ContractSummaryResponse>>> getByProperty(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId) {
+            @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId,
+            Authentication auth) {
 
-        List<ContractSummaryResponse> list = contractService.getByProperty(propertyId);
+        List<ContractSummaryResponse> list = contractService.getByProperty(propertyId, auth.getName());
         return ResponseEntity.ok(ApiResponse.ok(list));
     }
 

@@ -137,12 +137,20 @@ public class ContractService {
                 .toList();
     }
 
-    /** Todos los contratos de una propiedad (para AGENT o ADMIN). */
-    public List<ContractSummaryResponse> getByProperty(Long propertyId) {
+    /** Todos los contratos de una propiedad si el usuario participa en alguno de ellos o es ADMIN. */
+    public List<ContractSummaryResponse> getByProperty(Long propertyId, String requesterEmail) {
         if (!propertyRepository.existsById(propertyId)) {
             throw new ResourceNotFoundException("Propiedad no encontrada");
         }
-        return contractRepository.findByProperty_Id(propertyId).stream()
+
+        User requester = findUserByEmail(requesterEmail);
+        List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
+
+        if (requester.getRole() != UserRole.ADMIN && contracts.stream().noneMatch(contract -> canAccess(contract, requester))) {
+            throw new BadRequestException("No tiene permiso para ver los contratos de esta propiedad");
+        }
+
+        return contracts.stream()
                 .map(contractMapper::toSummaryResponse)
                 .toList();
     }

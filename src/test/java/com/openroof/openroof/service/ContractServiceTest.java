@@ -1,0 +1,142 @@
+package com.openroof.openroof.service;
+
+import com.openroof.openroof.dto.contract.ContractSummaryResponse;
+import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.mapper.ContractMapper;
+import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.contract.Contract;
+import com.openroof.openroof.model.enums.ContractStatus;
+import com.openroof.openroof.model.enums.ContractType;
+import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.ContractRepository;
+import com.openroof.openroof.repository.ContractTemplateRepository;
+import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class ContractServiceTest {
+
+    @Mock
+    private ContractRepository contractRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private AgentProfileRepository agentProfileRepository;
+    @Mock
+    private PropertyRepository propertyRepository;
+    @Mock
+    private ContractTemplateRepository contractTemplateRepository;
+    @Mock
+    private ContractMapper contractMapper;
+
+    @InjectMocks
+    private ContractService contractService;
+
+    @Nested
+    @DisplayName("getByProperty()")
+    class GetByPropertyTests {
+
+        @Test
+        @DisplayName("Admin puede ver contratos de la propiedad")
+        void getByProperty_adminCanAccess() {
+            User admin = User.builder().email("admin@test.com").role(UserRole.ADMIN).build();
+            admin.setId(1L);
+
+            Contract contract = Contract.builder().build();
+            contract.setId(10L);
+
+            ContractSummaryResponse summary = new ContractSummaryResponse(
+                    10L, null, null, null, null, null, null,
+                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null
+            );
+
+            when(propertyRepository.existsById(100L)).thenReturn(true);
+            when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+            when(contractRepository.findByProperty_Id(100L)).thenReturn(List.of(contract));
+            when(contractMapper.toSummaryResponse(contract)).thenReturn(summary);
+
+            List<ContractSummaryResponse> result = contractService.getByProperty(100L, "admin@test.com");
+
+            assertThat(result).containsExactly(summary);
+        }
+
+        @Test
+        @DisplayName("Agente participante puede ver contratos de la propiedad")
+        void getByProperty_participantCanAccess() {
+            User agentUser = User.builder().email("agent@test.com").role(UserRole.AGENT).build();
+            agentUser.setId(2L);
+
+            AgentProfile agentProfile = AgentProfile.builder().user(agentUser).build();
+            agentProfile.setId(20L);
+
+            Contract contract = Contract.builder().listingAgent(agentProfile).build();
+            contract.setId(10L);
+
+            ContractSummaryResponse summary = new ContractSummaryResponse(
+                    10L, null, null, null, null, null, null,
+                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null
+            );
+
+            when(propertyRepository.existsById(100L)).thenReturn(true);
+            when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agentUser));
+            when(contractRepository.findByProperty_Id(100L)).thenReturn(List.of(contract));
+            when(agentProfileRepository.findByUser_Id(2L)).thenReturn(Optional.of(agentProfile));
+            when(contractMapper.toSummaryResponse(contract)).thenReturn(summary);
+
+            List<ContractSummaryResponse> result = contractService.getByProperty(100L, "agent@test.com");
+
+            assertThat(result).containsExactly(summary);
+        }
+
+        @Test
+        @DisplayName("Usuario sin participación no puede ver contratos de la propiedad")
+        void getByProperty_nonParticipantThrows() {
+            User user = User.builder().email("user@test.com").role(UserRole.AGENT).build();
+            user.setId(3L);
+
+            AgentProfile otherAgent = AgentProfile.builder().build();
+            otherAgent.setId(30L);
+
+            AgentProfile requesterAgent = AgentProfile.builder().user(user).build();
+            requesterAgent.setId(31L);
+
+            Contract contract = Contract.builder().listingAgent(otherAgent).build();
+
+            when(propertyRepository.existsById(100L)).thenReturn(true);
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(contractRepository.findByProperty_Id(100L)).thenReturn(List.of(contract));
+            when(agentProfileRepository.findByUser_Id(3L)).thenReturn(Optional.of(requesterAgent));
+
+            assertThatThrownBy(() -> contractService.getByProperty(100L, "user@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("No tiene permiso");
+        }
+
+        @Test
+        @DisplayName("Propiedad inexistente lanza ResourceNotFoundException")
+        void getByProperty_propertyNotFound() {
+            when(propertyRepository.existsById(100L)).thenReturn(false);
+
+            assertThatThrownBy(() -> contractService.getByProperty(100L, "user@test.com"))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Propiedad no encontrada");
+        }
+    }
+}
