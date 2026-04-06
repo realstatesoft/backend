@@ -1,6 +1,8 @@
 spring:
   application:
     name: OpenRoof
+  config:
+    import: optional:file:.env[.properties]
 
   # ==================== DATASOURCE ====================
   # Requeridas: DB_URL, DB_USER, DB_PASSWORD
@@ -39,7 +41,7 @@ spring:
 
 # ==================== SERVER ====================
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
@@ -79,12 +81,12 @@ supabase:
   url: ${SUPABASE_URL}
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
-    bucket: openroof-images
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
 # ==================== UPLOAD ====================
 upload:
-  max-file-size: 5MB
-  allowed-types: image/jpeg,image/png,image/webp
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
