@@ -62,4 +62,12 @@ public class DashboardController {
         return ResponseEntity.ok(ApiResponse.ok(
                 dashboardService.getReportsSummary()));
     }
+
+    @GetMapping("/agent/sales-performance")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Rendimiento de ventas comparativo año actual vs anterior")
+    public ResponseEntity<ApiResponse<List<MonthlySalesData>>> getSalesPerformance(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                dashboardService.getSalesPerformance(auth.getName())));
+    }
 }

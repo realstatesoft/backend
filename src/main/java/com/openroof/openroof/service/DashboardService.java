@@ -22,6 +22,7 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -181,6 +182,38 @@ public class DashboardService {
                 }
 
                 return new ReportsSummaryResponse(marketMetrics, byType, monthlyTrend);
+        }
+        // ─── Sales Performance (Year vs Year comparison) ─────────────────────────
+
+        public List<MonthlySalesData> getSalesPerformance(String email) {
+                User user = findUserByEmail(email);
+                int currentYear = LocalDate.now().getYear();
+                int previousYear = currentYear - 1;
+
+                List<RawSalesData> raw = contractRepository.findMonthlySalesGrouped(
+                                user.getId(),
+                                List.of(PropertyStatus.SOLD, PropertyStatus.RENTED),
+                                currentYear,
+                                previousYear);
+
+                Map<String, RawSalesData> index = raw.stream()
+                                .collect(Collectors.toMap(
+                                                r -> r.year() + "-" + r.month(),
+                                                r -> r));
+
+                List<MonthlySalesData> result = new ArrayList<>();
+                for (int month = 1; month <= 12; month++) {
+                        RawSalesData curr = index.get(currentYear + "-" + month);
+                        RawSalesData prev = index.get(previousYear + "-" + month);
+
+                        result.add(new MonthlySalesData(
+                                        month,
+                                        curr != null ? new YearData(curr.totalAmount(), curr.count())
+                                                        : YearData.zero(),
+                                        prev != null ? new YearData(prev.totalAmount(), prev.count())
+                                                        : YearData.zero()));
+                }
+                return result;
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────────
