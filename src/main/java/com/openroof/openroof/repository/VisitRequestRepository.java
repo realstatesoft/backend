@@ -25,4 +25,7 @@ public interface VisitRequestRepository extends JpaRepository<VisitRequest, Long
            "JOIN FETCH vr.property JOIN FETCH vr.buyer " +
            "WHERE vr.property.owner.id = :ownerId ORDER BY vr.createdAt DESC")
     List<VisitRequest> findByPropertyOwnerIdWithDetails(@Param("ownerId") Long ownerId);
+
+    @Query("SELECT COUNT(vr) FROM VisitRequest vr WHERE vr.status IN :statuses AND YEAR(vr.createdAt) = :year AND MONTH(vr.createdAt) = :month")
+    long countByStatusesAndYearAndMonth(@Param("statuses") List<VisitRequestStatus> statuses, @Param("year") int year, @Param("month") int month);
 }
