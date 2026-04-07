@@ -76,7 +76,7 @@ logging:
     com.openroof: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE
 
 # ==================== SUPABASE STORAGE ====================
 # Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
