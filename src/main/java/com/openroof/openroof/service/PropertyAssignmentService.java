@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -64,9 +66,12 @@ public class PropertyAssignmentService {
                 .build();
 
         PropertyAssignmentResponse response = toResponse(assignmentRepository.save(assignment));
-        emailService.sendPropertyAssignmentEmail(
-                agent.getUser().getEmail(), agent.getUser().getName(),
-                property.getTitle(), currentUser.getName());
+        String agentEmail    = agent.getUser().getEmail();
+        String agentName     = agent.getUser().getName();
+        String propertyTitle = property.getTitle();
+        String ownerName     = currentUser.getName();
+        afterCommit(() -> emailService.sendPropertyAssignmentEmail(
+                agentEmail, agentName, propertyTitle, ownerName));
         return response;
     }
 
@@ -110,14 +115,16 @@ public class PropertyAssignmentService {
 
         assignment.setStatus(newStatus);
 
+        String ownerEmail    = assignment.getProperty().getOwner().getEmail();
+        String ownerName     = assignment.getProperty().getOwner().getName();
+        String propertyTitle = assignment.getProperty().getTitle();
+        String agentName     = assignment.getAgent().getUser().getName();
+        String statusName    = newStatus.name();
+
         try {
             PropertyAssignmentResponse response = toResponse(assignmentRepository.save(assignment));
-            emailService.sendPropertyAssignmentResponseEmail(
-                    assignment.getProperty().getOwner().getEmail(),
-                    assignment.getProperty().getOwner().getName(),
-                    assignment.getProperty().getTitle(),
-                    assignment.getAgent().getUser().getName(),
-                    newStatus.name());
+            afterCommit(() -> emailService.sendPropertyAssignmentResponseEmail(
+                    ownerEmail, ownerName, propertyTitle, agentName, statusName));
             return response;
         } catch (DataIntegrityViolationException ex) {
             if (newStatus == AssignmentStatus.ACCEPTED) {
@@ -188,6 +195,19 @@ public class PropertyAssignmentService {
     }
 
     // ─── HELPERS ──────────────────────────────────────────────────
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
+    }
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
