@@ -15,6 +15,7 @@ import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,8 +86,34 @@ public class PropertyAssignmentService {
                     "Solo se puede responder a asignaciones en estado PENDING. Estado actual: " + assignment.getStatus());
         }
 
+        if (newStatus == AssignmentStatus.ACCEPTED) {
+            Property lockedProperty = propertyRepository.findByIdForUpdate(assignment.getProperty().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Propiedad no encontrada con ID: " + assignment.getProperty().getId()));
+
+            boolean hasAnotherAccepted = assignmentRepository.existsByPropertyAndStatusExcludingAssignment(
+                    lockedProperty.getId(), AssignmentStatus.ACCEPTED, assignment.getId());
+
+            if (hasAnotherAccepted) {
+                throw new BadRequestException(
+                        "Ya existe una asignación ACCEPTED para esta propiedad. Revoca o rechaza la asignación activa antes de aceptar otra.");
+            }
+
+            lockedProperty.setAgent(assignment.getAgent());
+            propertyRepository.save(lockedProperty);
+        }
+
         assignment.setStatus(newStatus);
-        return toResponse(assignmentRepository.save(assignment));
+
+        try {
+            return toResponse(assignmentRepository.save(assignment));
+        } catch (DataIntegrityViolationException ex) {
+            if (newStatus == AssignmentStatus.ACCEPTED) {
+                throw new BadRequestException(
+                        "Ya existe una asignación ACCEPTED para esta propiedad. Revoca o rechaza la asignación activa antes de aceptar otra.");
+            }
+            throw ex;
+        }
     }
 
     // ─── REVOKE (owner) ───────────────────────────────────────────
@@ -101,6 +128,15 @@ public class PropertyAssignmentService {
                 || assignment.getStatus() == AssignmentStatus.REJECTED) {
             throw new BadRequestException(
                     "No se puede revocar una asignación en estado: " + assignment.getStatus());
+        }
+
+        if (assignment.getStatus() == AssignmentStatus.ACCEPTED) {
+            Property property = assignment.getProperty();
+            if (property.getAgent() != null
+                    && property.getAgent().getId().equals(assignment.getAgent().getId())) {
+                property.setAgent(null);
+                propertyRepository.save(property);
+            }
         }
 
         assignment.setStatus(AssignmentStatus.REVOKED);
@@ -131,7 +167,10 @@ public class PropertyAssignmentService {
                 .orElseThrow(() -> new BadRequestException(
                         "No tienes un perfil de agente asociado a tu cuenta"));
 
-        return assignmentRepository.findByAgent_Id(agentProfile.getId()).stream()
+        return assignmentRepository.findByAgent_IdAndStatusIn(
+                agentProfile.getId(),
+                List.of(AssignmentStatus.PENDING, AssignmentStatus.ACCEPTED)
+            ).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

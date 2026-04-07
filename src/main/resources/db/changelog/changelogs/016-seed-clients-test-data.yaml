@@ -1,0 +1,125 @@
+databaseChangeLog:
+  - changeSet:
+      id: seed-test-client-user-maria
+      author: Otto
+      context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          and:
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE email = 'maria.garcia@test.com'"
+            - not:
+                sqlCheck:
+                  expectedResult: 1
+                  sql: "SELECT COUNT(*) FROM users WHERE id = 202"
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column: {name: id, valueNumeric: 202}
+              - column: {name: email, value: maria.garcia@test.com}
+              - column: {name: password_hash, value: "$2a$10$w3oa2wou4oTUPuafWGrR.ezomBs0tjgLZYL4Nd6ccvQ5mIiMDCYsS"}
+              - column: {name: name, value: Maria Garcia}
+              - column: {name: role, value: USER}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-agent-client-maria
+      author: Otto
+      context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM agent_clients WHERE agent_id = 200 AND user_id = 202"
+      changes:
+        - insert:
+            tableName: agent_clients
+            columns:
+              - column: {name: agent_id, valueNumeric: 200}
+              - column: {name: user_id, valueNumeric: 202}
+              - column: {name: priority, value: MEDIUM}
+              - column: {name: status, value: ACTIVE}
+              - column: {name: client_type, value: INDIVIDUAL}
+              - column: {name: min_budget, valueNumeric: 150000}
+              - column: {name: max_budget, valueNumeric: 250000}
+              - column: {name: min_bedrooms, valueNumeric: 2}
+              - column: {name: max_bedrooms, valueNumeric: 3}
+              - column: {name: marital_status, value: SINGLE}
+              - column: {name: occupation, value: "Arquitecta"}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-external-client-carlos-otto
+      author: Otto
+      context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM external_clients WHERE email = 'carlos.ruiz@externo.com'"
+      changes:
+        - insert:
+            tableName: external_clients
+            columns:
+              - column: {name: agent_id, valueNumeric: 200}
+              - column: {name: name, value: "Carlos Ruiz"}
+              - column: {name: email, value: "carlos.ruiz@externo.com"}
+              - column: {name: phone, value: "+595971000111"}
+              - column: {name: status, value: ACTIVE}
+              - column: {name: priority, value: HIGH}
+              - column: {name: client_type, value: INDIVIDUAL}
+              - column: {name: origin, value: "Facebook Ads"}
+              - column: {name: notes, value: "Interesado en departamentos en pozo"}
+              - column: {name: min_budget, valueNumeric: 80000}
+              - column: {name: max_budget, valueNumeric: 120000}
+              - column: {name: min_bedrooms, valueNumeric: 1}
+              - column: {name: max_bedrooms, valueNumeric: 2}
+              - column: {name: preferred_areas, value: '["Villa Morra", "Recoleta"]'}
+              - column: {name: tags, value: '["Inversor", "Web Lead"]'}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}
+
+  - changeSet:
+      id: seed-test-external-client-ana-otto
+      author: Otto
+      context: dev,test
+      validCheckSum: ANY
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            sqlCheck:
+              expectedResult: 1
+              sql: "SELECT COUNT(*) FROM external_clients WHERE email = 'ana.lopez@corporativo.com'"
+      changes:
+        - insert:
+            tableName: external_clients
+            columns:
+              - column: {name: agent_id, valueNumeric: 200}
+              - column: {name: name, value: "Ana López"}
+              - column: {name: email, value: "ana.lopez@corporativo.com"}
+              - column: {name: phone, value: "+595981222333"}
+              - column: {name: status, value: ACTIVE}
+              - column: {name: priority, value: MEDIUM}
+              - column: {name: client_type, value: COMPANY}
+              - column: {name: origin, value: "Referido"}
+              - column: {name: notes, value: "Busca oficinas corporativas"}
+              - column: {name: min_budget, valueNumeric: 300000}
+              - column: {name: max_budget, valueNumeric: 600000}
+              - column: {name: preferred_property_types, value: '["Oficina", "Local Comercial"]'}
+              - column: {name: tags, value: '["Corporativo", "Alta Prioridad"]'}
+              - column: {name: created_at, valueComputed: "now()"}
+              - column: {name: updated_at, valueComputed: "now()"}
+              - column: {name: version, valueNumeric: 1}

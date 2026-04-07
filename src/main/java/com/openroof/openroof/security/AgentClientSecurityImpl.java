@@ -8,6 +8,7 @@ import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentClientRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.ExternalClientRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
 
     private final AgentClientRepository agentClientRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final ExternalClientRepository externalClientRepository;
 
     @Override
     public boolean canAccess(Long agentClientId, Object principal) {
@@ -45,6 +47,26 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
     }
 
     @Override
+    public boolean canAccessExternal(Long externalClientId, Object principal) {
+        if (!(principal instanceof User currentUser)) {
+            return false;
+        }
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+
+        if (currentUser.getRole() == UserRole.AGENT) {
+            return externalClientRepository.findByIdWithAgentAndUser(externalClientId)
+                    .map(client -> client.getAgent() != null &&
+                                   client.getAgent().getUser().getId().equals(currentUser.getId()))
+                    .orElse(false);
+        }
+
+        return false;
+    }
+
+    @Override
     public boolean canManageAgent(Long agentId, Object principal) {
         if (!(principal instanceof User currentUser)) {
             return false;
@@ -63,5 +85,13 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean isAgent(Object principal) {
+        if (!(principal instanceof User currentUser)) {
+            return false;
+        }
+        return currentUser.getRole() == UserRole.AGENT;
     }
 }

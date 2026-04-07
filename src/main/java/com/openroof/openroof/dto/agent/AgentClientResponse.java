@@ -41,7 +41,7 @@ public record AgentClientResponse(
 
         // Contacto
         String preferredContactMethod,
-        LocalDateTime lastContactDate,
+        LocalDateTime lastContactAt,
 
         // Notas
         String notes,
@@ -57,6 +57,8 @@ public record AgentClientResponse(
         List<String> preferredPropertyTypes,
         List<String> preferredAreas,
         List<String> desiredFeatures,
+
+        Boolean isSearchingProperty,
 
         // Audit
         LocalDateTime createdAt,

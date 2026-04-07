@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-external-client-status-and-priority
+      author: Otto
+      changes:
+        - addColumn:
+            tableName: external_clients
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: ACTIVE
+              - column:
+                  name: priority
+                  type: VARCHAR(20)
+                  defaultValue: MEDIUM
+
+  - changeSet:
+      id: add-external-client-extended-fields
+      author: Otto
+      changes:
+        - addColumn:
+            tableName: external_clients
+            columns:
+              - column:
+                  name: client_type
+                  type: VARCHAR(20)
+                  defaultValue: INDIVIDUAL
+              - column:
+                  name: last_contact_date
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: birth_date
+                  type: DATE
+              - column:
+                  name: marital_status
+                  type: VARCHAR(20)
+              - column:
+                  name: occupation
+                  type: VARCHAR(255)
+              - column:
+                  name: annual_income
+                  type: NUMERIC(19, 2)
+              - column:
+                  name: address
+                  type: TEXT
+              - column:
+                  name: source_channel
+                  type: VARCHAR(100)
+              - column:
+                  name: is_searching_property
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+
+  - changeSet:
+      id: add-external-client-range-fields
+      author: Otto
+      changes:
+        - addColumn:
+            tableName: external_clients
+            columns:
+              - column: {name: min_budget, type: "NUMERIC(19, 2)"}
+              - column: {name: max_budget, type: "NUMERIC(19, 2)"}
+              - column: {name: min_bedrooms, type: INTEGER}
+              - column: {name: max_bedrooms, type: INTEGER}
+              - column: {name: min_bathrooms, type: INTEGER}
+              - column: {name: max_bathrooms, type: INTEGER}
+
+  - changeSet:
+      id: add-external-client-preference-jsonb-fields
+      author: Otto
+      changes:
+        - addColumn:
+            tableName: external_clients
+            columns:
+              - column: {name: preferred_property_types, type: JSONB}
+              - column: {name: preferred_areas, type: JSONB}
+              - column: {name: desired_features, type: JSONB}

@@ -72,3 +72,6 @@ build/
 .vscode/
 src/main/resources/application.yml
 *.yml
+
+
+credenciales.txt

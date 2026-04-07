@@ -40,5 +40,27 @@ databaseChangeLog:
       file: changelogs/010-update-agent-client-constraints.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/005-create-property-assignments-table.yaml
+      file: changelogs/011-enforce-single-accepted-assignment-per-property.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/012-add-client-type-to-agent-client.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/013-add-client-type-index-to-agent-client.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/014-add-is-searching-property-to-agent-client.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/015-drop-stale-user-id-from-agent-agenda.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/015-add-missing-external-client-columns.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/015-add-client-interaction-api-support.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/016-seed-clients-test-data.yaml
+      relativeToChangelogFile: true
+      contextFilter: dev,test

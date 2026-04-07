@@ -4,6 +4,7 @@ import com.openroof.openroof.common.BaseEntity;
 import com.openroof.openroof.common.embeddable.IntegerRange;
 import com.openroof.openroof.common.embeddable.MoneyRange;
 import com.openroof.openroof.model.enums.ClientStatus;
+import com.openroof.openroof.model.enums.ClientType;
 import com.openroof.openroof.model.enums.ContactMethod;
 import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
@@ -24,7 +25,8 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_agent_clients_agent", columnList = "agent_id"),
         @Index(name = "idx_agent_clients_user", columnList = "user_id"),
         @Index(name = "idx_agent_clients_status", columnList = "status"),
-        @Index(name = "idx_agent_clients_priority", columnList = "priority")
+        @Index(name = "idx_agent_clients_priority", columnList = "priority"),
+        @Index(name = "idx_agent_clients_client_type", columnList = "client_type")
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -51,6 +53,10 @@ public class AgentClient extends BaseEntity {
     @Column(length = 20)
     @Builder.Default
     private Priority priority = Priority.MEDIUM;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_type", length = 20)
+    private ClientType clientType;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
@@ -91,7 +97,8 @@ public class AgentClient extends BaseEntity {
     @Builder.Default
     private ContactMethod preferredContactMethod = ContactMethod.EMAIL;
 
-    @Column(name = "last_contact_date")
+    @Column(name = "last_contact_at")
+
     private LocalDateTime lastContactDate;
 
     @Enumerated(EnumType.STRING)
@@ -134,4 +141,8 @@ public class AgentClient extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "is_searching_property")
+    @Builder.Default
+    private Boolean isSearchingProperty = false;
 }

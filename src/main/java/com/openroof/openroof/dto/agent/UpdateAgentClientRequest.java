@@ -15,6 +15,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record UpdateAgentClientRequest(
+        // User fields
+        String firstName,
+        String lastName,
+        String userEmail,
+        String userPhone,
 
         ClientStatus status,
 
@@ -58,7 +63,9 @@ public record UpdateAgentClientRequest(
         List<String> preferredAreas,
         List<String> desiredFeatures,
 
-        String notes) {
+        String notes,
+
+        Boolean isSearchingProperty) {
 
     @AssertTrue(message = "Los rangos de presupuesto, habitaciones o baños son inconsistentes (min > max)")
     private boolean isRangesValid() {

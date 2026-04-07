@@ -7,8 +7,10 @@ public record AgentClientSummaryResponse(
         Long userId,
         String userName,
         String userEmail,
+        String userPhone,
         String status,
         String priority,
-        LocalDateTime lastContactDate,
+        String clientType,
+        LocalDateTime lastContactAt,
         LocalDateTime createdAt) {
 }
