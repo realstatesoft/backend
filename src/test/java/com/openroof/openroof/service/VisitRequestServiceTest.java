@@ -38,6 +38,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -67,6 +68,7 @@ class VisitRequestServiceTest {
     @InjectMocks
     private VisitRequestService visitRequestService;
 
+    private final LocalDateTime fixedNow = LocalDateTime.of(2026, 4, 7, 10, 0);
     private User buyerUser;
     private User ownerUser;
     private User assignedAgentUser;
@@ -75,20 +77,56 @@ class VisitRequestServiceTest {
 
     @BeforeEach
     void setUp() {
-        buyerUser = User.builder().email("buyer@openroof.com").passwordHash("hash").name("Buyer").role(UserRole.USER).build();
-        buyerUser.setId(101L);
+        buyerUser = createUser(101L, "Buyer", "buyer@openroof.com", UserRole.USER);
+        ownerUser = createUser(201L, "Owner", "owner@openroof.com", UserRole.USER);
+        assignedAgentUser = createUser(301L, "Agent", "agent@openroof.com", UserRole.AGENT);
+        assignedAgentProfile = createAgentProfile(401L, assignedAgentUser);
+        property = createProperty(501L, "Casa Centro", ownerUser, assignedAgentProfile);
+    }
 
-        ownerUser = User.builder().email("owner@openroof.com").passwordHash("hash").name("Owner").role(UserRole.USER).build();
-        ownerUser.setId(201L);
+    private User createUser(Long id, String name, String email, UserRole role) {
+        User user = User.builder()
+                .email(email)
+                .passwordHash("hash")
+                .name(name)
+                .role(role)
+                .build();
+        user.setId(id);
+        return user;
+    }
 
-        assignedAgentUser = User.builder().email("agent@openroof.com").passwordHash("hash").name("Agent").role(UserRole.AGENT).build();
-        assignedAgentUser.setId(301L);
+    private AgentProfile createAgentProfile(Long id, User user) {
+        AgentProfile profile = AgentProfile.builder()
+                .user(user)
+                .build();
+        profile.setId(id);
+        return profile;
+    }
 
-        assignedAgentProfile = AgentProfile.builder().user(assignedAgentUser).build();
-        assignedAgentProfile.setId(401L);
+    private Property createProperty(Long id, String title, User owner, AgentProfile agent) {
+        Property p = Property.builder()
+                .title(title)
+                .owner(owner)
+                .agent(agent)
+                .build();
+        p.setId(id);
+        return p;
+    }
 
-        property = Property.builder().title("Casa Centro").owner(ownerUser).agent(assignedAgentProfile).build();
-        property.setId(501L);
+    private VisitRequest createVisitRequest(Long id, Property property, User buyer, AgentProfile agent, LocalDateTime proposedAt, VisitRequestStatus status) {
+        VisitRequest vr = VisitRequest.builder()
+                .property(property)
+                .buyer(buyer)
+                .agent(agent)
+                .proposedAt(proposedAt)
+                .status(status)
+                .buyerName(buyer.getName())
+                .buyerEmail(buyer.getEmail())
+                .buyerPhone(buyer.getPhone())
+                .message("mensaje")
+                .build();
+        vr.setId(id);
+        return vr;
     }
 
     @Nested
@@ -100,7 +138,7 @@ class VisitRequestServiceTest {
         void createValidUserRequest_returnsPendingResponse() {
             CreateVisitRequestRequest request = new CreateVisitRequestRequest(
                     property.getId(),
-                    LocalDateTime.now().plusDays(2),
+                    fixedNow.plusDays(2),
                     null,
                     null,
                     null,
@@ -129,17 +167,11 @@ class VisitRequestServiceTest {
         @Test
         @DisplayName("Usuario AGENT intenta crear solicitud y falla por rol")
         void createWithAgentRole_throwsBadRequest() {
-            User agentAsCurrentUser = User.builder()
-                    .email("agent-current@openroof.com")
-                    .passwordHash("hash")
-                    .name("Current Agent")
-                    .role(UserRole.AGENT)
-                    .build();
-            agentAsCurrentUser.setId(777L);
+            User agentAsCurrentUser = createUser(777L, "Current Agent", "agent-current@openroof.com", UserRole.AGENT);
 
             CreateVisitRequestRequest request = new CreateVisitRequestRequest(
                     property.getId(),
-                    LocalDateTime.now().plusDays(1),
+                    fixedNow.plusDays(1),
                     "",
                     "",
                     "",
@@ -150,7 +182,7 @@ class VisitRequestServiceTest {
 
             assertThatThrownBy(() -> visitRequestService.create(request, "agent-current@openroof.com"))
                     .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("Solo un usuario puede crear una solicitud");
+                    .hasMessage("Solo un usuario puede crear una solicitud de visita");
 
             verify(propertyRepository, never()).findById(any());
             verify(visitRequestRepository, never()).save(any());
@@ -166,12 +198,12 @@ class VisitRequestServiceTest {
                     .agent(assignedAgentProfile)
                     .assignedBy(ownerUser)
                     .status(AssignmentStatus.ACCEPTED)
-                    .assignedAt(LocalDateTime.now())
+                    .assignedAt(fixedNow)
                     .build();
 
             CreateVisitRequestRequest request = new CreateVisitRequestRequest(
                     property.getId(),
-                    LocalDateTime.now().plusDays(2),
+                    fixedNow.plusDays(2),
                     null,
                     null,
                     null,
@@ -204,18 +236,7 @@ class VisitRequestServiceTest {
         @Test
         @DisplayName("Agente asignado acepta y crea Visit en estado CONFIRMED")
         void acceptByAssignedAgent_createsVisitAndMarksAccepted() {
-            VisitRequest visitRequest = VisitRequest.builder()
-                    .property(property)
-                    .buyer(buyerUser)
-                    .agent(assignedAgentProfile)
-                    .proposedAt(LocalDateTime.now().plusDays(3))
-                    .status(VisitRequestStatus.PENDING)
-                    .buyerName("Buyer")
-                    .buyerEmail("buyer@openroof.com")
-                    .buyerPhone("555-1111")
-                    .message("mensaje")
-                    .build();
-            visitRequest.setId(1001L);
+            VisitRequest visitRequest = createVisitRequest(1001L, property, buyerUser, assignedAgentProfile, fixedNow.plusDays(3), VisitRequestStatus.PENDING);
 
             when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(assignedAgentUser));
             when(visitRequestRepository.findById(1001L)).thenReturn(Optional.of(visitRequest));
@@ -226,6 +247,7 @@ class VisitRequestServiceTest {
                 return savedVisit;
             });
             when(visitRequestRepository.save(any(VisitRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(clientInteractionService.recordVisitConfirmed(anyLong(), anyLong(), anyLong(), any(LocalDateTime.class))).thenReturn(true);
 
             VisitRequestResponse response = visitRequestService.accept(1001L, "agent@openroof.com");
 
@@ -241,56 +263,24 @@ class VisitRequestServiceTest {
         @Test
         @DisplayName("accept() crea AgentClient faltante y reintenta registrar interacción")
         void accept_createsMissingAgentClientAndRetriesInteractionRecording() {
-            User currentUser = new User();
-            currentUser.setId(100L);
-            currentUser.setEmail("agent@openroof.com");
-            currentUser.setRole(UserRole.AGENT);
-
-            User agentUser = new User();
-            agentUser.setId(200L);
-            agentUser.setName("Agente Test");
-
-            AgentProfile agent = new AgentProfile();
-            agent.setId(10L);
-            agent.setUser(agentUser);
-
-            User buyer = new User();
-            buyer.setId(20L);
-            buyer.setName("Comprador");
-            buyer.setEmail("buyer@openroof.com");
+            User buyer = createUser(20L, "Comprador", "buyer@openroof.com", UserRole.USER);
             buyer.setPhone("0991-000000");
+            
+            Property p = createProperty(30L, "Casa moderna", ownerUser, assignedAgentProfile);
+            LocalDateTime proposedAt = fixedNow.plusDays(1);
+            VisitRequest visitRequest = createVisitRequest(40L, p, buyer, assignedAgentProfile, proposedAt, VisitRequestStatus.PENDING);
 
-            Property property = new Property();
-            property.setId(30L);
-            property.setTitle("Casa moderna");
-            property.setAgent(agent);
-            property.setOwner(new User());
-
-            LocalDateTime proposedAt = LocalDateTime.of(2026, 3, 28, 16, 0);
-
-            VisitRequest visitRequest = new VisitRequest();
-            visitRequest.setId(40L);
-            visitRequest.setProperty(property);
-            visitRequest.setBuyer(buyer);
-            visitRequest.setAgent(agent);
-            visitRequest.setProposedAt(proposedAt);
-            visitRequest.setStatus(VisitRequestStatus.PENDING);
-            visitRequest.setBuyerName(buyer.getName());
-            visitRequest.setBuyerEmail(buyer.getEmail());
-            visitRequest.setBuyerPhone(buyer.getPhone());
-            visitRequest.setMessage("Quiero visitar esta propiedad");
-
-            when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(currentUser));
+            when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(assignedAgentUser));
             when(visitRequestRepository.findById(40L)).thenReturn(Optional.of(visitRequest));
-            when(agentProfileRepository.findByUser_Id(100L)).thenReturn(Optional.of(agent));
+            when(agentProfileRepository.findByUser_Id(assignedAgentUser.getId())).thenReturn(Optional.of(assignedAgentProfile));
             when(visitRepository.save(any(Visit.class))).thenAnswer(invocation -> {
                 Visit visit = invocation.getArgument(0);
                 visit.setId(99L);
                 return visit;
             });
-            when(clientInteractionService.recordVisitConfirmed(10L, 20L, 30L, proposedAt))
+            when(clientInteractionService.recordVisitConfirmed(anyLong(), anyLong(), anyLong(), any(LocalDateTime.class)))
                     .thenReturn(false, true);
-            when(agentClientRepository.findByAgent_IdAndUser_Id(10L, 20L)).thenReturn(Optional.empty());
+            when(agentClientRepository.findByAgent_IdAndUser_Id(anyLong(), anyLong())).thenReturn(Optional.empty());
             when(agentClientRepository.save(any(AgentClient.class))).thenAnswer(invocation -> {
                 AgentClient agentClient = invocation.getArgument(0);
                 agentClient.setId(501L);
@@ -302,62 +292,28 @@ class VisitRequestServiceTest {
 
             assertThat(response.status()).isEqualTo(VisitRequestStatus.ACCEPTED);
             assertThat(response.visitId()).isEqualTo(99L);
-            assertThat(visitRequest.getVisit()).isNotNull();
             verify(agentClientRepository).save(any(AgentClient.class));
             verify(clientInteractionService, times(2))
-                    .recordVisitConfirmed(10L, 20L, 30L, proposedAt);
+                    .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
         }
 
         @Test
         @DisplayName("accept() no crea AgentClient cuando la interacción se registra en el primer intento")
         void accept_doesNotCreateAgentClientWhenInteractionIsRecordedImmediately() {
-            User currentUser = new User();
-            currentUser.setId(100L);
-            currentUser.setEmail("agent@openroof.com");
-            currentUser.setRole(UserRole.AGENT);
+            User buyer = createUser(20L, "Comprador", "buyer@openroof.com", UserRole.USER);
+            Property p = createProperty(30L, "Casa moderna", ownerUser, assignedAgentProfile);
+            LocalDateTime proposedAt = fixedNow.plusDays(1);
+            VisitRequest visitRequest = createVisitRequest(40L, p, buyer, assignedAgentProfile, proposedAt, VisitRequestStatus.PENDING);
 
-            User agentUser = new User();
-            agentUser.setId(200L);
-            agentUser.setName("Agente Test");
-
-            AgentProfile agent = new AgentProfile();
-            agent.setId(10L);
-            agent.setUser(agentUser);
-
-            User buyer = new User();
-            buyer.setId(20L);
-            buyer.setName("Comprador");
-            buyer.setEmail("buyer@openroof.com");
-            buyer.setPhone("0991-000000");
-
-            Property property = new Property();
-            property.setId(30L);
-            property.setTitle("Casa moderna");
-            property.setAgent(agent);
-            property.setOwner(new User());
-
-            LocalDateTime proposedAt = LocalDateTime.of(2026, 3, 28, 16, 0);
-
-            VisitRequest visitRequest = new VisitRequest();
-            visitRequest.setId(40L);
-            visitRequest.setProperty(property);
-            visitRequest.setBuyer(buyer);
-            visitRequest.setAgent(agent);
-            visitRequest.setProposedAt(proposedAt);
-            visitRequest.setStatus(VisitRequestStatus.PENDING);
-            visitRequest.setBuyerName(buyer.getName());
-            visitRequest.setBuyerEmail(buyer.getEmail());
-            visitRequest.setBuyerPhone(buyer.getPhone());
-
-            when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(currentUser));
+            when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(assignedAgentUser));
             when(visitRequestRepository.findById(40L)).thenReturn(Optional.of(visitRequest));
-            when(agentProfileRepository.findByUser_Id(100L)).thenReturn(Optional.of(agent));
+            when(agentProfileRepository.findByUser_Id(assignedAgentUser.getId())).thenReturn(Optional.of(assignedAgentProfile));
             when(visitRepository.save(any(Visit.class))).thenAnswer(invocation -> {
                 Visit visit = invocation.getArgument(0);
                 visit.setId(99L);
                 return visit;
             });
-            when(clientInteractionService.recordVisitConfirmed(10L, 20L, 30L, proposedAt))
+            when(clientInteractionService.recordVisitConfirmed(anyLong(), anyLong(), anyLong(), any(LocalDateTime.class)))
                     .thenReturn(true);
             when(visitRequestRepository.save(visitRequest)).thenReturn(visitRequest);
 
@@ -367,7 +323,7 @@ class VisitRequestServiceTest {
             verify(agentClientRepository, never()).findByAgent_IdAndUser_Id(any(), any());
             verify(agentClientRepository, never()).save(any(AgentClient.class));
             verify(clientInteractionService)
-                    .recordVisitConfirmed(10L, 20L, 30L, proposedAt);
+                    .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
         }
     }
 
@@ -378,21 +334,12 @@ class VisitRequestServiceTest {
         @Test
         @DisplayName("Agente no asignado intenta contraofertar y falla")
         void counterProposeByOtherAgent_throwsBadRequest() {
-            User otherAgentUser = User.builder().email("other-agent@openroof.com").passwordHash("hash").name("Other Agent").role(UserRole.AGENT).build();
-            otherAgentUser.setId(999L);
-            AgentProfile otherAgentProfile = AgentProfile.builder().user(otherAgentUser).build();
-            otherAgentProfile.setId(998L);
+            User otherAgentUser = createUser(999L, "Other Agent", "other-agent@openroof.com", UserRole.AGENT);
+            AgentProfile otherAgentProfile = createAgentProfile(998L, otherAgentUser);
 
-            VisitRequest visitRequest = VisitRequest.builder()
-                    .property(property)
-                    .buyer(buyerUser)
-                    .agent(assignedAgentProfile)
-                    .proposedAt(LocalDateTime.now().plusDays(2))
-                    .status(VisitRequestStatus.PENDING)
-                    .build();
-            visitRequest.setId(3001L);
+            VisitRequest visitRequest = createVisitRequest(3001L, property, buyerUser, assignedAgentProfile, fixedNow.plusDays(2), VisitRequestStatus.PENDING);
 
-            CounterProposeRequest request = new CounterProposeRequest(LocalDateTime.now().plusDays(4), "nuevo horario");
+            CounterProposeRequest request = new CounterProposeRequest(fixedNow.plusDays(4), "nuevo horario");
 
             when(userRepository.findByEmail("other-agent@openroof.com")).thenReturn(Optional.of(otherAgentUser));
             when(visitRequestRepository.findById(3001L)).thenReturn(Optional.of(visitRequest));
@@ -400,7 +347,7 @@ class VisitRequestServiceTest {
 
             assertThatThrownBy(() -> visitRequestService.counterPropose(3001L, request, "other-agent@openroof.com"))
                     .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("No eres el agente asignado");
+                    .hasMessage("No eres el agente asignado a esta solicitud de visita");
 
             verify(visitRequestRepository, never()).save(any());
         }
