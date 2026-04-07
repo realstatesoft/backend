@@ -21,7 +21,6 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -220,31 +219,48 @@ public class DashboardService {
 
         public List<MonthlySalesData> getSalesPerformance(String email) {
                 User user = findUserByEmail(email);
+                Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
+                                .map(AgentProfile::getId).orElse(-1L);
+
                 int currentYear = LocalDate.now().getYear();
                 int previousYear = currentYear - 1;
 
-                List<RawSalesData> raw = contractRepository.findMonthlySalesGrouped(
-                                user.getId(),
-                                List.of(PropertyStatus.SOLD, PropertyStatus.RENTED),
-                                currentYear,
-                                previousYear);
-
-                Map<String, RawSalesData> index = raw.stream()
-                                .collect(Collectors.toMap(
-                                                r -> r.year() + "-" + r.month(),
-                                                r -> r));
+                List<Contract> signed = contractRepository
+                                .findAllByParticipant(user.getId(), agentProfileId).stream()
+                                .filter(c -> c.getStatus() == ContractStatus.SIGNED
+                                                && c.getStartDate() != null
+                                                && (c.getStartDate().getYear() == currentYear
+                                                                || c.getStartDate().getYear() == previousYear))
+                                .collect(Collectors.toList());
 
                 List<MonthlySalesData> result = new ArrayList<>();
                 for (int month = 1; month <= 12; month++) {
-                        RawSalesData curr = index.get(currentYear + "-" + month);
-                        RawSalesData prev = index.get(previousYear + "-" + month);
+                        final int m = month;
+
+                        List<Contract> curr = signed.stream()
+                                        .filter(c -> c.getStartDate().getYear() == currentYear
+                                                        && c.getStartDate().getMonthValue() == m)
+                                        .collect(Collectors.toList());
+
+                        List<Contract> prev = signed.stream()
+                                        .filter(c -> c.getStartDate().getYear() == previousYear
+                                                        && c.getStartDate().getMonthValue() == m)
+                                        .collect(Collectors.toList());
 
                         result.add(new MonthlySalesData(
                                         month,
-                                        curr != null ? new YearData(curr.totalAmount(), curr.count())
-                                                        : YearData.zero(),
-                                        prev != null ? new YearData(prev.totalAmount(), prev.count())
-                                                        : YearData.zero()));
+                                        curr.isEmpty() ? YearData.zero()
+                                                        : new YearData(
+                                                                        curr.stream().map(Contract::getAmount)
+                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                        BigDecimal::add),
+                                                                        curr.size()),
+                                        prev.isEmpty() ? YearData.zero()
+                                                        : new YearData(
+                                                                        prev.stream().map(Contract::getAmount)
+                                                                                        .reduce(BigDecimal.ZERO,
+                                                                                                        BigDecimal::add),
+                                                                        prev.size())));
                 }
                 return result;
         }
