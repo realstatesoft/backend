@@ -25,7 +25,10 @@ import com.openroof.openroof.repository.VisitRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,6 +46,7 @@ public class VisitRequestService {
     private final PropertyAssignmentRepository propertyAssignmentRepository;
     private final AgentClientRepository agentClientRepository;
     private final ClientInteractionService clientInteractionService;
+    private final EmailService emailService;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -68,6 +72,25 @@ public class VisitRequestService {
                 .buyerPhone(request.buyerPhone() != null ? request.buyerPhone() : buyer.getPhone())
                 .message(request.message())
                 .build();
+
+        // Notify agent (or property owner if no agent) — after commit so emails never fire on rollback
+        if (agent != null) {
+            String recipientEmail = agent.getUser().getEmail();
+            String recipientName  = agent.getUser().getName();
+            String propertyTitle  = property.getTitle();
+            String buyerName      = visitRequest.getBuyerName();
+            LocalDateTime proposedAt = visitRequest.getProposedAt();
+            afterCommit(() -> emailService.sendVisitRequestCreatedEmail(
+                    recipientEmail, recipientName, propertyTitle, buyerName, proposedAt));
+        } else if (property.getOwner() != null) {
+            String recipientEmail = property.getOwner().getEmail();
+            String recipientName  = property.getOwner().getName();
+            String propertyTitle  = property.getTitle();
+            String buyerName      = visitRequest.getBuyerName();
+            LocalDateTime proposedAt = visitRequest.getProposedAt();
+            afterCommit(() -> emailService.sendVisitRequestCreatedEmail(
+                    recipientEmail, recipientName, propertyTitle, buyerName, proposedAt));
+        }
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -114,6 +137,13 @@ public class VisitRequestService {
             }
         }
 
+        String buyerEmail     = visitRequest.getBuyer().getEmail();
+        String buyerName      = visitRequest.getBuyer().getName();
+        String propertyTitle  = visitRequest.getProperty().getTitle();
+        LocalDateTime scheduledAt = visit.getScheduledAt();
+        afterCommit(() -> emailService.sendVisitRequestAcceptedEmail(
+                buyerEmail, buyerName, propertyTitle, scheduledAt));
+
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -127,6 +157,10 @@ public class VisitRequestService {
         validatePendingOrCounterProposed(visitRequest);
 
         visitRequest.setStatus(VisitRequestStatus.REJECTED);
+        String buyerEmail    = visitRequest.getBuyer().getEmail();
+        String buyerName     = visitRequest.getBuyer().getName();
+        String propertyTitle = visitRequest.getProperty().getTitle();
+        afterCommit(() -> emailService.sendVisitRequestRejectedEmail(buyerEmail, buyerName, propertyTitle));
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -143,6 +177,13 @@ public class VisitRequestService {
         visitRequest.setCounterProposedAt(request.counterProposedAt());
         visitRequest.setCounterProposeMessage(request.counterProposeMessage());
         visitRequest.setStatus(VisitRequestStatus.COUNTER_PROPOSED);
+        String buyerEmail    = visitRequest.getBuyer().getEmail();
+        String buyerName     = visitRequest.getBuyer().getName();
+        String propertyTitle = visitRequest.getProperty().getTitle();
+        LocalDateTime counterAt  = request.counterProposedAt();
+        String counterMsg        = request.counterProposeMessage();
+        afterCommit(() -> emailService.sendVisitCounterProposedEmail(
+                buyerEmail, buyerName, propertyTitle, counterAt, counterMsg));
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -166,6 +207,14 @@ public class VisitRequestService {
         }
 
         visitRequest.setStatus(VisitRequestStatus.CANCELLED);
+        if (visitRequest.getAgent() != null) {
+            String agentEmail    = visitRequest.getAgent().getUser().getEmail();
+            String agentName     = visitRequest.getAgent().getUser().getName();
+            String propertyTitle = visitRequest.getProperty().getTitle();
+            String buyerName     = visitRequest.getBuyerName();
+            afterCommit(() -> emailService.sendVisitRequestCancelledEmail(
+                    agentEmail, agentName, propertyTitle, buyerName));
+        }
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -275,6 +324,19 @@ public class VisitRequestService {
                 .findTopByProperty_IdAndStatusOrderByAssignedAtDesc(property.getId(), AssignmentStatus.ACCEPTED)
                 .map(pa -> pa.getAgent())
                 .orElse(null);
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 
     private VisitRequestResponse toResponse(VisitRequest vr) {

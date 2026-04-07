@@ -182,7 +182,7 @@ class ContractServiceTest {
             when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
 
-            assertThatThrownBy(() -> contractService.create(request, "buyer@test.com"))
+            assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("commissionPct debe estar entre 0 y 100");
         }
@@ -225,7 +225,7 @@ class ContractServiceTest {
             when(agentProfileRepository.findById(400L)).thenReturn(Optional.of(listingAgent));
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
 
-            assertThatThrownBy(() -> contractService.create(request, "buyer@test.com"))
+            assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))
                 .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("listingAgentCommissionPct debe estar entre 0 y 100");
         }

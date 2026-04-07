@@ -2,7 +2,8 @@ databaseChangeLog:
   - changeSet:
       id: 017-add-commission-fields-to-contracts
       author: openroof-dev
-      validCheckSum: ANY
+      validCheckSum:
+        - ANY
       comment: >
         Extiende la tabla contracts con campos de comisión por porcentaje:
         comisión total, comisión del agente listador y comisión del agente
