@@ -7,6 +7,9 @@ import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -68,7 +71,10 @@ public class Contract extends BaseEntity {
      * Ej: 6.00 = 6% del monto del contrato.
      * Para ventas, tipicamente 3%-6%. Para alquileres, ~8%-10% del contrato anual.
      */
-    @Column(name = "commission_pct", precision = 5, scale = 2)
+    @NotNull
+    @DecimalMin("0.00")
+    @DecimalMax("100.00")
+    @Column(name = "commission_pct", nullable = false, precision = 5, scale = 2)
     @Builder.Default
     private BigDecimal commissionPct = new BigDecimal("3.00");
 
@@ -76,7 +82,10 @@ public class Contract extends BaseEntity {
      * Porcentaje de la comision que corresponde al agente listador
      * (el que representa al vendedor o propietario).
      */
-    @Column(name = "listing_agent_commission_pct", precision = 5, scale = 2)
+    @NotNull
+    @DecimalMin("0.00")
+    @DecimalMax("100.00")
+    @Column(name = "listing_agent_commission_pct", nullable = false, precision = 5, scale = 2)
     @Builder.Default
     private BigDecimal listingAgentCommissionPct = new BigDecimal("3.00");
 
@@ -84,7 +93,10 @@ public class Contract extends BaseEntity {
      * Porcentaje de la comision que corresponde al agente del comprador
      * o inquilino (si aplica). Puede ser 0 si no hay agente del otro lado.
      */
-    @Column(name = "buyer_agent_commission_pct", precision = 5, scale = 2)
+    @NotNull
+    @DecimalMin("0.00")
+    @DecimalMax("100.00")
+    @Column(name = "buyer_agent_commission_pct", nullable = false, precision = 5, scale = 2)
     @Builder.Default
     private BigDecimal buyerAgentCommissionPct = BigDecimal.ZERO;
 
