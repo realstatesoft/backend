@@ -155,7 +155,7 @@ class DashboardServiceTest {
             
             // Check current month data
             String currentMonth = java.time.LocalDate.now().getMonth()
-                    .getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es"));
+                    .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.forLanguageTag("es"));
             currentMonth = currentMonth.substring(0, 1).toUpperCase() + currentMonth.substring(1);
             
             String finalCurrentMonth = currentMonth;

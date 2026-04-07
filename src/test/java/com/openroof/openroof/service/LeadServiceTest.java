@@ -246,8 +246,6 @@ class LeadServiceTest {
         void createFromWizard_metadataContainsWizardFields() {
             CreateLeadFromWizardRequest request = sampleRequest();
 
-            Lead capturedLead = buildSavedLead(request);
-
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
             when(leadStatusRepository.findByName("Nuevo")).thenReturn(Optional.of(defaultStatus));
             when(leadRepository.save(any(Lead.class))).thenAnswer(inv -> {
