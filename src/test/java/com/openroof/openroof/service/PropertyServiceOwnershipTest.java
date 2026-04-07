@@ -40,6 +40,7 @@ class PropertyServiceOwnershipTest {
     @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
+    @Mock private NotificationService notificationService;
 
     private PropertyService propertyService;
 
@@ -52,7 +53,7 @@ class PropertyServiceOwnershipTest {
         propertyService = new PropertyService(
                 propertyRepository, userRepository, locationRepository,
                 agentProfileRepository, exteriorFeatureRepository,
-                interiorFeatureRepository, propertyMapper);
+                interiorFeatureRepository, propertyMapper, notificationService);
     }
 
     // ─── checkOwnership via delete() ──────────────────────────────
