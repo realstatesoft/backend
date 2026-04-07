@@ -4,5 +4,7 @@ public enum ClientType {
     BUYER,
     TENANT,
     SELLER,
-    LANDLORD
+    LANDLORD,
+    INDIVIDUAL,
+    COMPANY
 }

@@ -28,7 +28,7 @@ public interface ExternalClientRepository extends JpaRepository<ExternalClient, 
                     ac.status as status, 
                     ac.priority as priority, 
                     ac.client_type as client_type, 
-                    ac.last_contact_date as last_contact_date, 
+                    ac.last_contact_at as last_contact_date, 
                     ac.created_at as created_at, 
                     'AGENT' as internal_type
                 FROM agent_clients ac
