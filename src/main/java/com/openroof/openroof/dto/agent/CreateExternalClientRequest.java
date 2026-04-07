@@ -32,6 +32,7 @@ public record CreateExternalClientRequest(
         List<String> preferredPropertyTypes,
         List<String> preferredAreas,
         List<String> desiredFeatures,
-        Boolean isSearchingProperty
+        Boolean isSearchingProperty,
+        List<String> tags
 ) {
 }
