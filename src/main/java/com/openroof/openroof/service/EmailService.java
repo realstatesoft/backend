@@ -238,7 +238,7 @@ public class EmailService {
 
     private void send(String to, String subject, String htmlBody) {
         if (fromEmail == null || fromEmail.isBlank()) {
-            log.warn("MAIL_USERNAME no configurado — email omitido para {}", to);
+            log.warn("MAIL_USERNAME no configurado — email omitido para {}", maskEmail(to));
             return;
         }
         try {
@@ -249,9 +249,9 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
             mailSender.send(message);
-            log.info("Email enviado a {} — {}", to, subject);
+            log.info("Email enviado a {} — [REDACTED]", maskEmail(to));
         } catch (MessagingException | java.io.UnsupportedEncodingException e) {
-            log.error("Error enviando email a {} [{}]: {}", to, subject, e.getMessage());
+            log.error("Error enviando email a {} [REDACTED]", maskEmail(to), e);
         }
     }
 
@@ -312,6 +312,18 @@ public class EmailService {
 
     private String format(LocalDateTime dt) {
         return dt != null ? dt.format(DATE_FMT) : "—";
+    }
+
+    private static String maskEmail(String email) {
+        if (email == null) return "[null]";
+        int at = email.indexOf('@');
+        if (at <= 0) return "***";
+        String local = email.substring(0, at);
+        String domain = email.substring(at + 1);
+        int dot = domain.lastIndexOf('.');
+        String maskedLocal = local.charAt(0) + "***";
+        String maskedDomain = dot > 0 ? domain.charAt(0) + "***" + domain.substring(dot) : "***";
+        return maskedLocal + "@" + maskedDomain;
     }
 
     private String escapeHtml(String text) {
