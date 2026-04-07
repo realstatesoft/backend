@@ -39,7 +39,7 @@ public class EmailService {
         String subject = "¡Bienvenido a OpenRoof, " + userName + "!";
         String body = buildHtml(
                 "¡Bienvenido a OpenRoof!",
-                "Hola, " + userName + ".",
+                "Hola, " + escapeHtml(userName) + ".",
                 """
                 <p>Tu cuenta ha sido creada exitosamente. Ya puedes explorar propiedades,
                 contactar agentes y gestionar tus procesos inmobiliarios desde un solo lugar.</p>
@@ -60,12 +60,12 @@ public class EmailService {
         String subject = "Nuevo contrato en OpenRoof — " + propertyTitle;
         String body = buildHtml(
                 "Nuevo contrato creado",
-                "Hola, " + userName + ".",
+                "Hola, " + escapeHtml(userName) + ".",
                 """
                 <p>Se ha creado un nuevo contrato para la propiedad
                 <strong>%s</strong> y has sido registrado como parte del mismo.</p>
                 <p>Ingresa a la plataforma para revisar los detalles, términos y estado del contrato.</p>
-                """.formatted(propertyTitle),
+                """.formatted(escapeHtml(propertyTitle)),
                 "Ver contrato",
                 baseUrl + "/contracts/" + contractId
         );
@@ -79,12 +79,12 @@ public class EmailService {
         String subject = "Contrato actualizado — " + propertyTitle;
         String body = buildHtml(
                 "Estado del contrato actualizado",
-                "Hola, " + userName + ".",
+                "Hola, " + escapeHtml(userName) + ".",
                 """
                 <p>El estado del contrato para la propiedad <strong>%s</strong>
                 ha cambiado a <strong>%s</strong>.</p>
                 <p>Ingresa a la plataforma para ver los detalles actualizados.</p>
-                """.formatted(propertyTitle, label),
+                """.formatted(escapeHtml(propertyTitle), label),
                 "Ver contrato",
                 baseUrl + "/contracts"
         );
@@ -100,12 +100,12 @@ public class EmailService {
         String subject = "Nueva solicitud de visita — " + propertyTitle;
         String body = buildHtml(
                 "Nueva solicitud de visita",
-                "Hola, " + recipientName + ".",
+                "Hola, " + escapeHtml(recipientName) + ".",
                 """
                 <p><strong>%s</strong> ha solicitado visitar la propiedad
                 <strong>%s</strong> el <strong>%s</strong>.</p>
                 <p>Acepta, rechaza o propone una nueva fecha desde la plataforma.</p>
-                """.formatted(buyerName, propertyTitle, format(proposedAt)),
+                """.formatted(escapeHtml(buyerName), escapeHtml(propertyTitle), format(proposedAt)),
                 "Gestionar solicitud",
                 baseUrl + "/visit-requests"
         );
@@ -118,13 +118,13 @@ public class EmailService {
         String subject = "¡Tu visita fue confirmada! — " + propertyTitle;
         String body = buildHtml(
                 "Visita confirmada",
-                "Hola, " + buyerName + ".",
+                "Hola, " + escapeHtml(buyerName) + ".",
                 """
                 <p>Tu solicitud de visita para la propiedad <strong>%s</strong>
                 ha sido <strong>aceptada</strong>.</p>
                 <p>Fecha y hora confirmada: <strong>%s</strong>.</p>
                 <p>Recuerda llegar puntualmente. Si necesitas cancelar, hazlo con anticipación.</p>
-                """.formatted(propertyTitle, format(scheduledAt)),
+                """.formatted(escapeHtml(propertyTitle), format(scheduledAt)),
                 "Ver mis visitas",
                 baseUrl + "/visit-requests"
         );
@@ -137,12 +137,12 @@ public class EmailService {
         String subject = "Solicitud de visita rechazada — " + propertyTitle;
         String body = buildHtml(
                 "Solicitud de visita rechazada",
-                "Hola, " + buyerName + ".",
+                "Hola, " + escapeHtml(buyerName) + ".",
                 """
                 <p>Tu solicitud de visita para la propiedad <strong>%s</strong>
                 ha sido <strong>rechazada</strong> por el agente.</p>
                 <p>Puedes consultar otras propiedades disponibles o contactar directamente al agente.</p>
-                """.formatted(propertyTitle),
+                """.formatted(escapeHtml(propertyTitle)),
                 "Ver propiedades",
                 baseUrl + "/properties"
         );
@@ -160,13 +160,13 @@ public class EmailService {
         String subject = "Nueva propuesta de fecha para tu visita — " + propertyTitle;
         String body = buildHtml(
                 "Propuesta de nueva fecha",
-                "Hola, " + buyerName + ".",
+                "Hola, " + escapeHtml(buyerName) + ".",
                 """
                 <p>El agente ha propuesto una nueva fecha para visitar
                 <strong>%s</strong>: <strong>%s</strong>.</p>
                 %s
                 <p>Acepta o rechaza la propuesta desde la plataforma.</p>
-                """.formatted(propertyTitle, format(counterProposedAt), notes),
+                """.formatted(escapeHtml(propertyTitle), format(counterProposedAt), notes),
                 "Ver solicitud",
                 baseUrl + "/visit-requests"
         );
@@ -179,11 +179,11 @@ public class EmailService {
         String subject = "Solicitud de visita cancelada — " + propertyTitle;
         String body = buildHtml(
                 "Visita cancelada",
-                "Hola, " + recipientName + ".",
+                "Hola, " + escapeHtml(recipientName) + ".",
                 """
                 <p><strong>%s</strong> ha cancelado la solicitud de visita
                 para la propiedad <strong>%s</strong>.</p>
-                """.formatted(buyerName, propertyTitle),
+                """.formatted(escapeHtml(buyerName), escapeHtml(propertyTitle)),
                 "Ver visitas",
                 baseUrl + "/visit-requests"
         );
@@ -198,12 +198,12 @@ public class EmailService {
         String subject = "Nueva propiedad asignada — " + propertyTitle;
         String body = buildHtml(
                 "Tienes una nueva propiedad asignada",
-                "Hola, " + agentName + ".",
+                "Hola, " + escapeHtml(agentName) + ".",
                 """
                 <p><strong>%s</strong> te ha asignado la propiedad
                 <strong>%s</strong> para que la gestiones.</p>
                 <p>Acepta o rechaza la asignación desde tu panel de agente.</p>
-                """.formatted(ownerName, propertyTitle),
+                """.formatted(escapeHtml(ownerName), escapeHtml(propertyTitle)),
                 "Ver asignación",
                 baseUrl + "/agent/assignments"
         );
@@ -222,12 +222,12 @@ public class EmailService {
                 : "<p>Puedes asignar otro agente desde tu panel de propietario.</p>";
         String body = buildHtml(
                 "Respuesta a asignación de propiedad",
-                "Hola, " + ownerName + ".",
+                "Hola, " + escapeHtml(ownerName) + ".",
                 """
                 <p>El agente <strong>%s</strong> ha <strong>%s</strong>
                 la asignación de la propiedad <strong>%s</strong>.</p>
                 %s
-                """.formatted(agentName, actionLabel, propertyTitle, extra),
+                """.formatted(escapeHtml(agentName), actionLabel, escapeHtml(propertyTitle), extra),
                 "Ver propiedad",
                 baseUrl + "/owner/properties"
         );
