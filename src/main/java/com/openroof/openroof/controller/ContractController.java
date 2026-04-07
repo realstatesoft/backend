@@ -37,9 +37,10 @@ public class ContractController {
                D) Dual agency: ambos agentes, pcts suman commissionPct
                """)
     public ResponseEntity<ApiResponse<ContractResponse>> create(
-            @Valid @RequestBody ContractRequest request) {
+            @Valid @RequestBody ContractRequest request,
+            Authentication auth) {
 
-        ContractResponse response = contractService.create(request);
+        ContractResponse response = contractService.create(request, auth.getName());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Contrato creado exitosamente"));
