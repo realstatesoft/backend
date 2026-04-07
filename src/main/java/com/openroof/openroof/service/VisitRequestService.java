@@ -40,6 +40,7 @@ public class VisitRequestService {
     private final AgentProfileRepository agentProfileRepository;
     private final AgentClientRepository agentClientRepository;
     private final ClientInteractionService clientInteractionService;
+    private final EmailService emailService;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -66,6 +67,17 @@ public class VisitRequestService {
                 .buyerPhone(request.buyerPhone() != null ? request.buyerPhone() : buyer.getPhone())
                 .message(request.message())
                 .build();
+
+        // Notify agent (or property owner if no agent)
+        if (agent != null) {
+            emailService.sendVisitRequestCreatedEmail(
+                    agent.getUser().getEmail(), agent.getUser().getName(),
+                    property.getTitle(), visitRequest.getBuyerName(), visitRequest.getProposedAt());
+        } else if (property.getOwner() != null) {
+            emailService.sendVisitRequestCreatedEmail(
+                    property.getOwner().getEmail(), property.getOwner().getName(),
+                    property.getTitle(), visitRequest.getBuyerName(), visitRequest.getProposedAt());
+        }
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -112,6 +124,10 @@ public class VisitRequestService {
             }
         }
 
+        emailService.sendVisitRequestAcceptedEmail(
+                visitRequest.getBuyer().getEmail(), visitRequest.getBuyer().getName(),
+                visitRequest.getProperty().getTitle(), visit.getScheduledAt());
+
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -125,6 +141,9 @@ public class VisitRequestService {
         validatePendingOrCounterProposed(visitRequest);
 
         visitRequest.setStatus(VisitRequestStatus.REJECTED);
+        emailService.sendVisitRequestRejectedEmail(
+                visitRequest.getBuyer().getEmail(), visitRequest.getBuyer().getName(),
+                visitRequest.getProperty().getTitle());
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -141,6 +160,10 @@ public class VisitRequestService {
         visitRequest.setCounterProposedAt(request.counterProposedAt());
         visitRequest.setCounterProposeMessage(request.counterProposeMessage());
         visitRequest.setStatus(VisitRequestStatus.COUNTER_PROPOSED);
+        emailService.sendVisitCounterProposedEmail(
+                visitRequest.getBuyer().getEmail(), visitRequest.getBuyer().getName(),
+                visitRequest.getProperty().getTitle(), request.counterProposedAt(),
+                request.counterProposeMessage());
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -164,6 +187,12 @@ public class VisitRequestService {
         }
 
         visitRequest.setStatus(VisitRequestStatus.CANCELLED);
+        if (visitRequest.getAgent() != null) {
+            emailService.sendVisitRequestCancelledEmail(
+                    visitRequest.getAgent().getUser().getEmail(),
+                    visitRequest.getAgent().getUser().getName(),
+                    visitRequest.getProperty().getTitle(), visitRequest.getBuyerName());
+        }
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 

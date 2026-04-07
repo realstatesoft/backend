@@ -32,6 +32,7 @@ public class PropertyAssignmentService {
     private final PropertyRepository propertyRepository;
     private final AgentProfileRepository agentProfileRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     // ─── ASSIGN (owner) ───────────────────────────────────────────
 
@@ -62,7 +63,11 @@ public class PropertyAssignmentService {
                 .assignedAt(LocalDateTime.now())
                 .build();
 
-        return toResponse(assignmentRepository.save(assignment));
+        PropertyAssignmentResponse response = toResponse(assignmentRepository.save(assignment));
+        emailService.sendPropertyAssignmentEmail(
+                agent.getUser().getEmail(), agent.getUser().getName(),
+                property.getTitle(), currentUser.getName());
+        return response;
     }
 
     // ─── ACCEPT / REJECT (agent) ──────────────────────────────────
@@ -106,7 +111,14 @@ public class PropertyAssignmentService {
         assignment.setStatus(newStatus);
 
         try {
-            return toResponse(assignmentRepository.save(assignment));
+            PropertyAssignmentResponse response = toResponse(assignmentRepository.save(assignment));
+            emailService.sendPropertyAssignmentResponseEmail(
+                    assignment.getProperty().getOwner().getEmail(),
+                    assignment.getProperty().getOwner().getName(),
+                    assignment.getProperty().getTitle(),
+                    assignment.getAgent().getUser().getName(),
+                    newStatus.name());
+            return response;
         } catch (DataIntegrityViolationException ex) {
             if (newStatus == AssignmentStatus.ACCEPTED) {
                 throw new BadRequestException(

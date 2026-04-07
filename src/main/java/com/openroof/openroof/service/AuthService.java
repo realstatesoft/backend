@@ -37,6 +37,7 @@ public class AuthService {
         private final UserRepository userRepository;
         private final UserSessionRepository userSessionRepository;
         private final AgentProfileRepository agentProfileRepository;
+        private final EmailService emailService;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -83,6 +84,7 @@ public class AuthService {
                                 .build();
 
                 userRepository.save(user);
+                emailService.sendWelcomeEmail(user.getEmail(), user.getName());
 
                 if (selectedRole == UserRole.AGENT) {
                         AgentProfile agentProfile = AgentProfile.builder()
