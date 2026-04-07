@@ -1,7 +1,6 @@
 package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.messaging.Message;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

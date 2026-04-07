@@ -160,10 +160,6 @@ public class ClientInteractionService {
                         "Interaccion no encontrada con ID: " + interactionId));
     }
 
-    private void bumpInteractionCount(AgentClient agentClient, int delta) {
-        recalcInteractionMetricsForAgentClient(agentClient.getId());
-    }
-
     private void recalcInteractionMetricsForAgentClient(Long agentClientId) {
         ClientInteractionRepository.AgentClientInteractionMetrics metrics =
                 clientInteractionRepository.calculateMetricsByAgentClientId(agentClientId);

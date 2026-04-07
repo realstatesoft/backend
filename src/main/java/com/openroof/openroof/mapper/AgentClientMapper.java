@@ -5,7 +5,6 @@ import com.openroof.openroof.common.embeddable.MoneyRange;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.model.agent.AgentClient;
 import com.openroof.openroof.model.agent.AgentProfile;
-import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.user.User;
 import org.springframework.stereotype.Component;
 
