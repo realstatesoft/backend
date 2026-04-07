@@ -281,16 +281,31 @@ public class ContractService {
         if (requester.getRole() == UserRole.ADMIN) {
             return;
         }
-        boolean valid = switch (current) {
-            case DRAFT            -> next == ContractStatus.SENT || next == ContractStatus.CANCELLED;
-            case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
-                                  || next == ContractStatus.REJECTED
-                                  || next == ContractStatus.CANCELLED;
-            case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
-                                  || next == ContractStatus.REJECTED
-                                  || next == ContractStatus.CANCELLED;
-            default               -> false; // SIGNED, REJECTED, EXPIRED, CANCELLED son terminales
-        };
+        boolean valid;
+        if (requester.getRole() == UserRole.AGENT) {
+            // Agents drive the full signing workflow, including sending drafts
+            valid = switch (current) {
+                case DRAFT            -> next == ContractStatus.SENT || next == ContractStatus.CANCELLED;
+                case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                default               -> false; // SIGNED, REJECTED, EXPIRED, CANCELLED son terminales
+            };
+        } else {
+            // BUYER / SELLER / OWNER: can only sign, reject, or cancel — cannot send a draft
+            valid = switch (current) {
+                case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                default               -> false;
+            };
+        }
         if (!valid) {
             throw new BadRequestException(
                     "Transición de estado no permitida: " + current + " → " + next);
