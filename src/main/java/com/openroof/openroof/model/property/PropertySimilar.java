@@ -1,7 +1,6 @@
 package com.openroof.openroof.model.property;
 
 import com.openroof.openroof.common.BaseEntity;
-import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 

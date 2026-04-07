@@ -20,4 +20,6 @@ public class AuthResponse {
     private String refreshToken;
     private String email;
     private String role;
+    /** ID del perfil de agente (solo presente cuando role == AGENT) */
+    private Long agentProfileId;
 }

@@ -1,8 +1,6 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.dto.agent.AgentAgendaResponse;
 import com.openroof.openroof.dto.agent.CreateAgentAgendaRequest;
-import com.openroof.openroof.dto.agent.UpdateAgentAgendaRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentAgendaMapper;
@@ -26,10 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
