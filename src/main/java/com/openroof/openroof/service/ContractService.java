@@ -167,11 +167,21 @@ public class ContractService {
         User requester = findUserByEmail(requesterEmail);
         List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
 
-        if (requester.getRole() != UserRole.ADMIN && contracts.stream().noneMatch(contract -> canAccess(contract, requester))) {
+        if (requester.getRole() == UserRole.ADMIN) {
+            return contracts.stream()
+                    .map(contractMapper::toSummaryResponse)
+                    .toList();
+        }
+
+        List<Contract> accessible = contracts.stream()
+                .filter(contract -> canAccess(contract, requester))
+                .toList();
+
+        if (accessible.isEmpty()) {
             throw new BadRequestException("No tiene permiso para ver los contratos de esta propiedad");
         }
 
-        return contracts.stream()
+        return accessible.stream()
                 .map(contractMapper::toSummaryResponse)
                 .toList();
     }
