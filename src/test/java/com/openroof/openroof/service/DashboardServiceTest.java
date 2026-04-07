@@ -155,7 +155,7 @@ class DashboardServiceTest {
 
             assertThat(summary).isNotNull();
             assertThat(summary.totalSold()).isEqualTo(100000L);
-            assertThat(summary.totalCommissions()).isEqualTo(3000L); // 3% de 100000 (listingAgentCommissionPct @Builder.Default)
+            assertThat(summary.myCommissions()).isEqualTo(3000L); // 3% de 100000 (listingAgentCommissionPct @Builder.Default)
             assertThat(summary.signedContracts()).isEqualTo(1);
             assertThat(summary.activeContracts()).isEqualTo(1); // c2 en DRAFT
             assertThat(summary.monthlyData()).hasSize(6);

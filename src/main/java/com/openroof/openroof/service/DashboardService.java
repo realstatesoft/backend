@@ -134,7 +134,7 @@ public class DashboardService {
                                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                                 .setScale(0, RoundingMode.HALF_UP).longValue();
 
-                long totalCommissions = signed.stream()
+                long myCommissions = signed.stream()
                                 .map(c -> computeMyCommission(c, user.getId(), agentProfileId))
                                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                                 .setScale(0, RoundingMode.HALF_UP).longValue();
@@ -176,7 +176,7 @@ public class DashboardService {
                         monthlyData.add(new SalesSummaryResponse.MonthlyDataPoint(monthName, monthlySales, monthlyComm));
                 }
 
-                return new SalesSummaryResponse(totalSold, totalCommissions, signedCount, activeContracts, monthlyData);
+                return new SalesSummaryResponse(totalSold, myCommissions, signedCount, activeContracts, monthlyData);
         }
 
         // ─── Reports Summary ──────────────────────────────────────────────────────

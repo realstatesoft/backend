@@ -173,7 +173,7 @@ class DashboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalSold").value(250000))
-                .andExpect(jsonPath("$.data.totalCommissions").value(7500))
+                .andExpect(jsonPath("$.data.myCommissions").value(7500))
                 .andExpect(jsonPath("$.data.signedContracts").value(1))
                 .andExpect(jsonPath("$.data.activeContracts").value(2))
                 .andExpect(jsonPath("$.data.monthlyData").isArray());

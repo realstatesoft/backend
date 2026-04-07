@@ -4,10 +4,10 @@ import java.util.List;
 
 public record SalesSummaryResponse(
     long totalSold,
-    long totalCommissions,
+    long myCommissions,
     int signedContracts,
     int activeContracts,
     List<MonthlyDataPoint> monthlyData
 ) {
-    public record MonthlyDataPoint(String month, long sales, long commissions) {}
+    public record MonthlyDataPoint(String month, long sales, long myCommissions) {}
 }
