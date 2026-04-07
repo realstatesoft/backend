@@ -38,9 +38,15 @@ public interface VisitRequestRepository extends JpaRepository<VisitRequest, Long
            "WHERE vr.agent.id = :agentId " +
            "AND vr.status IN :statuses " +
            "AND (" +
-           "  (vr.proposedAt >= :start AND vr.proposedAt < :end) " +
-           "  OR " +
-           "  (vr.counterProposedAt >= :start AND vr.counterProposedAt < :end)" +
+           "  (" +
+           "    (vr.status = com.openroof.openroof.model.enums.VisitRequestStatus.PENDING OR " +
+           "     (vr.status = com.openroof.openroof.model.enums.VisitRequestStatus.ACCEPTED AND vr.counterProposedAt IS NULL)) " +
+           "    AND (vr.proposedAt >= :start AND vr.proposedAt < :end)" +
+           "  ) OR (" +
+           "    (vr.status = com.openroof.openroof.model.enums.VisitRequestStatus.COUNTER_PROPOSED OR " +
+           "     (vr.status = com.openroof.openroof.model.enums.VisitRequestStatus.ACCEPTED AND vr.counterProposedAt IS NOT NULL)) " +
+           "    AND (vr.counterProposedAt >= :start AND vr.counterProposedAt < :end)" +
+           "  )" +
            ")")
     List<VisitRequest> findBusyVisits(
             @Param("agentId") Long agentId,

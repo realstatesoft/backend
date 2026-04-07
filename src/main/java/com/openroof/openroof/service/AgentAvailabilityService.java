@@ -54,10 +54,14 @@ public class AgentAvailabilityService {
                 .findByAgentIdAndDateOverlap(agentId, dayStart, dayEnd);
 
         for (AgentAgenda event : agendaEvents) {
+            // Asegurar que el slot no exceda los límites del día solicitado (07:00 - 19:00)
+            LocalDateTime start = event.getStartsAt().isBefore(dayStart) ? dayStart : event.getStartsAt();
+            LocalDateTime end = event.getEndsAt().isAfter(dayEnd) ? dayEnd : event.getEndsAt();
+
             busySlots.add(new BusySlotResponse(
-                    event.getStartsAt(),
-                    event.getEndsAt(),
-                    "Evento: " + event.getTitle()
+                    start,
+                    end,
+                    "Ocupado (Agenda)" // Título genérico para proteger la privacidad
             ));
         }
 

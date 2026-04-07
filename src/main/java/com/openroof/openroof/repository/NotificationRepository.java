@@ -46,11 +46,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     int markAllAsRead(@Param("userId") Long userId, @Param("readAt") LocalDateTime readAt);
 
     @Modifying
-    @Query("UPDATE Notification n SET n.readAt = :now WHERE n.user.id = :userId AND n.readAt IS NULL")
-    int markAllAsReadByUserId(@Param("userId") Long userId, @Param("now") LocalDateTime now);
-
-    @Modifying
     @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.id = :id AND n.user.id = :userId")
     int softDelete(@Param("id") Long id, @Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.deletedAt IS NULL")
+    int deleteAllByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.readAt IS NULL AND n.deletedAt IS NULL")
+    int deleteAllUnreadByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.readAt IS NOT NULL AND n.deletedAt IS NULL")
+    int deleteAllReadByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.type = :type AND n.deletedAt IS NULL")
+    int deleteAllByTypeByUser(@Param("userId") Long userId, @Param("type") NotificationType type, @Param("now") LocalDateTime now);
 }
 

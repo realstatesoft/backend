@@ -101,6 +101,22 @@ public class NotificationService {
         notificationRepository.delete(notification);
     }
 
+    public long deleteAll(String currentUserEmail, String filter) {
+        User currentUser = getUserByEmail(currentUserEmail);
+        Long userId = currentUser.getId();
+        LocalDateTime now = LocalDateTime.now();
+
+        if ("UNREAD".equalsIgnoreCase(filter)) {
+            return notificationRepository.deleteAllUnreadByUser(userId, now);
+        } else if ("READ".equalsIgnoreCase(filter)) {
+            return notificationRepository.deleteAllReadByUser(userId, now);
+        } else if ("PROPERTY".equalsIgnoreCase(filter)) {
+            return notificationRepository.deleteAllByTypeByUser(userId, NotificationType.PROPERTY, now);
+        } else {
+            return notificationRepository.deleteAllByUser(userId, now);
+        }
+    }
+
     public void createPropertyPendingNotification(Property property) {
         List<User> admins = userRepository.findByRole(UserRole.ADMIN);
 
