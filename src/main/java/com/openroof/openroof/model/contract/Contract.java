@@ -1,4 +1,4 @@
-package com.openroof.openroof.model.contract;
+﻿package com.openroof.openroof.model.contract;
 
 import com.openroof.openroof.common.BaseEntity;
 import com.openroof.openroof.model.agent.AgentProfile;
@@ -50,6 +50,11 @@ public class Contract extends BaseEntity {
     @JoinColumn(name = "template_id")
     private ContractTemplate template;
 
+    /**
+     * Agente del vendedor/propietario (listing agent).
+     * Puede ser null si el propietario gestiona la venta sin agente intermediario.
+     * Corresponde a property.agent al momento de cerrar el contrato.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "listing_agent_id")
     private AgentProfile listingAgent;
@@ -58,14 +63,27 @@ public class Contract extends BaseEntity {
     @JoinColumn(name = "buyer_agent_id")
     private AgentProfile buyerAgent;
 
+    /**
+     * Comision total de la operacion en porcentaje.
+     * Ej: 6.00 = 6% del monto del contrato.
+     * Para ventas, tipicamente 3%-6%. Para alquileres, ~8%-10% del contrato anual.
+     */
     @Column(name = "commission_pct", precision = 5, scale = 2)
     @Builder.Default
-    private BigDecimal commissionPct = BigDecimal.ZERO;
+    private BigDecimal commissionPct = new BigDecimal("3.00");
 
+    /**
+     * Porcentaje de la comision que corresponde al agente listador
+     * (el que representa al vendedor o propietario).
+     */
     @Column(name = "listing_agent_commission_pct", precision = 5, scale = 2)
     @Builder.Default
-    private BigDecimal listingAgentCommissionPct = BigDecimal.ZERO;
+    private BigDecimal listingAgentCommissionPct = new BigDecimal("3.00");
 
+    /**
+     * Porcentaje de la comision que corresponde al agente del comprador
+     * o inquilino (si aplica). Puede ser 0 si no hay agente del otro lado.
+     */
     @Column(name = "buyer_agent_commission_pct", precision = 5, scale = 2)
     @Builder.Default
     private BigDecimal buyerAgentCommissionPct = BigDecimal.ZERO;
@@ -93,46 +111,6 @@ public class Contract extends BaseEntity {
 
     @Column(name = "document_url", length = 500)
     private String documentUrl;
-
-    // ─── Comisiones ───────────────────────────────────────────────────────────
-
-    /**
-     * Agente del vendedor/propietario (listing agent).
-     * Puede ser null si el propietario gestiona la venta sin agente intermediario.
-     * Corresponde a property.agent al momento de cerrar el contrato.
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "listing_agent_id")
-    private AgentProfile listingAgent;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_agent_id")
-    private AgentProfile buyerAgent;
-
-    /**
-     * Comisión total de la operación en porcentaje.
-     * Ej: 6.00 = 6% del monto del contrato.
-     * Para ventas, tipicamente 3%-6%. Para alquileres, ~8%-10% del contrato anual.
-     */
-    @Column(name = "commission_pct", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal commissionPct = new BigDecimal("3.00");
-
-    /**
-     * Porcentaje de la comisión que corresponde al agente listador
-     * (el que representa al vendedor o propietario).
-     */
-    @Column(name = "listing_agent_commission_pct", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal listingAgentCommissionPct = new BigDecimal("3.00");
-
-    /**
-     * Porcentaje de la comisión que corresponde al agente del comprador
-     * o inquilino (si aplica). Puede ser 0 si no hay agente del otro lado.
-     */
-    @Column(name = "buyer_agent_commission_pct", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal buyerAgentCommissionPct = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
