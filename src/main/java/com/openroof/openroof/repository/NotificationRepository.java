@@ -49,20 +49,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.id = :id AND n.user.id = :userId")
     int softDelete(@Param("id") Long id, @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    @Modifying
-    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.deletedAt IS NULL")
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.deletedAt = :now, n.version = n.version + 1 WHERE n.user.id = :userId AND n.deletedAt IS NULL")
     int deleteAllByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    @Modifying
-    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.readAt IS NULL AND n.deletedAt IS NULL")
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.deletedAt = :now, n.version = n.version + 1 WHERE n.user.id = :userId AND n.readAt IS NULL AND n.deletedAt IS NULL")
     int deleteAllUnreadByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    @Modifying
-    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.readAt IS NOT NULL AND n.deletedAt IS NULL")
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.deletedAt = :now, n.version = n.version + 1 WHERE n.user.id = :userId AND n.readAt IS NOT NULL AND n.deletedAt IS NULL")
     int deleteAllReadByUser(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    @Modifying
-    @Query("UPDATE Notification n SET n.deletedAt = :now WHERE n.user.id = :userId AND n.type = :type AND n.deletedAt IS NULL")
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notification n SET n.deletedAt = :now, n.version = n.version + 1 WHERE n.user.id = :userId AND n.type = :type AND n.deletedAt IS NULL")
     int deleteAllByTypeByUser(@Param("userId") Long userId, @Param("type") NotificationType type, @Param("now") LocalDateTime now);
 }
 

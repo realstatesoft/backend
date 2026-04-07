@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.notification.NotificationResponse;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.NotificationType;
@@ -106,17 +107,20 @@ public class NotificationService {
         Long userId = currentUser.getId();
         LocalDateTime now = LocalDateTime.now();
 
-        if ("UNREAD".equalsIgnoreCase(filter)) {
+        if (filter == null || filter.trim().isEmpty() || "ALL".equalsIgnoreCase(filter)) {
+            return notificationRepository.deleteAllByUser(userId, now);
+        } else if ("UNREAD".equalsIgnoreCase(filter)) {
             return notificationRepository.deleteAllUnreadByUser(userId, now);
         } else if ("READ".equalsIgnoreCase(filter)) {
             return notificationRepository.deleteAllReadByUser(userId, now);
         } else if ("PROPERTY".equalsIgnoreCase(filter)) {
             return notificationRepository.deleteAllByTypeByUser(userId, NotificationType.PROPERTY, now);
         } else {
-            return notificationRepository.deleteAllByUser(userId, now);
+            throw new BadRequestException("Filtro no válido para eliminación: " + filter);
         }
     }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void createPropertyPendingNotification(Property property) {
         List<User> admins = userRepository.findByRole(UserRole.ADMIN);
 
