@@ -149,7 +149,11 @@ public class ExternalClientService {
         String typeStr = criteria.clientType() != null ? criteria.clientType().name() : null;
 
         // Map frontend camelCase sort parameters to database snake_case columns
-        Sort mappedSort = Sort.by(pageable.getSort().stream()
+        java.util.List<String> validColumns = java.util.Arrays.asList(
+                "name", "email", "phone", "status", "priority", "client_type", "last_contact_date", "created_at", "internal_type", "id"
+        );
+
+        java.util.List<Sort.Order> validOrders = pageable.getSort().stream()
                 .map(order -> {
                     String prop = order.getProperty();
                     String mappedProp = prop;
@@ -159,7 +163,10 @@ public class ExternalClientService {
                     else if ("internalType".equals(prop)) mappedProp = "internal_type";
                     return new Sort.Order(order.getDirection(), mappedProp);
                 })
-                .toList());
+                .filter(order -> validColumns.contains(order.getProperty()))
+                .toList();
+
+        Sort mappedSort = validOrders.isEmpty() ? Sort.by(Sort.Direction.DESC, "created_at") : Sort.by(validOrders);
         
         Pageable mappedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mappedSort);
 
