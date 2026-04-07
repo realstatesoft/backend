@@ -22,6 +22,8 @@ import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 
@@ -37,6 +39,7 @@ public class AuthService {
         private final UserRepository userRepository;
         private final UserSessionRepository userSessionRepository;
         private final AgentProfileRepository agentProfileRepository;
+        private final EmailService emailService;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -83,6 +86,9 @@ public class AuthService {
                                 .build();
 
                 userRepository.save(user);
+                String userEmail = user.getEmail();
+                String userName  = user.getName();
+                afterCommit(() -> emailService.sendWelcomeEmail(userEmail, userName));
 
                 if (selectedRole == UserRole.AGENT) {
                         AgentProfile agentProfile = AgentProfile.builder()
@@ -121,6 +127,19 @@ public class AuthService {
 
                 // 5. Emitir nuevos tokens y guardar nueva sesión
                 return generateFullAuthResponse(user, httpRequest);
+        }
+
+        // ─── Helpers ──────────────────────────────────────────────────────────────
+
+        private void afterCommit(Runnable action) {
+                if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() { action.run(); }
+                        });
+                } else {
+                        action.run();
+                }
         }
 
         private AuthResponse generateFullAuthResponse(User user, HttpServletRequest httpRequest) {

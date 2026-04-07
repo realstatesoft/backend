@@ -15,6 +15,8 @@ import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,6 +36,7 @@ public class ContractService {
     private final PropertyRepository propertyRepository;
     private final ContractTemplateRepository contractTemplateRepository;
     private final ContractMapper contractMapper;
+    private final EmailService emailService;
 
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
@@ -93,7 +96,19 @@ public class ContractService {
             throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
         }
 
-        return contractMapper.toResponse(contractRepository.save(contract));
+        ContractResponse saved = contractMapper.toResponse(contractRepository.save(contract));
+        String propertyTitle = property.getTitle();
+        emailService.sendContractCreatedEmail(buyer.getEmail(), buyer.getName(), propertyTitle, saved.id());
+        emailService.sendContractCreatedEmail(seller.getEmail(), seller.getName(), propertyTitle, saved.id());
+        if (listingAgent != null) {
+            emailService.sendContractCreatedEmail(listingAgent.getUser().getEmail(),
+                    listingAgent.getUser().getName(), propertyTitle, saved.id());
+        }
+        if (buyerAgent != null && (listingAgent == null || !buyerAgent.getId().equals(listingAgent.getId()))) {
+            emailService.sendContractCreatedEmail(buyerAgent.getUser().getEmail(),
+                    buyerAgent.getUser().getName(), propertyTitle, saved.id());
+        }
+        return saved;
     }
 
     // ─── READ ─────────────────────────────────────────────────────────────────
@@ -154,11 +169,21 @@ public class ContractService {
         User requester = findUserByEmail(requesterEmail);
         List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
 
-        if (requester.getRole() != UserRole.ADMIN && contracts.stream().noneMatch(contract -> canAccess(contract, requester))) {
+        if (requester.getRole() == UserRole.ADMIN) {
+            return contracts.stream()
+                    .map(contractMapper::toSummaryResponse)
+                    .toList();
+        }
+
+        List<Contract> accessible = contracts.stream()
+                .filter(contract -> canAccess(contract, requester))
+                .toList();
+
+        if (accessible.isEmpty()) {
             throw new BadRequestException("No tiene permiso para ver los contratos de esta propiedad");
         }
 
-        return contracts.stream()
+        return accessible.stream()
                 .map(contractMapper::toSummaryResponse)
                 .toList();
     }
@@ -177,7 +202,34 @@ public class ContractService {
         validateStatusTransition(contract.getStatus(), request.status(), requester);
 
         contract.setStatus(request.status());
-        return contractMapper.toResponse(contractRepository.save(contract));
+        ContractResponse response = contractMapper.toResponse(contractRepository.save(contract));
+
+        String propertyTitle = contract.getProperty().getTitle();
+        String newStatus = request.status().name();
+        String buyerEmail      = contract.getBuyer().getEmail();
+        String buyerName       = contract.getBuyer().getName();
+        String sellerEmail     = contract.getSeller().getEmail();
+        String sellerName      = contract.getSeller().getName();
+        AgentProfile la = contract.getListingAgent();
+        AgentProfile ba = contract.getBuyerAgent();
+        String listingAgentEmail = la != null ? la.getUser().getEmail() : null;
+        String listingAgentName  = la != null ? la.getUser().getName()  : null;
+        String buyerAgentEmail   = ba != null ? ba.getUser().getEmail() : null;
+        String buyerAgentName    = ba != null ? ba.getUser().getName()  : null;
+        boolean sameAgent = la != null && ba != null && la.getId().equals(ba.getId());
+
+        afterCommit(() -> {
+            emailService.sendContractStatusChangedEmail(buyerEmail,  buyerName,  propertyTitle, newStatus);
+            emailService.sendContractStatusChangedEmail(sellerEmail, sellerName, propertyTitle, newStatus);
+            if (listingAgentEmail != null) {
+                emailService.sendContractStatusChangedEmail(listingAgentEmail, listingAgentName, propertyTitle, newStatus);
+            }
+            if (buyerAgentEmail != null && !sameAgent) {
+                emailService.sendContractStatusChangedEmail(buyerAgentEmail, buyerAgentName, propertyTitle, newStatus);
+            }
+        });
+
+        return response;
     }
 
     // ─── DELETE (soft) ────────────────────────────────────────────────────────
@@ -249,16 +301,31 @@ public class ContractService {
         if (requester.getRole() == UserRole.ADMIN) {
             return;
         }
-        boolean valid = switch (current) {
-            case DRAFT            -> next == ContractStatus.SENT || next == ContractStatus.CANCELLED;
-            case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
-                                  || next == ContractStatus.REJECTED
-                                  || next == ContractStatus.CANCELLED;
-            case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
-                                  || next == ContractStatus.REJECTED
-                                  || next == ContractStatus.CANCELLED;
-            default               -> false; // SIGNED, REJECTED, EXPIRED, CANCELLED son terminales
-        };
+        boolean valid;
+        if (requester.getRole() == UserRole.AGENT) {
+            // Agents drive the full signing workflow, including sending drafts
+            valid = switch (current) {
+                case DRAFT            -> next == ContractStatus.SENT || next == ContractStatus.CANCELLED;
+                case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                default               -> false; // SIGNED, REJECTED, EXPIRED, CANCELLED son terminales
+            };
+        } else {
+            // BUYER / SELLER / OWNER: can only sign, reject, or cancel — cannot send a draft
+            valid = switch (current) {
+                case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                case PARTIALLY_SIGNED -> next == ContractStatus.SIGNED
+                                      || next == ContractStatus.REJECTED
+                                      || next == ContractStatus.CANCELLED;
+                default               -> false;
+            };
+        }
         if (!valid) {
             throw new BadRequestException(
                     "Transición de estado no permitida: " + current + " → " + next);
@@ -317,5 +384,15 @@ public class ContractService {
         if (entity instanceof User u)         return u.getId();
         if (entity instanceof AgentProfile a) return a.getId();
         return null;
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { action.run(); }
+            });
+        } else {
+            action.run();
+        }
     }
 }

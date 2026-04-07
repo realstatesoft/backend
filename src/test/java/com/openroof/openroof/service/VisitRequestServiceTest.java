@@ -65,6 +65,9 @@ class VisitRequestServiceTest {
     @Mock
     private ClientInteractionService clientInteractionService;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private VisitRequestService visitRequestService;
 

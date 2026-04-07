@@ -1,7 +1,5 @@
 package com.openroof.openroof.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.ClientInteractionResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
@@ -54,9 +52,6 @@ class ClientInteractionControllerTest {
     private WebApplicationContext context;
 
     private MockMvc mockMvc;
-
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
 
     @MockitoBean
     private ClientInteractionService clientInteractionService;
