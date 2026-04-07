@@ -68,6 +68,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/logout-all")
                                                 .authenticated()
                                                 .requestMatchers(PUBLIC_URLS).permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/agents/*/availability").authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()

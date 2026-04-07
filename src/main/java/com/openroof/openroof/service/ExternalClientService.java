@@ -59,7 +59,7 @@ public class ExternalClientService {
                 .priority(request.priority() != null ? request.priority() : Priority.MEDIUM)
                 .clientType(request.clientType() != null ? request.clientType() : ClientType.BUYER)
                 .origin(request.sourceChannel()) // Using sourceChannel as origin
-                .tags(new ArrayList<>())
+                .tags(request.tags() != null ? request.tags() : new ArrayList<>())
                 .notes(request.notes())
                 .birthDate(request.birthDate())
                 .maritalStatus(parseMaritalStatus(request.maritalStatus()))

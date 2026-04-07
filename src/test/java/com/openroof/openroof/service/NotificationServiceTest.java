@@ -18,6 +18,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -162,17 +167,18 @@ class NotificationServiceTest {
         @DisplayName("Lista las notificaciones del usuario actual")
         void getMyNotifications_returnsMappedResponses() {
             User currentUser = user(10L, "user@test.com", UserRole.USER);
+            Pageable pageable = PageRequest.of(0, 10);
             when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(currentUser));
-            when(notificationRepository.findByUser_IdOrderByCreatedAtDesc(10L)).thenReturn(List.of(
+            when(notificationRepository.findByUser_IdOrderByCreatedAtDesc(eq(10L), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(
                     notification(1L, currentUser, NotificationType.VISIT, null),
                     notification(2L, currentUser, NotificationType.ALERT, LocalDateTime.of(2026, 3, 28, 8, 0))
-            ));
+            ), pageable, 2));
 
-            List<NotificationResponse> responses = notificationService.getMyNotifications("user@test.com");
+            Page<NotificationResponse> responses = notificationService.getMyNotifications("user@test.com", null, pageable);
 
-            assertThat(responses).hasSize(2);
-            assertThat(responses.getFirst().read()).isFalse();
-            assertThat(responses.get(1).read()).isTrue();
+            assertThat(responses.getContent()).hasSize(2);
+            assertThat(responses.getContent().getFirst().read()).isFalse();
+            assertThat(responses.getContent().get(1).read()).isTrue();
         }
 
         @Test
@@ -180,7 +186,7 @@ class NotificationServiceTest {
         void getMyNotificationsMissingUser_throwsNotFound() {
             when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> notificationService.getMyNotifications("ghost@test.com"))
+            assertThatThrownBy(() -> notificationService.getMyNotifications("ghost@test.com", null, PageRequest.of(0, 10)))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("ghost@test.com");
         }

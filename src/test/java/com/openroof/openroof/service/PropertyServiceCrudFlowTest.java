@@ -52,6 +52,8 @@ class PropertyServiceCrudFlowTest {
     private InteriorFeatureRepository interiorFeatureRepository;
     @Mock
     private PropertyMapper propertyMapper;
+    @Mock
+    private NotificationService notificationService;
 
     private PropertyService propertyService;
 
@@ -64,7 +66,8 @@ class PropertyServiceCrudFlowTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
-                propertyMapper
+                propertyMapper,
+                notificationService
         );
     }
 
