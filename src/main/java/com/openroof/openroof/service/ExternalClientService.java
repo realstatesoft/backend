@@ -10,7 +10,9 @@ import com.openroof.openroof.common.embeddable.IntegerRange;
 import com.openroof.openroof.common.embeddable.MoneyRange;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -146,7 +148,29 @@ public class ExternalClientService {
         String statusStr = criteria.status() != null ? criteria.status().name() : null;
         String typeStr = criteria.clientType() != null ? criteria.clientType().name() : null;
 
-        return externalClientRepository.searchUnifiedClients(agentId, criteria.q(), statusStr, typeStr, criteria.internalType(), pageable)
+        // Map frontend camelCase sort parameters to database snake_case columns
+        java.util.List<String> validColumns = java.util.Arrays.asList(
+                "name", "email", "phone", "status", "priority", "client_type", "last_contact_date", "created_at", "internal_type", "id"
+        );
+
+        java.util.List<Sort.Order> validOrders = pageable.getSort().stream()
+                .map(order -> {
+                    String prop = order.getProperty();
+                    String mappedProp = prop;
+                    if ("createdAt".equals(prop)) mappedProp = "created_at";
+                    else if ("lastContactDate".equals(prop)) mappedProp = "last_contact_date";
+                    else if ("clientType".equals(prop)) mappedProp = "client_type";
+                    else if ("internalType".equals(prop)) mappedProp = "internal_type";
+                    return new Sort.Order(order.getDirection(), mappedProp);
+                })
+                .filter(order -> validColumns.contains(order.getProperty()))
+                .toList();
+
+        Sort mappedSort = validOrders.isEmpty() ? Sort.by(Sort.Direction.DESC, "created_at") : Sort.by(validOrders);
+        
+        Pageable mappedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mappedSort);
+
+        return externalClientRepository.searchUnifiedClients(agentId, criteria.q(), statusStr, typeStr, criteria.internalType(), mappedPageable)
                 .map(this::mapToUnifiedResponse);
     }
 

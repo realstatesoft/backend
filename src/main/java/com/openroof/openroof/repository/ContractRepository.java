@@ -48,4 +48,26 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     """)
     List<Contract> findAllByParticipant(@Param("userId") Long userId,
                                         @Param("agentProfileId") Long agentProfileId);
+
+    @Query("""
+        SELECT new com.openroof.openroof.dto.dashboard.RawSalesData(
+            YEAR(c.startDate),
+            MONTH(c.startDate),
+            COALESCE(SUM(c.amount), 0),
+            COUNT(c)
+        )
+        FROM Contract c
+        WHERE c.seller.id = :sellerId
+          AND c.startDate IS NOT NULL
+          AND c.property.status IN :statuses
+          AND YEAR(c.startDate) IN (:currentYear, :previousYear)
+        GROUP BY YEAR(c.startDate), MONTH(c.startDate)
+        ORDER BY YEAR(c.startDate), MONTH(c.startDate)
+    """)
+    List<com.openroof.openroof.dto.dashboard.RawSalesData> findMonthlySalesGrouped(
+        @Param("sellerId") Long sellerId,
+        @Param("statuses") List<com.openroof.openroof.model.enums.PropertyStatus> statuses,
+        @Param("currentYear") int currentYear,
+        @Param("previousYear") int previousYear
+    );
 }

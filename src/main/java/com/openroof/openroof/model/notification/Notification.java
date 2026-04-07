@@ -22,7 +22,7 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_notifications_created", columnList = "created_at")
 })
 @SQLRestriction("deleted_at IS NULL")
-@SQLDelete(sql = "UPDATE notifications SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE notifications SET deleted_at = CURRENT_TIMESTAMP, version = version + 1 WHERE id = ? AND version = ?")
 @Getter
 @Setter
 @NoArgsConstructor

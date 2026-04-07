@@ -41,7 +41,7 @@ public record AgentClientResponse(
 
         // Contacto
         String preferredContactMethod,
-        LocalDateTime lastContactDate,
+        LocalDateTime lastContactAt,
 
         // Notas
         String notes,
