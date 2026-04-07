@@ -1,6 +1,7 @@
 package com.openroof.openroof.model.contract;
 
 import com.openroof.openroof.common.BaseEntity;
+import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.property.Property;
@@ -46,6 +47,26 @@ public class Contract extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id")
     private ContractTemplate template;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "listing_agent_id")
+    private AgentProfile listingAgent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_agent_id")
+    private AgentProfile buyerAgent;
+
+    @Column(name = "commission_pct", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal commissionPct = BigDecimal.ZERO;
+
+    @Column(name = "listing_agent_commission_pct", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal listingAgentCommissionPct = BigDecimal.ZERO;
+
+    @Column(name = "buyer_agent_commission_pct", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal buyerAgentCommissionPct = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "contract_type", nullable = false, length = 50)

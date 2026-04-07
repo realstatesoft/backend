@@ -19,6 +19,12 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     List<Contract> findByStatus(ContractStatus status);
 
+    List<Contract> findByListingAgent_Id(Long agentProfileId);
+
+    List<Contract> findByBuyerAgent_Id(Long agentProfileId);
+
+    List<Contract> findByProperty_Id(Long propertyId);
+
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.seller.id = :sellerId AND c.status = :status")
     long countBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") ContractStatus status);
 
