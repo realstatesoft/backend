@@ -47,7 +47,7 @@ public class ContractService {
      * D) Dual agency            → ambos agentes presentes, pcts suman commissionPct
      */
     @Transactional
-    public ContractResponse create(ContractRequest request) {
+    public ContractResponse create(ContractRequest request, String requesterEmail) {
         Property property = propertyRepository.findById(request.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
 
@@ -88,6 +88,11 @@ public class ContractService {
                 .endDate(request.endDate())
                 .terms(request.terms())
                 .build();
+
+        User requester = findUserByEmail(requesterEmail);
+        if (!canAccess(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
+        }
 
         ContractResponse saved = contractMapper.toResponse(contractRepository.save(contract));
         String propertyTitle = property.getTitle();

@@ -3,10 +3,10 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.security.AgentClientSecurity;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
@@ -55,6 +55,9 @@ class AgentClientControllerTest {
 
         @MockitoBean
         private AgentClientService agentClientService;
+
+        @MockitoBean
+        private com.openroof.openroof.service.ExternalClientService externalClientService;
 
         @MockitoBean
         private JwtAuthenticationFilter jwtAuthenticationFilter;

@@ -2,7 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.AgentClientSearchRequest;
-import com.openroof.openroof.dto.agent.AgentClientSummaryResponse;
+import com.openroof.openroof.dto.agent.UnifiedClientSummaryResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
@@ -50,6 +50,9 @@ class AgentClientSearchControllerTest {
 
     @MockitoBean
     private AgentClientService agentClientService;
+
+    @MockitoBean
+    private com.openroof.openroof.service.ExternalClientService externalClientService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -108,13 +111,13 @@ class AgentClientSearchControllerTest {
         when(agentClientSecurity.isAgent(any())).thenReturn(true);
         when(agentClientService.getAgentIdByUser(agentUser.getId())).thenReturn(10L);
         
-        AgentClientSummaryResponse summary = new AgentClientSummaryResponse(
+        UnifiedClientSummaryResponse summary = new UnifiedClientSummaryResponse(
                 1L, 20L, "Client Name", "client@email.com", null,
-                "ACTIVE", "MEDIUM", "BUYER", null, LocalDateTime.now());
-        
-        Page<AgentClientSummaryResponse> page = new PageImpl<>(List.of(summary));
-        
-        when(agentClientService.searchClients(eq(10L), any(AgentClientSearchRequest.class), any())).thenReturn(page);
+                "ACTIVE", "MEDIUM", "BUYER", null, LocalDateTime.now(), "AGENT");
+
+        Page<UnifiedClientSummaryResponse> page = new PageImpl<>(List.of(summary));
+
+        when(externalClientService.searchUnified(eq(10L), any(AgentClientSearchRequest.class), any())).thenReturn(page);
 
         mockMvc.perform(get(API_BASE)
                 .with(authentication(getAgentAuth()))
@@ -123,10 +126,10 @@ class AgentClientSearchControllerTest {
                 .param("clientType", "BUYER"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].userName").value("Client Name"))
+                .andExpect(jsonPath("$.data.content[0].name").value("Client Name"))
                 .andExpect(jsonPath("$.data.content[0].clientType").value("BUYER"));
 
-        verify(agentClientService).searchClients(eq(10L), argThat(req ->
+        verify(externalClientService).searchUnified(eq(10L), argThat(req ->
             req != null &&
             "Client".equals(req.q()) &&
             req.status() != null && "ACTIVE".equals(req.status().name()) &&

@@ -132,12 +132,17 @@ public class AuthService {
                 // Aquí es donde realmente ocurre la magia de guardar la sesión
                 saveUserSession(user, refreshToken, httpRequest);
 
+                Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
+                                .map(ap -> ap.getId())
+                                .orElse(null);
+
                 return AuthResponse.builder()
                                 .id(user.getId())
                                 .accessToken(accessToken)
                                 .refreshToken(refreshToken)
                                 .email(user.getEmail())
                                 .role(user.getRole().name())
+                                .agentProfileId(agentProfileId)
                                 .build();
         }
 
