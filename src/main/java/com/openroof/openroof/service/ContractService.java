@@ -15,6 +15,8 @@ import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -204,10 +206,28 @@ public class ContractService {
 
         String propertyTitle = contract.getProperty().getTitle();
         String newStatus = request.status().name();
-        emailService.sendContractStatusChangedEmail(
-                contract.getBuyer().getEmail(), contract.getBuyer().getName(), propertyTitle, newStatus);
-        emailService.sendContractStatusChangedEmail(
-                contract.getSeller().getEmail(), contract.getSeller().getName(), propertyTitle, newStatus);
+        String buyerEmail      = contract.getBuyer().getEmail();
+        String buyerName       = contract.getBuyer().getName();
+        String sellerEmail     = contract.getSeller().getEmail();
+        String sellerName      = contract.getSeller().getName();
+        AgentProfile la = contract.getListingAgent();
+        AgentProfile ba = contract.getBuyerAgent();
+        String listingAgentEmail = la != null ? la.getUser().getEmail() : null;
+        String listingAgentName  = la != null ? la.getUser().getName()  : null;
+        String buyerAgentEmail   = ba != null ? ba.getUser().getEmail() : null;
+        String buyerAgentName    = ba != null ? ba.getUser().getName()  : null;
+        boolean sameAgent = la != null && ba != null && la.getId().equals(ba.getId());
+
+        afterCommit(() -> {
+            emailService.sendContractStatusChangedEmail(buyerEmail,  buyerName,  propertyTitle, newStatus);
+            emailService.sendContractStatusChangedEmail(sellerEmail, sellerName, propertyTitle, newStatus);
+            if (listingAgentEmail != null) {
+                emailService.sendContractStatusChangedEmail(listingAgentEmail, listingAgentName, propertyTitle, newStatus);
+            }
+            if (buyerAgentEmail != null && !sameAgent) {
+                emailService.sendContractStatusChangedEmail(buyerAgentEmail, buyerAgentName, propertyTitle, newStatus);
+            }
+        });
 
         return response;
     }
@@ -364,5 +384,15 @@ public class ContractService {
         if (entity instanceof User u)         return u.getId();
         if (entity instanceof AgentProfile a) return a.getId();
         return null;
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { action.run(); }
+            });
+        } else {
+            action.run();
+        }
     }
 }
