@@ -22,6 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -167,8 +171,11 @@ class NotificationControllerTest {
         @Test
         @DisplayName("Lista las notificaciones del usuario autenticado")
         void getMyNotifications_returns200() throws Exception {
-            when(notificationService.getMyNotifications("user@test.com"))
-                    .thenReturn(List.of(sampleResponse(1L), sampleResponse(2L)));
+            List<NotificationResponse> list = List.of(sampleResponse(1L), sampleResponse(2L));
+            Page<NotificationResponse> page = new PageImpl<>(list, PageRequest.of(0, 10), 2);
+            
+            when(notificationService.getMyNotifications(eq("user@test.com"), any(), any()))
+                    .thenReturn(page);
 
             mockMvc.perform(get(BASE + "/me")
                             .with(user("user@test.com").roles("USER")))
