@@ -5,14 +5,12 @@ spring:
     import: optional:file:.env[.properties]
 
   # ==================== DATASOURCE ====================
-  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
-  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
+  # Para Supabase activar perfil: --spring.profiles.active=supabase
+  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
-
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/openroof}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -35,11 +33,29 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    default-schema: public
 
   # ==================== JACKSON ====================
   jackson:
     default-property-inclusion: non_null
     time-zone: UTC
+
+  # ==================== MAIL (Gmail SMTP) ====================
+  # Configurar en Render Environment / .env:
+  #   MAIL_USERNAME=tucorreo@gmail.com
+  #   MAIL_PASSWORD=xxxx xxxx xxxx xxxx   (App Password de Google)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 # ==================== SERVER ====================
 server:
@@ -59,11 +75,15 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
+# ==================== CORS ====================
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
+
 # ==================== JWT ====================
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET}
+      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -77,11 +97,10 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 # ==================== SUPABASE STORAGE ====================
-# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+  url: ${SUPABASE_URL:https://your-project.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
@@ -94,3 +113,11 @@ upload:
 spring.servlet.multipart:
   max-file-size: 5MB
   max-request-size: 10MB
+
+# =================== TRASHCAN ======================
+trashcan: 
+  retention-days: 10
+
+mail:
+  from-name: OpenRoof
+  base-url: ${FRONTEND_URL:http://localhost:5173}
