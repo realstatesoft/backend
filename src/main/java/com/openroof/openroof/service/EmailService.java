@@ -2,8 +2,8 @@ package com.openroof.openroof.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -14,14 +14,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
 
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -237,6 +237,10 @@ public class EmailService {
     // ─── Core sender ──────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {
+        if (mailSender == null) {
+            log.warn("JavaMailSender no disponible — email omitido para {}", maskEmail(to));
+            return;
+        }
         if (fromEmail == null || fromEmail.isBlank()) {
             log.warn("MAIL_USERNAME no configurado — email omitido para {}", maskEmail(to));
             return;
