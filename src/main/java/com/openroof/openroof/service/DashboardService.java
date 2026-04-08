@@ -225,7 +225,7 @@ public class DashboardService {
                         long ventas = contractRepository.countSignedByYearAndMonth(year, monthValue);
                         long visitas = visitRequestRepository.countByStatusesAndYearAndMonth(
                                         activeVisitStatuses, year, monthValue);
-                        monthlyTrend.add(new ReportsSummaryResponse.MonthlyTrend(monthName, (int) ventas, (int) visitas));
+                        monthlyTrend.add(new ReportsSummaryResponse.MonthlyTrend(monthName, Math.toIntExact(ventas), Math.toIntExact(visitas)));
                 }
 
                 return new ReportsSummaryResponse(marketMetrics, byType, monthlyTrend);
