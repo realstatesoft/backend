@@ -52,6 +52,14 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     long countByStatus(PropertyStatus status);
 
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.deletedAt IS NULL AND p.trashedAt IS NULL AND p.createdAt >= :start AND p.createdAt < :end")
+    long countCreatedBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    List<Property> findByDeletedAtIsNullAndTrashedAtIsNullAndStatusIn(List<PropertyStatus> statuses);
+
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.deletedAt IS NULL AND p.trashedAt IS NULL AND p.status IN :statuses")
+    long countByStatusIn(@Param("statuses") List<PropertyStatus> statuses);
+
     long countByPropertyTypeAndStatus(PropertyType propertyType, PropertyStatus status);
 
     long countByOwner_Id(Long ownerId);
