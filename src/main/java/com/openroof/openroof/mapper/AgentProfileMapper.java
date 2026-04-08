@@ -20,6 +20,15 @@ public class AgentProfileMapper {
 
     public AgentProfileResponse toResponse(AgentProfile agent) {
         User user = agent.getUser();
+        // TODO: En el futuro estas estadísticas deberán calcularse dinámicamente
+        // consultando las entidades de transacciones o propiedades del agente.
+        AgentProfileResponse.AgentStatsDto statsMock = new AgentProfileResponse.AgentStatsDto(
+                45,
+                23,
+                68,
+                "$ 750.000"
+        );
+
         return new AgentProfileResponse(
                 agent.getId(),
                 user != null ? user.getId() : null,
@@ -35,6 +44,7 @@ public class AgentProfileMapper {
                 agent.getTotalReviews(),
                 mapSpecialties(agent.getSpecialties()),
                 mapSocialMedia(agent.getSocialMedia()),
+                statsMock,
                 agent.getCreatedAt(),
                 agent.getUpdatedAt()
         );
