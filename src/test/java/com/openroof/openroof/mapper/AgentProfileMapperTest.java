@@ -61,7 +61,8 @@ class AgentProfileMapperTest {
                 .build();
         agent.getSocialMedia().add(sm);
 
-        AgentProfileResponse response = mapper.toResponse(agent);
+        AgentProfileResponse.AgentStatsDto stats = new AgentProfileResponse.AgentStatsDto(5, 2, 7, "$ 500.000");
+        AgentProfileResponse response = mapper.toResponse(agent, stats);
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.userId()).isEqualTo(1L);

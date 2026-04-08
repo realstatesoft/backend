@@ -19,10 +19,19 @@ public record AgentProfileResponse(
         Integer totalReviews,
         List<SpecialtyDto> specialties,
         List<AgentSocialMediaDto> socialMedia,
+        AgentStatsDto stats,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
 
     public record SpecialtyDto(Long id, String name) {
+    }
+
+    public record AgentStatsDto(
+            Integer vendidas,
+            Integer alquiladas,
+            Integer total,
+            String precioPromedio
+    ) {
     }
 }

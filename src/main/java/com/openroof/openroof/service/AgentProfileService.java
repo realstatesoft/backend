@@ -13,6 +13,11 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.AgentSpecialtyRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.ContractRepository;
+import com.openroof.openroof.model.enums.ContractStatus;
+import com.openroof.openroof.model.enums.PropertyStatus;
+import com.openroof.openroof.model.contract.Contract;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +40,8 @@ public class AgentProfileService {
     private final UserRepository userRepository;
     private final AgentSpecialtyRepository agentSpecialtyRepository;
     private final AgentProfileMapper agentProfileMapper;
+    private final PropertyRepository propertyRepository;
+    private final ContractRepository contractRepository;
 
     // ─── CREATE ───────────────────────────────────────────────────
 
@@ -63,7 +70,7 @@ public class AgentProfileService {
         }
 
         agent = agentProfileRepository.save(agent);
-        return agentProfileMapper.toResponse(agent);
+        return agentProfileMapper.toResponse(agent, calculateAgentStats(agent));
     }
 
     // ─── READ ─────────────────────────────────────────────────────
@@ -71,7 +78,7 @@ public class AgentProfileService {
     @Transactional(readOnly = true)
     public AgentProfileResponse getById(Long id) {
         AgentProfile agent = findAgentOrThrow(id);
-        return agentProfileMapper.toResponse(agent);
+        return agentProfileMapper.toResponse(agent, calculateAgentStats(agent));
     }
 
     @Transactional(readOnly = true)
@@ -110,7 +117,7 @@ public class AgentProfileService {
         }
 
         agent = agentProfileRepository.save(agent);
-        return agentProfileMapper.toResponse(agent);
+        return agentProfileMapper.toResponse(agent, calculateAgentStats(agent));
     }
 
     // ─── DELETE (Soft) ────────────────────────────────────────────
@@ -240,5 +247,39 @@ public class AgentProfileService {
             throw new BadRequestException("Algunas especialidades no fueron encontradas");
         }
         return specialties;
+    }
+
+    private AgentProfileResponse.AgentStatsDto calculateAgentStats(AgentProfile agent) {
+        Long agentId = agent.getId() != null ? agent.getId() : -1L;
+        Long userId = (agent.getUser() != null && agent.getUser().getId() != null) ? agent.getUser().getId() : -1L;
+
+        // 1. Contar propiedades por estado
+        int vendidas = (int) propertyRepository.countByAgentIdAndStatus(agentId, PropertyStatus.SOLD);
+        int alquiladas = (int) propertyRepository.countByAgentIdAndStatus(agentId, PropertyStatus.RENTED);
+        int total = vendidas + alquiladas;
+
+        // 2. Calcular precio promedio de contratos firmados
+        List<Contract> signedContracts = contractRepository.findAllByParticipant(userId, agentId).stream()
+                .filter(c -> c.getStatus() == ContractStatus.SIGNED)
+                .toList();
+
+        java.math.BigDecimal avgPrice = java.math.BigDecimal.ZERO;
+        if (!signedContracts.isEmpty()) {
+            java.math.BigDecimal sum = signedContracts.stream()
+                    .map(Contract::getAmount)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+            avgPrice = sum.divide(java.math.BigDecimal.valueOf(signedContracts.size()), 0, java.math.RoundingMode.HALF_UP);
+        }
+
+        // 3. Formatear precio promedio (ej: "$ 1.250.000")
+        String precioFormatted = "$ " + java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("es-ES")).format(avgPrice);
+
+        return new AgentProfileResponse.AgentStatsDto(
+                vendidas,
+                alquiladas,
+                total,
+                precioFormatted
+        );
     }
 }
