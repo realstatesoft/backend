@@ -6,6 +6,8 @@ import com.openroof.openroof.dto.visit.VisitRequestResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.agent.AgentClient;
+import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.enums.VisitStatus;
@@ -14,6 +16,8 @@ import com.openroof.openroof.model.interaction.VisitRequest;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.AgentClientRepository;
+import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.VisitRepository;
@@ -21,7 +25,10 @@ import com.openroof.openroof.repository.VisitRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,6 +43,10 @@ public class VisitRequestService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final PropertyAssignmentRepository propertyAssignmentRepository;
+    private final AgentClientRepository agentClientRepository;
+    private final ClientInteractionService clientInteractionService;
+    private final EmailService emailService;
 
     // ─── CREATE (buyer) ───────────────────────────────────────────
 
@@ -48,8 +59,7 @@ public class VisitRequestService {
 
         Property property = getProperty(request.propertyId());
 
-        // Resolve the agent from the property (optional)
-        AgentProfile agent = property.getAgent();
+        AgentProfile agent = resolveAssignedAgent(property);
 
         VisitRequest visitRequest = VisitRequest.builder()
                 .property(property)
@@ -62,6 +72,25 @@ public class VisitRequestService {
                 .buyerPhone(request.buyerPhone() != null ? request.buyerPhone() : buyer.getPhone())
                 .message(request.message())
                 .build();
+
+        // Notify agent (or property owner if no agent) — after commit so emails never fire on rollback
+        if (agent != null) {
+            String recipientEmail = agent.getUser().getEmail();
+            String recipientName  = agent.getUser().getName();
+            String propertyTitle  = property.getTitle();
+            String buyerName      = visitRequest.getBuyerName();
+            LocalDateTime proposedAt = visitRequest.getProposedAt();
+            afterCommit(() -> emailService.sendVisitRequestCreatedEmail(
+                    recipientEmail, recipientName, propertyTitle, buyerName, proposedAt));
+        } else if (property.getOwner() != null) {
+            String recipientEmail = property.getOwner().getEmail();
+            String recipientName  = property.getOwner().getName();
+            String propertyTitle  = property.getTitle();
+            String buyerName      = visitRequest.getBuyerName();
+            LocalDateTime proposedAt = visitRequest.getProposedAt();
+            afterCommit(() -> emailService.sendVisitRequestCreatedEmail(
+                    recipientEmail, recipientName, propertyTitle, buyerName, proposedAt));
+        }
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -91,6 +120,30 @@ public class VisitRequestService {
         visitRequest.setStatus(VisitRequestStatus.ACCEPTED);
         visitRequest.setVisit(visit);
 
+        if (visitRequest.getAgent() != null) {
+            boolean interactionRecorded = clientInteractionService.recordVisitConfirmed(
+                    visitRequest.getAgent().getId(),
+                    visitRequest.getBuyer().getId(),
+                    visitRequest.getProperty().getId(),
+                    visit.getScheduledAt());
+
+            if (!interactionRecorded) {
+                ensureAgentClientExists(visitRequest.getAgent(), visitRequest.getBuyer());
+                clientInteractionService.recordVisitConfirmed(
+                        visitRequest.getAgent().getId(),
+                        visitRequest.getBuyer().getId(),
+                        visitRequest.getProperty().getId(),
+                        visit.getScheduledAt());
+            }
+        }
+
+        String buyerEmail     = visitRequest.getBuyer().getEmail();
+        String buyerName      = visitRequest.getBuyer().getName();
+        String propertyTitle  = visitRequest.getProperty().getTitle();
+        LocalDateTime scheduledAt = visit.getScheduledAt();
+        afterCommit(() -> emailService.sendVisitRequestAcceptedEmail(
+                buyerEmail, buyerName, propertyTitle, scheduledAt));
+
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -104,6 +157,10 @@ public class VisitRequestService {
         validatePendingOrCounterProposed(visitRequest);
 
         visitRequest.setStatus(VisitRequestStatus.REJECTED);
+        String buyerEmail    = visitRequest.getBuyer().getEmail();
+        String buyerName     = visitRequest.getBuyer().getName();
+        String propertyTitle = visitRequest.getProperty().getTitle();
+        afterCommit(() -> emailService.sendVisitRequestRejectedEmail(buyerEmail, buyerName, propertyTitle));
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -120,6 +177,13 @@ public class VisitRequestService {
         visitRequest.setCounterProposedAt(request.counterProposedAt());
         visitRequest.setCounterProposeMessage(request.counterProposeMessage());
         visitRequest.setStatus(VisitRequestStatus.COUNTER_PROPOSED);
+        String buyerEmail    = visitRequest.getBuyer().getEmail();
+        String buyerName     = visitRequest.getBuyer().getName();
+        String propertyTitle = visitRequest.getProperty().getTitle();
+        LocalDateTime counterAt  = request.counterProposedAt();
+        String counterMsg        = request.counterProposeMessage();
+        afterCommit(() -> emailService.sendVisitCounterProposedEmail(
+                buyerEmail, buyerName, propertyTitle, counterAt, counterMsg));
 
         return toResponse(visitRequestRepository.save(visitRequest));
     }
@@ -143,6 +207,14 @@ public class VisitRequestService {
         }
 
         visitRequest.setStatus(VisitRequestStatus.CANCELLED);
+        if (visitRequest.getAgent() != null) {
+            String agentEmail    = visitRequest.getAgent().getUser().getEmail();
+            String agentName     = visitRequest.getAgent().getUser().getName();
+            String propertyTitle = visitRequest.getProperty().getTitle();
+            String buyerName     = visitRequest.getBuyerName();
+            afterCommit(() -> emailService.sendVisitRequestCancelledEmail(
+                    agentEmail, agentName, propertyTitle, buyerName));
+        }
         return toResponse(visitRequestRepository.save(visitRequest));
     }
 
@@ -213,6 +285,14 @@ public class VisitRequestService {
                         "Solicitud de visita no encontrada con ID: " + id));
     }
 
+    private AgentClient ensureAgentClientExists(AgentProfile agent, User buyer) {
+        return agentClientRepository.findByAgent_IdAndUser_Id(agent.getId(), buyer.getId())
+                .orElseGet(() -> agentClientRepository.save(AgentClient.builder()
+                        .agent(agent)
+                        .user(buyer)
+                        .build()));
+    }
+
     private void validateIsAssignedAgent(VisitRequest visitRequest, User currentUser) {
         if (currentUser.getRole() == UserRole.ADMIN) return;
 
@@ -232,6 +312,30 @@ public class VisitRequestService {
             throw new BadRequestException(
                     "La solicitud debe estar en estado PENDING o COUNTER_PROPOSED. Estado actual: "
                             + visitRequest.getStatus());
+        }
+    }
+
+    private AgentProfile resolveAssignedAgent(Property property) {
+        if (property.getAgent() != null) {
+            return property.getAgent();
+        }
+
+        return propertyAssignmentRepository
+                .findTopByProperty_IdAndStatusOrderByAssignedAtDesc(property.getId(), AssignmentStatus.ACCEPTED)
+                .map(pa -> pa.getAgent())
+                .orElse(null);
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
         }
     }
 

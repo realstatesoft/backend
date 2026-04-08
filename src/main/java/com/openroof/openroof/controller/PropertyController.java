@@ -2,7 +2,6 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
-import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
 import io.swagger.v3.oas.annotations.Operation;

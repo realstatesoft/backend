@@ -1,0 +1,53 @@
+
+
+BEGIN;
+
+TRUNCATE TABLE
+    admin_reviews,
+    agent_agenda,
+    agent_clients,
+    agent_profiles,
+    agent_reviews,
+    agent_social_media,
+    agent_specialties,
+    agent_to_specialties,
+    alerts,
+    audit_logs,
+    client_interactions,
+    contracts,
+    contract_signatures,
+    contract_templates,
+    documents_uploaded,
+    exterior_features,
+    favorites,
+    images,
+    interior_features,
+    lead_interactions,
+    lead_statuses,
+    leads,
+    locations,
+    messages,
+    notifications,
+    offers,
+    properties,
+    property_assignments,
+    property_exterior_features,
+    property_flags,
+    property_media,
+    property_price_history,
+    property_reviews,
+    property_room_features,
+    property_rooms,
+    property_similar,
+    property_status_history,
+    property_views,
+    reservations,
+    search_preferences,
+    user_sessions,
+    users,
+    visit_requests,
+    visits,
+    external_clients
+RESTART IDENTITY CASCADE;
+
+COMMIT;

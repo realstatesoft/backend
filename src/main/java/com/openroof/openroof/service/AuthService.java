@@ -22,6 +22,8 @@ import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 
@@ -37,6 +39,7 @@ public class AuthService {
         private final UserRepository userRepository;
         private final UserSessionRepository userSessionRepository;
         private final AgentProfileRepository agentProfileRepository;
+        private final EmailService emailService;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -83,6 +86,9 @@ public class AuthService {
                                 .build();
 
                 userRepository.save(user);
+                String userEmail = user.getEmail();
+                String userName  = user.getName();
+                afterCommit(() -> emailService.sendWelcomeEmail(userEmail, userName));
 
                 if (selectedRole == UserRole.AGENT) {
                         AgentProfile agentProfile = AgentProfile.builder()
@@ -123,6 +129,19 @@ public class AuthService {
                 return generateFullAuthResponse(user, httpRequest);
         }
 
+        // ─── Helpers ──────────────────────────────────────────────────────────────
+
+        private void afterCommit(Runnable action) {
+                if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() { action.run(); }
+                        });
+                } else {
+                        action.run();
+                }
+        }
+
         private AuthResponse generateFullAuthResponse(User user, HttpServletRequest httpRequest) {
                 String accessToken = jwtService.generateToken(user);
                 String refreshToken = jwtService.generateRefreshToken(user);
@@ -130,12 +149,17 @@ public class AuthService {
                 // Aquí es donde realmente ocurre la magia de guardar la sesión
                 saveUserSession(user, refreshToken, httpRequest);
 
+                Long agentProfileId = agentProfileRepository.findByUser_Id(user.getId())
+                                .map(ap -> ap.getId())
+                                .orElse(null);
+
                 return AuthResponse.builder()
                                 .id(user.getId())
                                 .accessToken(accessToken)
                                 .refreshToken(refreshToken)
                                 .email(user.getEmail())
                                 .role(user.getRole().name())
+                                .agentProfileId(agentProfileId)
                                 .build();
         }
 
