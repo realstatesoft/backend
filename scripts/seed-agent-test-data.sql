@@ -53,14 +53,15 @@ INSERT INTO agent_clients (
     is_searching_property, created_at, updated_at, version
 )
 SELECT
-    200, 203, 'MEDIUM', 'ACTIVE', 'BUYER',
+    200, u.id, 'MEDIUM', 'ACTIVE', 'BUYER',
     'WHATSAPP', 6, 2, 1,
     150000, 250000, 2, 3, 1, 2,
     'Arquitecta', 65000, 'Instagram',
     '["Apartamento"]', '["Villa Morra", "Carmelitas"]',
     '["Primer Contacto", "Interesada en Alquiler"]',
     true, now(), now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM agent_clients WHERE agent_id = 200 AND user_id = 203);
+FROM (SELECT id FROM users WHERE email = 'maria.garcia@test.com') u
+WHERE NOT EXISTS (SELECT 1 FROM agent_clients WHERE agent_id = 200 AND user_id = u.id);
 
 INSERT INTO agent_clients (
     agent_id, user_id, priority, status, client_type,
@@ -71,14 +72,15 @@ INSERT INTO agent_clients (
     is_searching_property, created_at, updated_at, version
 )
 SELECT
-    200, 204, 'LOW', 'ACTIVE', 'SELLER',
+    200, u.id, 'LOW', 'ACTIVE', 'SELLER',
     'PHONE', 2, 0, 0,
     300000, 500000, 3, 5, 2, 4,
     'Empresario', 120000, 'Referral',
     '["Casa", "Terreno"]', '["Luque", "San Lorenzo"]',
     '["Cliente Frío", "Recontactar en 3 meses"]',
     false, now(), now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM agent_clients WHERE agent_id = 200 AND user_id = 204);
+FROM (SELECT id FROM users WHERE email = 'carlos.lopez@test.com') u
+WHERE NOT EXISTS (SELECT 1 FROM agent_clients WHERE agent_id = 200 AND user_id = u.id);
 
 -- ============================================================
 -- 3. UBICACIÓN DE PRUEBA
@@ -188,17 +190,19 @@ WHERE NOT EXISTS (SELECT 1 FROM contracts WHERE id = 300);
 
 -- Contrato 301: DRAFT → aparece como contrato activo
 INSERT INTO contracts (id, property_id, buyer_id, seller_id, contract_type, status, amount, terms, created_at, updated_at, version)
-SELECT 301, 301, 203, 200, 'SALE', 'DRAFT', 180000.00,
+SELECT 301, 301, u.id, 200, 'SALE', 'DRAFT', 180000.00,
        'Financiado al 30%. Sujeto a aprobación bancaria.',
        now() - interval '10 days', now(), 1
+FROM (SELECT id FROM users WHERE email = 'maria.garcia@test.com') u
 WHERE NOT EXISTS (SELECT 1 FROM contracts WHERE id = 301);
 
 -- Contrato 302: PARTIALLY_SIGNED → aparece como contrato activo
 INSERT INTO contracts (id, property_id, buyer_id, seller_id, contract_type, status, amount, start_date, end_date, terms, created_at, updated_at, version)
-SELECT 302, 302, 204, 200, 'RENT', 'PARTIALLY_SIGNED', 320000.00,
+SELECT 302, 302, u.id, 200, 'RENT', 'PARTIALLY_SIGNED', 320000.00,
        '2026-04-01', '2027-04-01',
        'Alquiler anual. Depósito equivalente a 2 meses. Revisión de precio cada 6 meses.',
        now() - interval '5 days', now(), 1
+FROM (SELECT id FROM users WHERE email = 'carlos.lopez@test.com') u
 WHERE NOT EXISTS (SELECT 1 FROM contracts WHERE id = 302);
 
 -- ============================================================
@@ -228,12 +232,13 @@ INSERT INTO visit_requests (
     created_at, updated_at, version
 )
 SELECT
-    301, 302, 203, 200,
+    301, 302, u.id, 200,
     now() + interval '14 days', 'ACCEPTED',
     'María García', 'maria.garcia@test.com', '+595982654321',
     'Quiero ver el jardín y la distribución de los dormitorios.',
     now(), now(), 1
-WHERE NOT EXISTS (SELECT 1 FROM visit_requests WHERE property_id = 302 AND buyer_id = 203 AND agent_id = 200);
+FROM (SELECT id FROM users WHERE email = 'maria.garcia@test.com') u
+WHERE NOT EXISTS (SELECT 1 FROM visit_requests WHERE property_id = 302 AND buyer_id = u.id AND agent_id = 200);
 
 COMMIT;
 
