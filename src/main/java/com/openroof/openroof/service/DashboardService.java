@@ -11,9 +11,6 @@ import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -234,57 +231,6 @@ public class DashboardService {
                 return new ReportsSummaryResponse(marketMetrics, byType, monthlyTrend);
         }
 
-        // ─── Agent Report CSV Export ──────────────────────────────────────────────
-
-        public ResponseEntity<String> exportAgentReportCsv(String email) {
-                User user = findUserByEmail(email);
-                AgentProfile agent = findAgentByUserId(user.getId());
-                Long agentId = agent.getId();
-
-                List<Contract> signed = contractRepository.findSignedByAgentId(agentId);
-
-                StringBuilder csv = new StringBuilder();
-                csv.append("Fecha,Propiedad,Comprador,Vendedor,Monto,Comisión Agente,Rol\n");
-
-                for (Contract c : signed) {
-                        String fecha = c.getStartDate() != null ? c.getStartDate().toString() : "";
-                        String propiedad = c.getProperty() != null ? escapeCsvField(c.getProperty().getAddress()) : "";
-                        String comprador = c.getBuyer() != null
-                                        ? escapeCsvField(c.getBuyer().getName())
-                                        : "";
-                        String vendedor = c.getSeller() != null
-                                        ? escapeCsvField(c.getSeller().getName())
-                                        : "";
-                        String monto = c.getAmount() != null ? c.getAmount().setScale(2, RoundingMode.HALF_UP).toString() : "0";
-                        BigDecimal commision = computeMyCommission(c, user.getId(), agentId);
-                        String comision = commision.setScale(2, RoundingMode.HALF_UP).toString();
-                        String rol = resolveRole(c, user.getId(), agentId);
-
-                        csv.append(fecha).append(",")
-                                        .append(propiedad).append(",")
-                                        .append(comprador).append(",")
-                                        .append(vendedor).append(",")
-                                        .append(monto).append(",")
-                                        .append(comision).append(",")
-                                        .append(rol).append("\n");
-                }
-
-                String agentName = user.getName().replaceAll("[^a-zA-Z0-9]", "_");
-                String filename = "reporte-agente-" + agentName + "-" + LocalDate.now() + ".csv";
-
-                return ResponseEntity.ok()
-                                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
-                                .body(csv.toString());
-        }
-
-        private String escapeCsvField(String value) {
-                if (value == null) return "";
-                if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-                        return "\"" + value.replace("\"", "\"\"") + "\"";
-                }
-                return value;
-        }
         // ─── Sales Performance (Year vs Year comparison) ─────────────────────────
 
         public List<MonthlySalesData> getSalesPerformance(String email) {

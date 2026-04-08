@@ -41,9 +41,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.status = 'SIGNED' AND c.startDate IS NOT NULL AND YEAR(c.startDate) = :year AND MONTH(c.startDate) = :month")
     long countSignedByYearAndMonth(@Param("year") int year, @Param("month") int month);
 
-    @Query("SELECT c FROM Contract c WHERE (c.listingAgent.id = :agentId OR c.buyerAgent.id = :agentId) AND c.status = 'SIGNED' AND c.startDate IS NOT NULL ORDER BY c.startDate DESC")
-    List<Contract> findSignedByAgentId(@Param("agentId") Long agentId);
-
     @Query("""
           SELECT DISTINCT c FROM Contract c
           LEFT JOIN c.listingAgent la

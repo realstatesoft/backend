@@ -71,10 +71,4 @@ public class DashboardController {
                 dashboardService.getSalesPerformance(auth.getName())));
     }
 
-    @GetMapping("/agent/report/export")
-    @PreAuthorize("hasRole('AGENT')")
-    @Operation(summary = "Exportar reporte de ventas del agente en formato CSV")
-    public ResponseEntity<String> exportAgentReport(Authentication auth) {
-        return dashboardService.exportAgentReportCsv(auth.getName());
-    }
 }
