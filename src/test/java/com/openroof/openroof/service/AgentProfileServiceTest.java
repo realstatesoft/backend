@@ -12,6 +12,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.AgentSpecialtyRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.ContractRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +50,10 @@ class AgentProfileServiceTest {
     private AgentSpecialtyRepository agentSpecialtyRepository;
     @Mock
     private AgentProfileMapper agentProfileMapper;
+    @Mock
+    private PropertyRepository propertyRepository;
+    @Mock
+    private ContractRepository contractRepository;
 
     @InjectMocks
     private AgentProfileService agentProfileService;
@@ -118,7 +124,7 @@ class AgentProfileServiceTest {
             when(agentProfileRepository.existsByUser_Id(1L)).thenReturn(false);
             when(agentProfileMapper.toEntity(eq(request), eq(testUser), anyList())).thenReturn(testAgent);
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
 
             AgentProfileResponse result = agentProfileService.create(request);
 
@@ -141,7 +147,7 @@ class AgentProfileServiceTest {
             when(agentProfileRepository.existsByUser_Id(1L)).thenReturn(false);
             when(agentProfileMapper.toEntity(any(), any(), anyList())).thenReturn(testAgent);
             when(agentProfileRepository.save(any())).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(any())).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(any(), any())).thenReturn(testResponse);
 
             assertThatCode(() -> agentProfileService.create(request)).doesNotThrowAnyException();
         }
@@ -207,7 +213,7 @@ class AgentProfileServiceTest {
             when(agentProfileRepository.existsByUser_Id(1L)).thenReturn(false);
             when(agentProfileMapper.toEntity(eq(request), eq(testUser), anyList())).thenReturn(testAgent);
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
 
             AgentProfileResponse result = agentProfileService.create(request);
             assertThat(result).isNotNull();
@@ -227,7 +233,7 @@ class AgentProfileServiceTest {
         @DisplayName("Obtener agente existente → 200 con datos")
         void getExistingAgent_returnsResponse() {
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
 
             AgentProfileResponse result = agentProfileService.getById(10L);
 
@@ -345,7 +351,7 @@ class AgentProfileServiceTest {
 
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(updatedResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(updatedResponse);
 
             AgentProfileResponse result = agentProfileService.update(10L, request);
 
@@ -382,7 +388,7 @@ class AgentProfileServiceTest {
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
             when(agentSpecialtyRepository.findAllById(new LinkedHashSet<>(List.of(1L)))).thenReturn(List.of(spec));
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
 
             agentProfileService.update(10L, request);
 
@@ -401,7 +407,7 @@ class AgentProfileServiceTest {
 
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
             when(agentProfileRepository.save(testAgent)).thenReturn(testAgent);
-            when(agentProfileMapper.toResponse(testAgent)).thenReturn(testResponse);
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
 
             agentProfileService.update(10L, request);
 

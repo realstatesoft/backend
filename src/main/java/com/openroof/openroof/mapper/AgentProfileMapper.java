@@ -18,16 +18,8 @@ public class AgentProfileMapper {
 
     // ─── Entity → Response ────────────────────────────────────────
 
-    public AgentProfileResponse toResponse(AgentProfile agent) {
+    public AgentProfileResponse toResponse(AgentProfile agent, AgentProfileResponse.AgentStatsDto stats) {
         User user = agent.getUser();
-        // TODO: En el futuro estas estadísticas deberán calcularse dinámicamente
-        // consultando las entidades de transacciones o propiedades del agente.
-        AgentProfileResponse.AgentStatsDto statsMock = new AgentProfileResponse.AgentStatsDto(
-                0,
-                0,
-                0,
-                "$ 0"
-        );
 
         return new AgentProfileResponse(
                 agent.getId(),
@@ -44,7 +36,7 @@ public class AgentProfileMapper {
                 agent.getTotalReviews(),
                 mapSpecialties(agent.getSpecialties()),
                 mapSocialMedia(agent.getSocialMedia()),
-                statsMock,
+                stats,
                 agent.getCreatedAt(),
                 agent.getUpdatedAt()
         );
