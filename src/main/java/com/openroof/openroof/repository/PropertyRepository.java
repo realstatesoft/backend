@@ -70,6 +70,9 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Query("SELECT COUNT(p) FROM Property p WHERE p.agent.id = :agentId AND p.status = :status AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     long countByAgentIdAndStatus(@Param("agentId") Long agentId, @Param("status") PropertyStatus status);
 
+    @Query("SELECT COALESCE(AVG(p.price), 0) FROM Property p WHERE p.status IN :statuses AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
+    Double findAvgPriceByStatuses(@Param("statuses") List<PropertyStatus> statuses);
+
 
     // TRASHCAN ─────────────────────────────────────────
 

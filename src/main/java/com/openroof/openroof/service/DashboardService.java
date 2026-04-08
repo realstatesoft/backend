@@ -190,8 +190,14 @@ public class DashboardService {
                                 ? (int) ((soldCount * 100) / totalProperties)
                                 : 0;
 
+                Double avgPriceRaw = propertyRepository.findAvgPriceByStatuses(
+                                List.of(PropertyStatus.PUBLISHED, PropertyStatus.SOLD));
+                long avgPrice = (avgPriceRaw != null && !avgPriceRaw.isNaN())
+                                ? BigDecimal.valueOf(avgPriceRaw).setScale(0, RoundingMode.HALF_UP).longValue()
+                                : 0;
+
                 var marketMetrics = new ReportsSummaryResponse.MarketMetrics(
-                                0, 0, publishedCount, 0, 0, 0, closingRate, 0);
+                                avgPrice, 0, publishedCount, 0, 0, 0, closingRate, 0);
 
                 // Property distribution by type
                 List<ReportsSummaryResponse.TypeDistribution> byType = new ArrayList<>();
@@ -202,19 +208,29 @@ public class DashboardService {
                         }
                 }
 
-                // Monthly trend placeholder
+                // Monthly trend — real data for last 6 months
                 List<ReportsSummaryResponse.MonthlyTrend> monthlyTrend = new ArrayList<>();
                 LocalDate now = LocalDate.now();
+                List<VisitRequestStatus> activeVisitStatuses = List.of(
+                                VisitRequestStatus.PENDING,
+                                VisitRequestStatus.COUNTER_PROPOSED,
+                                VisitRequestStatus.ACCEPTED);
                 for (int i = 5; i >= 0; i--) {
                         LocalDate month = now.minusMonths(i);
                         String monthName = month.getMonth().getDisplayName(TextStyle.SHORT,
                                         Locale.forLanguageTag("es"));
                         monthName = monthName.substring(0, 1).toUpperCase() + monthName.substring(1);
-                        monthlyTrend.add(new ReportsSummaryResponse.MonthlyTrend(monthName, 0, 0));
+                        int year = month.getYear();
+                        int monthValue = month.getMonthValue();
+                        long ventas = contractRepository.countSignedByYearAndMonth(year, monthValue);
+                        long visitas = visitRequestRepository.countByStatusesAndYearAndMonth(
+                                        activeVisitStatuses, year, monthValue);
+                        monthlyTrend.add(new ReportsSummaryResponse.MonthlyTrend(monthName, Math.toIntExact(ventas), Math.toIntExact(visitas)));
                 }
 
                 return new ReportsSummaryResponse(marketMetrics, byType, monthlyTrend);
         }
+
         // ─── Sales Performance (Year vs Year comparison) ─────────────────────────
 
         public List<MonthlySalesData> getSalesPerformance(String email) {
