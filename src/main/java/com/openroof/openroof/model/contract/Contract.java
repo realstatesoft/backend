@@ -1,4 +1,4 @@
-﻿package com.openroof.openroof.model.contract;
+package com.openroof.openroof.model.contract;
 
 import com.openroof.openroof.common.BaseEntity;
 import com.openroof.openroof.model.agent.AgentProfile;

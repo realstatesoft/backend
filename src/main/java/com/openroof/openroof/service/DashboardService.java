@@ -190,10 +190,10 @@ public class DashboardService {
                                 ? (int) ((soldCount * 100) / totalProperties)
                                 : 0;
 
-                BigDecimal avgPriceRaw = propertyRepository.findAvgPriceByStatuses(
+                Double avgPriceRaw = propertyRepository.findAvgPriceByStatuses(
                                 List.of(PropertyStatus.PUBLISHED, PropertyStatus.SOLD));
-                long avgPrice = avgPriceRaw != null
-                                ? avgPriceRaw.setScale(0, RoundingMode.HALF_UP).longValue()
+                long avgPrice = (avgPriceRaw != null && !avgPriceRaw.isNaN())
+                                ? BigDecimal.valueOf(avgPriceRaw).setScale(0, RoundingMode.HALF_UP).longValue()
                                 : 0;
 
                 var marketMetrics = new ReportsSummaryResponse.MarketMetrics(
