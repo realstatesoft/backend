@@ -23,10 +23,10 @@ public class AgentProfileMapper {
         // TODO: En el futuro estas estadísticas deberán calcularse dinámicamente
         // consultando las entidades de transacciones o propiedades del agente.
         AgentProfileResponse.AgentStatsDto statsMock = new AgentProfileResponse.AgentStatsDto(
-                45,
-                23,
-                68,
-                "$ 750.000"
+                0,
+                0,
+                0,
+                "$ 0"
         );
 
         return new AgentProfileResponse(

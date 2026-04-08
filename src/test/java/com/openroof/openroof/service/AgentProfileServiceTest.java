@@ -88,6 +88,7 @@ class AgentProfileServiceTest {
                 "Test Realty", "Experienced agent", 5, "LIC-001",
                 BigDecimal.ZERO, 0,
                 Collections.emptyList(), Collections.emptyList(),
+                new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                 testAgent.getCreatedAt(), testAgent.getUpdatedAt()
         );
 
@@ -338,6 +339,7 @@ class AgentProfileServiceTest {
                     "New Company", "New bio", 10, "LIC-001",
                     BigDecimal.ZERO, 0,
                     Collections.emptyList(), Collections.emptyList(),
+                    new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                     testAgent.getCreatedAt(), testAgent.getUpdatedAt()
             );
 
