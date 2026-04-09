@@ -95,8 +95,8 @@ public class AgentProfileController {
     // ─── UPDATE ───────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Actualizar un perfil de agente (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN') or @leadSecurity.isAgentOwner(principal, #id)")
+    @Operation(summary = "Actualizar un perfil de agente (ADMIN o el propio agente)")
     public ResponseEntity<ApiResponse<AgentProfileResponse>> update(
             @Parameter(description = "ID del agente") @PathVariable Long id,
             @Valid @RequestBody UpdateAgentProfileRequest request) {
