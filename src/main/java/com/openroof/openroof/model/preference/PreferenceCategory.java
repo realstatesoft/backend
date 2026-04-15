@@ -29,7 +29,7 @@ public class PreferenceCategory {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @OrderBy("displayOrder ASC")
     @Builder.Default
     private List<PreferenceOption> options = new ArrayList<>();

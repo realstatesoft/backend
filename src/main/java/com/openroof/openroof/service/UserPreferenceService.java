@@ -117,13 +117,13 @@ public class UserPreferenceService {
         validateUserExists(userId);
 
         userPreferenceRepository.findByUserId(userId)
-                .ifPresent(pref -> {
-                    userPreferenceRepository.delete(pref);
-                    // Resetear el flag de onboarding en el usuario
-                    User user = pref.getUser();
-                    user.setOnboardingCompleted(false);
-                    userRepository.save(user);
-                });
+                .ifPresent(userPreferenceRepository::delete);
+
+        // Asegurar que el flag de onboarding se resetee siempre (incluso si no hay registro de preferencias)
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        user.setOnboardingCompleted(false);
+        userRepository.save(user);
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -160,8 +160,11 @@ public class UserPreferenceService {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        List<PreferenceOption> found = preferenceOptionRepository.findAllById(ids);
-        if (found.size() != ids.size()) {
+        // Deduplicar IDs para evitar errores falsos de validación
+        List<Long> distinctIds = ids.stream().distinct().toList();
+        List<PreferenceOption> found = preferenceOptionRepository.findAllById(distinctIds);
+
+        if (found.size() != distinctIds.size()) {
             Set<Long> foundIds = new HashSet<>();
             found.forEach(o -> foundIds.add(o.getId()));
             List<Long> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();

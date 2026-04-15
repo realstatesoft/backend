@@ -140,29 +140,31 @@ public class PropertyService {
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
-        
-        // 1. Obtener todas las propiedades que coincidan con los filtros
-        List<Property> properties = propertyRepository.findAll(spec);
 
-        // 2. Ordenar por relevancia si el usuario tiene preferencias
+        // 1. Verificar si el usuario tiene preferencias antes de cargar lista completa
         if (userId != null) {
             Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserId(userId);
             if (prefOpt.isPresent()) {
                 UserPreference pref = prefOpt.get();
+                
+                // 2. Obtener todas las propiedades (SOLO si necesitamos ordenar por relevancia)
+                List<Property> properties = propertyRepository.findAll(spec);
+
+                // 3. Ordenar por relevancia
                 properties = properties.stream()
                         .sorted(Comparator.comparingInt(
                                 (Property p) -> propertyRelevanceService.calculateScore(p, pref)
                         ).reversed())
                         .collect(Collectors.toList());
 
-                // 3. Paginación manual sobre lista ordenada
+                // 4. Paginación manual
                 int start = (int) pageable.getOffset();
                 int end = Math.min(start + pageable.getPageSize(), properties.size());
                 List<Property> pageContent = start >= properties.size()
                         ? Collections.emptyList()
                         : properties.subList(start, end);
 
-                // 4. Mapear a DTO con relevanceScore incluido
+                // 5. Mapear a DTO con relevanceScore incluido
                 List<PropertySummaryResponse> dtos = pageContent.stream()
                         .map(p -> propertyMapper.toSummaryResponse(p, propertyRelevanceService.calculateScore(p, pref)))
                         .collect(Collectors.toList());
@@ -171,7 +173,7 @@ public class PropertyService {
             }
         }
 
-        // Si no hay usuario o no tiene preferencias, paginación normal en base de datos
+        // Si no hay usuario o no tiene preferencias, paginación normal en base de datos (SQL LIMIT/OFFSET)
         return propertyRepository.findAll(spec, sanitizePageable(pageable))
                 .map(p -> propertyMapper.toSummaryResponse(p, 0));
     }
@@ -184,29 +186,35 @@ public class PropertyService {
 
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> search(String keyword, Pageable pageable, Long userId) {
-        List<Property> properties;
-        if (keyword == null || keyword.isBlank()) {
-            properties = propertyRepository.findAll();
-        } else {
-            properties = propertyRepository.searchByKeyword(keyword.trim(), org.springframework.data.domain.Pageable.unpaged()).getContent();
-        }
-
+        // 1. Verificar si el usuario tiene preferencias
         if (userId != null) {
             Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserId(userId);
             if (prefOpt.isPresent()) {
                 UserPreference pref = prefOpt.get();
+
+                // 2. Cargar todo en memoria (Solo si necesitamos ordenar)
+                List<Property> properties;
+                if (keyword == null || keyword.isBlank()) {
+                    properties = propertyRepository.findAll();
+                } else {
+                    properties = propertyRepository.searchByKeyword(keyword.trim(), org.springframework.data.domain.Pageable.unpaged()).getContent();
+                }
+
+                // 3. Ordenar por relevancia
                 properties = properties.stream()
                         .sorted(Comparator.comparingInt(
                                 (Property p) -> propertyRelevanceService.calculateScore(p, pref)
                         ).reversed())
                         .collect(Collectors.toList());
 
+                // 4. Paginación manual
                 int start = (int) pageable.getOffset();
                 int end = Math.min(start + pageable.getPageSize(), properties.size());
                 List<Property> pageContent = start >= properties.size()
                         ? Collections.emptyList()
                         : properties.subList(start, end);
 
+                // 5. Mapear a DTO
                 List<PropertySummaryResponse> dtos = pageContent.stream()
                         .map(p -> propertyMapper.toSummaryResponse(p, propertyRelevanceService.calculateScore(p, pref)))
                         .collect(Collectors.toList());
@@ -215,6 +223,7 @@ public class PropertyService {
             }
         }
 
+        // Si no necesitamos ordenamiento por relevancia, usar paginación estándar de BD
         if (keyword == null || keyword.isBlank()) {
             return propertyRepository.findAll(sanitizePageable(pageable))
                     .map(p -> propertyMapper.toSummaryResponse(p, 0));
