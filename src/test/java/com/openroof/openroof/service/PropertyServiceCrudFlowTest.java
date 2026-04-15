@@ -52,6 +52,10 @@ class PropertyServiceCrudFlowTest {
     private InteriorFeatureRepository interiorFeatureRepository;
     @Mock
     private PropertyMapper propertyMapper;
+    @Mock
+    private com.openroof.openroof.repository.UserPreferenceRepository userPreferenceRepository;
+    @Mock
+    private com.openroof.openroof.service.PropertyRelevanceService propertyRelevanceService;
 
     private PropertyService propertyService;
 
@@ -64,7 +68,9 @@ class PropertyServiceCrudFlowTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
-                propertyMapper
+                propertyMapper,
+                userPreferenceRepository,
+                propertyRelevanceService
         );
     }
 

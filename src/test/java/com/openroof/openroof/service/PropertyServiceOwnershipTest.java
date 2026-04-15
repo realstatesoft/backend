@@ -40,6 +40,8 @@ class PropertyServiceOwnershipTest {
     @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
+    @Mock private com.openroof.openroof.repository.UserPreferenceRepository userPreferenceRepository;
+    @Mock private com.openroof.openroof.service.PropertyRelevanceService propertyRelevanceService;
 
     private PropertyService propertyService;
 
@@ -52,7 +54,8 @@ class PropertyServiceOwnershipTest {
         propertyService = new PropertyService(
                 propertyRepository, userRepository, locationRepository,
                 agentProfileRepository, exteriorFeatureRepository,
-                interiorFeatureRepository, propertyMapper);
+                interiorFeatureRepository, propertyMapper,
+                userPreferenceRepository, propertyRelevanceService);
     }
 
     // ─── checkOwnership via delete() ──────────────────────────────

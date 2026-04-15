@@ -36,6 +36,8 @@ class PropertySimilarTest {
     @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
+    @Mock private com.openroof.openroof.repository.UserPreferenceRepository userPreferenceRepository;
+    @Mock private com.openroof.openroof.service.PropertyRelevanceService propertyRelevanceService;
 
     private PropertyService propertyService;
 
@@ -65,7 +67,8 @@ class PropertySimilarTest {
                 "Asuncion",         // locationName
                 new BigDecimal("-25.2637"), // lat
                 new BigDecimal("-57.5759"), // lng
-                null                // trashedAt
+                null,               // trashedAt
+                0                   // relevanceScore
         );
     }
 
@@ -78,7 +81,9 @@ class PropertySimilarTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
-                propertyMapper
+                propertyMapper,
+                userPreferenceRepository,
+                propertyRelevanceService
         );
 
         Location location = Location.builder()

@@ -32,6 +32,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Comparator;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageImpl;
+import com.openroof.openroof.model.preference.UserPreference;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +59,8 @@ public class PropertyService {
     private final ExteriorFeatureRepository exteriorFeatureRepository;
     private final InteriorFeatureRepository interiorFeatureRepository;
     private final PropertyMapper propertyMapper;
-
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final PropertyRelevanceService propertyRelevanceService;
     private static final double EARTH_RADIUS = 6371;
 
     // price variation percentage for searching similar properties
@@ -131,26 +138,89 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable) {
+    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
+        
+        // 1. Obtener todas las propiedades que coincidan con los filtros
+        List<Property> properties = propertyRepository.findAll(spec);
+
+        // 2. Ordenar por relevancia si el usuario tiene preferencias
+        if (userId != null) {
+            Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserId(userId);
+            if (prefOpt.isPresent()) {
+                UserPreference pref = prefOpt.get();
+                properties = properties.stream()
+                        .sorted(Comparator.comparingInt(
+                                (Property p) -> propertyRelevanceService.calculateScore(p, pref)
+                        ).reversed())
+                        .collect(Collectors.toList());
+
+                // 3. Paginación manual sobre lista ordenada
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), properties.size());
+                List<Property> pageContent = start >= properties.size()
+                        ? Collections.emptyList()
+                        : properties.subList(start, end);
+
+                // 4. Mapear a DTO con relevanceScore incluido
+                List<PropertySummaryResponse> dtos = pageContent.stream()
+                        .map(p -> propertyMapper.toSummaryResponse(p, propertyRelevanceService.calculateScore(p, pref)))
+                        .collect(Collectors.toList());
+
+                return new PageImpl<>(dtos, pageable, properties.size());
+            }
+        }
+
+        // Si no hay usuario o no tiene preferencias, paginación normal en base de datos
         return propertyRepository.findAll(spec, sanitizePageable(pageable))
-                .map(propertyMapper::toSummaryResponse);
+                .map(p -> propertyMapper.toSummaryResponse(p, 0));
     }
 
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> getByOwner(Long ownerId, Pageable pageable) {
         return propertyRepository.findByOwner_IdAndTrashedAtIsNull(ownerId, pageable)
-                .map(propertyMapper::toSummaryResponse);
+                .map(p -> propertyMapper.toSummaryResponse(p, 0));
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> search(String keyword, Pageable pageable) {
+    public Page<PropertySummaryResponse> search(String keyword, Pageable pageable, Long userId) {
+        List<Property> properties;
         if (keyword == null || keyword.isBlank()) {
-            return propertyRepository.findAll(pageable)
-                    .map(propertyMapper::toSummaryResponse);
+            properties = propertyRepository.findAll();
+        } else {
+            properties = propertyRepository.searchByKeyword(keyword.trim(), org.springframework.data.domain.Pageable.unpaged()).getContent();
         }
-        return propertyRepository.searchByKeyword(keyword.trim(), pageable)
-                .map(propertyMapper::toSummaryResponse);
+
+        if (userId != null) {
+            Optional<UserPreference> prefOpt = userPreferenceRepository.findByUserId(userId);
+            if (prefOpt.isPresent()) {
+                UserPreference pref = prefOpt.get();
+                properties = properties.stream()
+                        .sorted(Comparator.comparingInt(
+                                (Property p) -> propertyRelevanceService.calculateScore(p, pref)
+                        ).reversed())
+                        .collect(Collectors.toList());
+
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), properties.size());
+                List<Property> pageContent = start >= properties.size()
+                        ? Collections.emptyList()
+                        : properties.subList(start, end);
+
+                List<PropertySummaryResponse> dtos = pageContent.stream()
+                        .map(p -> propertyMapper.toSummaryResponse(p, propertyRelevanceService.calculateScore(p, pref)))
+                        .collect(Collectors.toList());
+
+                return new PageImpl<>(dtos, pageable, properties.size());
+            }
+        }
+
+        if (keyword == null || keyword.isBlank()) {
+            return propertyRepository.findAll(sanitizePageable(pageable))
+                    .map(p -> propertyMapper.toSummaryResponse(p, 0));
+        }
+        return propertyRepository.searchByKeyword(keyword.trim(), sanitizePageable(pageable))
+                .map(p -> propertyMapper.toSummaryResponse(p, 0));
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────

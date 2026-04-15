@@ -21,7 +21,7 @@ import java.util.List;
  * Base path: /api/v1/preferences (el prefijo /api lo agrega el context-path del servidor)
  */
 @RestController
-@RequestMapping("/v1/preferences")
+@RequestMapping("/preferences")
 @RequiredArgsConstructor
 @Tag(name = "User Preferences", description = "Preferencias de búsqueda del usuario para el onboarding wizard")
 public class UserPreferenceController {
