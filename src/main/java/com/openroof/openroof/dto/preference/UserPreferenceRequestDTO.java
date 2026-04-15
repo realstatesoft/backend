@@ -14,7 +14,7 @@ public record UserPreferenceRequestDTO(
         Long userId,
 
         @NotEmpty(message = "Debe seleccionar al menos una opción de preferencia")
-        List<Long> selectedOptionIds,
+        List<@NotNull(message = "Los IDs de opción no pueden ser nulos") Long> selectedOptionIds,
 
         @Valid
         List<RangeDTO> ranges

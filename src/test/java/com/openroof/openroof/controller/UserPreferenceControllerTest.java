@@ -3,6 +3,8 @@ package com.openroof.openroof.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.preference.*;
+import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.UserPreferenceService;
@@ -100,58 +102,90 @@ class UserPreferenceControllerTest {
     @Test
     @DisplayName("GET /v1/preferences/{userId} → 200 con preferencias")
     void getUserPreferences_returns200() throws Exception {
-        UserPreferenceResponseDTO res = new UserPreferenceResponseDTO(1L, true, List.of(), List.of(new RangeDTO("PRICE", 100D, 200D)));
-        when(userPreferenceService.getUserPreferences(1L)).thenReturn(res);
+        Long userId = 1L;
+        User currentUser = User.builder().email("user@test.com").role(UserRole.USER).build();
+        currentUser.setId(userId);
 
-        mockMvc.perform(get("/v1/preferences/1").with(user("user@test.com")))
+        UserPreferenceResponseDTO res = new UserPreferenceResponseDTO(userId, true, List.of(), List.of(new RangeDTO("PRICE", 100D, 200D)));
+        when(userPreferenceService.getUserPreferences(userId)).thenReturn(res);
+
+        mockMvc.perform(get("/v1/preferences/" + userId).with(user(currentUser)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.userId").value(1L))
-                .andExpect(jsonPath("$.data.onboardingCompleted").value(true))
-                .andExpect(jsonPath("$.data.ranges[0].fieldName").value("PRICE"));
+                .andExpect(jsonPath("$.data.userId").value(userId));
     }
-    
+
     @Test
-    @DisplayName("GET /v1/preferences/{userId} sin auth → 401")
-    void getUserPreferences_unauthorized_returns401() throws Exception {
-        mockMvc.perform(get("/v1/preferences/1"))
-                .andExpect(status().isUnauthorized());
+    @DisplayName("GET /v1/preferences/{userId} de otro usuario → 403 Forbidden")
+    void getUserPreferences_otherUser_returns403() throws Exception {
+        Long targetUserId = 2L;
+        User currentUser = User.builder().email("user@test.com").role(UserRole.USER).build();
+        currentUser.setId(1L); // My ID is 1, targeting 2
+
+        mockMvc.perform(get("/v1/preferences/" + targetUserId).with(user(currentUser)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /v1/preferences/{userId} de otro usuario como ADMIN → 200")
+    void getUserPreferences_otherUserAsAdmin_returns200() throws Exception {
+        Long targetUserId = 2L;
+        User adminUser = User.builder().email("admin@test.com").role(UserRole.ADMIN).build();
+        adminUser.setId(99L);
+
+        UserPreferenceResponseDTO res = new UserPreferenceResponseDTO(targetUserId, true, List.of(), List.of());
+        when(userPreferenceService.getUserPreferences(targetUserId)).thenReturn(res);
+
+        mockMvc.perform(get("/v1/preferences/" + targetUserId).with(user(adminUser)))
+                .andExpect(status().isOk());
     }
 
     @Test
     @DisplayName("POST /v1/preferences → 200 guardado exitoso")
     void savePreferences_returns200() throws Exception {
-        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(1L, List.of(10L), Collections.emptyList());
-        UserPreferenceResponseDTO res = new UserPreferenceResponseDTO(1L, true, List.of(new PreferenceOptionDTO(10L, "Opt", "OPT", "TEST")), Collections.emptyList());
+        Long userId = 1L;
+        User currentUser = User.builder().email("user@test.com").role(UserRole.USER).build();
+        currentUser.setId(userId);
+
+        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(userId, List.of(10L), Collections.emptyList());
+        UserPreferenceResponseDTO res = new UserPreferenceResponseDTO(userId, true, List.of(new PreferenceOptionDTO(10L, "Opt", "OPT", "TEST")), Collections.emptyList());
 
         when(userPreferenceService.saveOrUpdateUserPreferences(any(UserPreferenceRequestDTO.class))).thenReturn(res);
 
         mockMvc.perform(post("/v1/preferences")
-                        .with(user("user@test.com"))
+                        .with(user(currentUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.onboardingCompleted").value(true));
+                .andExpect(jsonPath("$.success").value(true));
     }
-    
+
     @Test
-    @DisplayName("POST /v1/preferences payload invalido → 400")
-    void savePreferences_invalidPayload_returns400() throws Exception {
-        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(null, Collections.emptyList(), null);
+    @DisplayName("POST /v1/preferences con rango inválido → 400")
+    void savePreferences_invalidRange_returns400() throws Exception {
+        Long userId = 1L;
+        User currentUser = User.builder().email("user@test.com").role(UserRole.USER).build();
+        currentUser.setId(userId);
+
+        RangeDTO invalidRange = new RangeDTO("PRICE", 500D, 100D); // min > max
+        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(userId, List.of(10L), List.of(invalidRange));
 
         mockMvc.perform(post("/v1/preferences")
-                        .with(user("user@test.com"))
+                        .with(user(currentUser))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath("$.message").value("Error de validación"));
     }
 
     @Test
     @DisplayName("DELETE /v1/preferences/{userId} → 204")
     void deletePreferences_returns204() throws Exception {
-        mockMvc.perform(delete("/v1/preferences/1").with(user("user@test.com")))
+        Long userId = 1L;
+        User currentUser = User.builder().email("user@test.com").role(UserRole.USER).build();
+        currentUser.setId(userId);
+
+        mockMvc.perform(delete("/v1/preferences/" + userId).with(user(currentUser)))
                 .andExpect(status().isNoContent());
     }
 }

@@ -9,6 +9,6 @@ import java.util.Optional;
 
 public interface UserPreferenceRepository extends JpaRepository<UserPreference, Long> {
 
-    @Query("SELECT up FROM UserPreference up LEFT JOIN FETCH up.selectedOptions LEFT JOIN FETCH up.ranges WHERE up.user.id = :userId")
+    @Query("SELECT DISTINCT up FROM UserPreference up LEFT JOIN FETCH up.selectedOptions LEFT JOIN FETCH up.ranges WHERE up.user.id = :userId")
     Optional<UserPreference> findByUserId(@Param("userId") Long userId);
 }

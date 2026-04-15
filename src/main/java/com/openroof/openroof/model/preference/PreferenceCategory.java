@@ -30,6 +30,7 @@ public class PreferenceCategory {
     private String name;
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OrderBy("displayOrder ASC")
     @Builder.Default
     private List<PreferenceOption> options = new ArrayList<>();
 }

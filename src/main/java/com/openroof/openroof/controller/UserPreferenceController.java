@@ -47,7 +47,7 @@ public class UserPreferenceController {
      * Si no existen, devuelve 200 con onboardingCompleted=false y listas vacías.
      */
     @GetMapping("/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
     @Operation(summary = "Obtener preferencias de un usuario",
                description = "Retorna las preferencias guardadas. Si no existen, devuelve onboardingCompleted=false con listas vacías.")
     public ResponseEntity<ApiResponse<UserPreferenceResponseDTO>> getUserPreferences(
@@ -61,7 +61,7 @@ public class UserPreferenceController {
      * Crea o actualiza las preferencias del usuario (upsert completo).
      */
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("#request.userId == authentication.principal.id or hasRole('ADMIN')")
     @Operation(summary = "Guardar o actualizar preferencias de usuario",
                description = "Crea o reemplaza completamente las preferencias del usuario. Marca onboardingCompleted=true.")
     public ResponseEntity<ApiResponse<UserPreferenceResponseDTO>> saveOrUpdatePreferences(
@@ -75,7 +75,7 @@ public class UserPreferenceController {
      * Elimina todas las preferencias del usuario.
      */
     @DeleteMapping("/{userId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
     @Operation(summary = "Eliminar preferencias de un usuario")
     public ResponseEntity<Void> deletePreferences(
             @Parameter(description = "ID del usuario") @PathVariable Long userId) {

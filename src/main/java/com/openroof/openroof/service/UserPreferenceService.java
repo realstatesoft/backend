@@ -2,14 +2,17 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.preference.*;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.UserPreferenceMapper;
+import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.preference.PreferenceOption;
 import com.openroof.openroof.model.preference.UserPreference;
 import com.openroof.openroof.model.preference.UserPreferenceRange;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +57,7 @@ public class UserPreferenceService {
      */
     @Transactional(readOnly = true)
     public UserPreferenceResponseDTO getUserPreferences(Long userId) {
+        checkOwnership(userId);
         validateUserExists(userId);
 
         return userPreferenceRepository.findByUserId(userId)
@@ -69,6 +73,8 @@ public class UserPreferenceService {
      * Al guardar, marca onboardingCompleted=true en el usuario.
      */
     public UserPreferenceResponseDTO saveOrUpdateUserPreferences(UserPreferenceRequestDTO dto) {
+        checkOwnership(dto.userId());
+        
         User user = userRepository.findById(dto.userId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with id: " + dto.userId()));
@@ -107,6 +113,7 @@ public class UserPreferenceService {
      * Elimina todas las preferencias del usuario.
      */
     public void deleteUserPreferences(Long userId) {
+        checkOwnership(userId);
         validateUserExists(userId);
 
         userPreferenceRepository.findByUserId(userId)
@@ -120,6 +127,28 @@ public class UserPreferenceService {
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Valida que el usuario autenticado sea el dueño del ID solicitado o sea ADMIN.
+     */
+    private void checkOwnership(Long userId) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new ForbiddenException("No autenticado");
+        }
+
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof User currentUser)) {
+            throw new ForbiddenException("No se pudo determinar el usuario actual");
+        }
+
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+        boolean isOwner = currentUser.getId().equals(userId);
+
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException("No tienes permiso para acceder a las preferencias de otro usuario");
+        }
+    }
 
     private void validateUserExists(Long userId) {
         if (!userRepository.existsById(userId)) {

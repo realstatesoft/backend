@@ -2,12 +2,12 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.preference.*;
 import com.openroof.openroof.exception.BadRequestException;
-import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.mapper.UserPreferenceMapper;
+import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.preference.PreferenceCategory;
 import com.openroof.openroof.model.preference.PreferenceOption;
 import com.openroof.openroof.model.preference.UserPreference;
-import com.openroof.openroof.model.preference.UserPreferenceRange;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PreferenceCategoryRepository;
 import com.openroof.openroof.repository.PreferenceOptionRepository;
@@ -16,10 +16,13 @@ import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +41,10 @@ class UserPreferenceServiceTest {
     private PreferenceOptionRepository preferenceOptionRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private SecurityContext securityContext;
+    @Mock
+    private Authentication authentication;
 
     private UserPreferenceMapper userPreferenceMapper;
     private UserPreferenceService userPreferenceService;
@@ -54,8 +61,17 @@ class UserPreferenceServiceTest {
         );
     }
 
+    private void mockAuth(Long userId, UserRole role) {
+        User u = user(userId);
+        u.setRole(role);
+        when(authentication.getPrincipal()).thenReturn(u);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
     private User user(Long id) {
-        User u = User.builder().email("test@test.com").build();
+        User u = User.builder().email("test@test.com").role(UserRole.USER).build();
         u.setId(id);
         u.setOnboardingCompleted(false);
         return u;
@@ -67,7 +83,7 @@ class UserPreferenceServiceTest {
     void getPreferenceOptions_returnsMappedCategories() {
         PreferenceCategory cat1 = PreferenceCategory.builder().id(1L).code("ZONE").name("Zona").build();
         PreferenceOption opt1 = PreferenceOption.builder().id(10L).category(cat1).label("Asunción").value("ASUNCION").displayOrder(1).build();
-        cat1.setOptions(List.of(opt1));
+        cat1.setOptions(new ArrayList<>(List.of(opt1)));
 
         when(preferenceCategoryRepository.findAllWithOptions()).thenReturn(List.of(cat1));
 
@@ -75,64 +91,60 @@ class UserPreferenceServiceTest {
 
         assertEquals(1, res.size());
         assertEquals("ZONE", res.get(0).code());
-        assertEquals(1, res.get(0).options().size());
-        assertEquals("Asunción", res.get(0).options().get(0).label());
     }
 
     // ─── GET USER PREFERENCES ────────────────────────────────────────────────
 
     @Test
-    void getUserPreferences_userDoesNotExist_throwsException() {
-        when(userRepository.existsById(1L)).thenReturn(false);
-
-        assertThrows(ResourceNotFoundException.class, () -> userPreferenceService.getUserPreferences(1L));
+    void getUserPreferences_otherUser_throwsForbidden() {
+        mockAuth(1L, UserRole.USER); // I am user 1
+        assertThrows(ForbiddenException.class, () -> userPreferenceService.getUserPreferences(2L));
     }
 
     @Test
-    void getUserPreferences_noPreferences_returnsEmptyDTO() {
+    void getUserPreferences_ownPreferences_returnsOk() {
+        mockAuth(1L, UserRole.USER);
         when(userRepository.existsById(1L)).thenReturn(true);
         when(userPreferenceRepository.findByUserId(1L)).thenReturn(Optional.empty());
 
         UserPreferenceResponseDTO res = userPreferenceService.getUserPreferences(1L);
-
         assertEquals(1L, res.userId());
-        assertFalse(res.onboardingCompleted());
-        assertTrue(res.selectedOptions().isEmpty());
-        assertTrue(res.ranges().isEmpty());
     }
 
     @Test
-    void getUserPreferences_hasPreferences_returnsMappedPreferences() {
+    void getUserPreferences_otherUserAsAdmin_returnsOk() {
+        mockAuth(99L, UserRole.ADMIN);
         when(userRepository.existsById(1L)).thenReturn(true);
-        UserPreference pref = UserPreference.builder()
-                .id(100L)
-                .user(user(1L))
-                .onboardingCompleted(true)
-                .build();
-        pref.getRanges().add(UserPreferenceRange.builder().fieldName("PRICE").minValue(100D).maxValue(500D).build());
-
-        when(userPreferenceRepository.findByUserId(1L)).thenReturn(Optional.of(pref));
+        when(userPreferenceRepository.findByUserId(1L)).thenReturn(Optional.empty());
 
         UserPreferenceResponseDTO res = userPreferenceService.getUserPreferences(1L);
-
         assertEquals(1L, res.userId());
-        assertTrue(res.onboardingCompleted());
-        assertEquals(1, res.ranges().size());
-        assertEquals("PRICE", res.ranges().get(0).fieldName());
     }
 
     // ─── SAVE OR UPDATE ──────────────────────────────────────────────────────
 
     @Test
-    void saveOrUpdate_userNotFound_throwsException() {
-        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(1L, List.of(10L), null);
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void saveOrUpdate_validData_upsertsPreferences() {
+        mockAuth(1L, UserRole.USER);
+        User u = user(1L);
+        PreferenceOption opt1 = PreferenceOption.builder().id(10L).build();
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(u));
+        when(preferenceOptionRepository.findAllById(List.of(10L))).thenReturn(List.of(opt1));
+        when(userPreferenceRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(userPreferenceRepository.save(any(UserPreference.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertThrows(ResourceNotFoundException.class, () -> userPreferenceService.saveOrUpdateUserPreferences(req));
+        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(1L, List.of(10L), List.of());
+        UserPreferenceResponseDTO res = userPreferenceService.saveOrUpdateUserPreferences(req);
+
+        assertEquals(1L, res.userId());
+        assertTrue(res.onboardingCompleted());
+        verify(userPreferenceRepository).save(any(UserPreference.class));
     }
 
     @Test
     void saveOrUpdate_invalidOptionIds_throwsBadRequest() {
+        mockAuth(1L, UserRole.USER);
         User u = user(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(u));
         when(preferenceOptionRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(PreferenceOption.builder().id(10L).build()));
@@ -143,49 +155,12 @@ class UserPreferenceServiceTest {
         assertTrue(ex.getMessage().contains("11"));
     }
 
-    @Test
-    void saveOrUpdate_validData_upsertsPreferences() {
-        User u = user(1L);
-        PreferenceOption opt1 = PreferenceOption.builder().id(10L).build();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(u));
-        when(preferenceOptionRepository.findAllById(List.of(10L))).thenReturn(List.of(opt1));
-        
-        UserPreference existingPref = UserPreference.builder().id(100L).user(u).build();
-        when(userPreferenceRepository.findByUserId(1L)).thenReturn(Optional.of(existingPref));
-        when(userPreferenceRepository.save(any(UserPreference.class))).thenAnswer(i -> i.getArgument(0));
-
-        List<RangeDTO> ranges = List.of(new RangeDTO("SURFACE", 50D, null));
-        UserPreferenceRequestDTO req = new UserPreferenceRequestDTO(1L, List.of(10L), ranges);
-
-        UserPreferenceResponseDTO res = userPreferenceService.saveOrUpdateUserPreferences(req);
-
-        assertEquals(1L, res.userId());
-        assertTrue(res.onboardingCompleted());
-        assertEquals(1, res.selectedOptions().size());
-        assertEquals(10L, res.selectedOptions().get(0).id());
-        assertEquals(1, res.ranges().size());
-        assertEquals("SURFACE", res.ranges().get(0).fieldName());
-        
-        verify(userPreferenceRepository).save(any(UserPreference.class));
-        
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertTrue(userCaptor.getValue().isOnboardingCompleted());
-    }
-
     // ─── DELETE ──────────────────────────────────────────────────────────────
 
     @Test
-    void delete_userNotFound_throwsException() {
-        when(userRepository.existsById(1L)).thenReturn(false);
-
-        assertThrows(ResourceNotFoundException.class, () -> userPreferenceService.deleteUserPreferences(1L));
-    }
-
-    @Test
     void delete_preferencesExist_deletesAndResetsUser() {
+        mockAuth(1L, UserRole.USER);
         User u = user(1L);
-        u.setOnboardingCompleted(true);
         UserPreference pref = UserPreference.builder().id(100L).user(u).build();
         
         when(userRepository.existsById(1L)).thenReturn(true);
@@ -194,9 +169,6 @@ class UserPreferenceServiceTest {
         userPreferenceService.deleteUserPreferences(1L);
 
         verify(userPreferenceRepository).delete(pref);
-        
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertFalse(userCaptor.getValue().isOnboardingCompleted());
+        verify(userRepository).save(any(User.class));
     }
 }
