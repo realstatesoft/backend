@@ -1,0 +1,375 @@
+databaseChangeLog:
+
+  # ──────────────────────────────────────────────────────────────────
+  # 021 – Seed: Categorías y opciones del catálogo de preferencias
+  # ──────────────────────────────────────────────────────────────────
+
+  - changeSet:
+      id: 021-seed-preference-categories
+      author: openroof-team
+      comment: "Inserta las categorías del catálogo de preferencias"
+      changes:
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: PROPERTY_TYPE}
+              - column: {name: name, value: "Tipo de propiedad"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: AVAILABILITY}
+              - column: {name: name, value: "Disponibilidad"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: WATER_CONNECTION}
+              - column: {name: name, value: "Conexión de agua"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: SANITARY_INSTALLATION}
+              - column: {name: name, value: "Instalación sanitaria"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: EXTERIOR_FEATURE}
+              - column: {name: name, value: "Características exteriores"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: INTERIOR_FEATURE}
+              - column: {name: name, value: "Características interiores"}
+        - insert:
+            tableName: preference_categories
+            columns:
+              - column: {name: code, value: ZONE}
+              - column: {name: name, value: "Zona"}
+
+  - changeSet:
+      id: 021-seed-preference-options-property-type
+      author: openroof-team
+      comment: "Opciones de tipo de propiedad"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Casa"}
+              - column: {name: value, value: "HOUSE"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Departamento"}
+              - column: {name: value, value: "APARTMENT"}
+              - column: {name: display_order, valueNumeric: 2}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Terreno"}
+              - column: {name: value, value: "LAND"}
+              - column: {name: display_order, valueNumeric: 3}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Local"}
+              - column: {name: value, value: "COMMERCIAL"}
+              - column: {name: display_order, valueNumeric: 4}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Depósito"}
+              - column: {name: value, value: "WAREHOUSE"}
+              - column: {name: display_order, valueNumeric: 5}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='PROPERTY_TYPE')"}
+              - column: {name: label, value: "Campo"}
+              - column: {name: value, value: "FARM"}
+              - column: {name: display_order, valueNumeric: 6}
+
+  - changeSet:
+      id: 021-seed-preference-options-availability
+      author: openroof-team
+      comment: "Opciones de disponibilidad"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='AVAILABILITY')"}
+              - column: {name: label, value: "Inmediata"}
+              - column: {name: value, value: "IMMEDIATE"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='AVAILABILITY')"}
+              - column: {name: label, value: "A convenir"}
+              - column: {name: value, value: "TO_AGREE"}
+              - column: {name: display_order, valueNumeric: 2}
+
+  - changeSet:
+      id: 021-seed-preference-options-water
+      author: openroof-team
+      comment: "Opciones de conexión de agua"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='WATER_CONNECTION')"}
+              - column: {name: label, value: "Agua corriente"}
+              - column: {name: value, value: "RUNNING_WATER"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='WATER_CONNECTION')"}
+              - column: {name: label, value: "Pozo"}
+              - column: {name: value, value: "WELL"}
+              - column: {name: display_order, valueNumeric: 2}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='WATER_CONNECTION')"}
+              - column: {name: label, value: "Cisterna"}
+              - column: {name: value, value: "CISTERN"}
+              - column: {name: display_order, valueNumeric: 3}
+
+  - changeSet:
+      id: 021-seed-preference-options-sanitary
+      author: openroof-team
+      comment: "Opciones de instalación sanitaria"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='SANITARY_INSTALLATION')"}
+              - column: {name: label, value: "Red pública"}
+              - column: {name: value, value: "PUBLIC_NETWORK"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='SANITARY_INSTALLATION')"}
+              - column: {name: label, value: "Cámara séptica"}
+              - column: {name: value, value: "SEPTIC_TANK"}
+              - column: {name: display_order, valueNumeric: 2}
+
+  - changeSet:
+      id: 021-seed-preference-options-exterior
+      author: openroof-team
+      comment: "Opciones de características exteriores"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Piscina"}
+              - column: {name: value, value: "POOL"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Jardín"}
+              - column: {name: value, value: "GARDEN"}
+              - column: {name: display_order, valueNumeric: 2}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Garage"}
+              - column: {name: value, value: "GARAGE"}
+              - column: {name: display_order, valueNumeric: 3}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Parrilla / Quincho"}
+              - column: {name: value, value: "GRILL"}
+              - column: {name: display_order, valueNumeric: 4}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Cerco eléctrico"}
+              - column: {name: value, value: "ELECTRIC_FENCE"}
+              - column: {name: display_order, valueNumeric: 5}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Cámara de seguridad"}
+              - column: {name: value, value: "SECURITY_CAMERA"}
+              - column: {name: display_order, valueNumeric: 6}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Terraza"}
+              - column: {name: value, value: "TERRACE"}
+              - column: {name: display_order, valueNumeric: 7}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Portón automático"}
+              - column: {name: value, value: "AUTOMATIC_GATE"}
+              - column: {name: display_order, valueNumeric: 8}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Cancha deportiva"}
+              - column: {name: value, value: "SPORTS_COURT"}
+              - column: {name: display_order, valueNumeric: 9}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='EXTERIOR_FEATURE')"}
+              - column: {name: label, value: "Salón de eventos"}
+              - column: {name: value, value: "EVENT_HALL"}
+              - column: {name: display_order, valueNumeric: 10}
+
+  - changeSet:
+      id: 021-seed-preference-options-interior
+      author: openroof-team
+      comment: "Opciones de características interiores"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Aire acondicionado"}
+              - column: {name: value, value: "AIR_CONDITIONING"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Piso de porcelanato"}
+              - column: {name: value, value: "PORCELAIN_FLOOR"}
+              - column: {name: display_order, valueNumeric: 2}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Piso de madera"}
+              - column: {name: value, value: "WOOD_FLOOR"}
+              - column: {name: display_order, valueNumeric: 3}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Closet empotrado"}
+              - column: {name: value, value: "BUILT_IN_CLOSET"}
+              - column: {name: display_order, valueNumeric: 4}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Cocina equipada"}
+              - column: {name: value, value: "EQUIPPED_KITCHEN"}
+              - column: {name: display_order, valueNumeric: 5}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Calefón"}
+              - column: {name: value, value: "WATER_HEATER"}
+              - column: {name: display_order, valueNumeric: 6}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Ventilador de techo"}
+              - column: {name: value, value: "CEILING_FAN"}
+              - column: {name: display_order, valueNumeric: 7}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='INTERIOR_FEATURE')"}
+              - column: {name: label, value: "Mesada de granito"}
+              - column: {name: value, value: "GRANITE_COUNTERTOP"}
+              - column: {name: display_order, valueNumeric: 8}
+
+  - changeSet:
+      id: 021-seed-preference-options-zone
+      author: openroof-team
+      comment: "Opciones de zonas geográficas"
+      changes:
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Asunción"}
+              - column: {name: value, value: "ASUNCION"}
+              - column: {name: display_order, valueNumeric: 1}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "San Lorenzo"}
+              - column: {name: value, value: "SAN_LORENZO"}
+              - column: {name: display_order, valueNumeric: 2}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Fernando de la Mora"}
+              - column: {name: value, value: "FERNANDO_DE_LA_MORA"}
+              - column: {name: display_order, valueNumeric: 3}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Luque"}
+              - column: {name: value, value: "LUQUE"}
+              - column: {name: display_order, valueNumeric: 4}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Lambaré"}
+              - column: {name: value, value: "LAMBARE"}
+              - column: {name: display_order, valueNumeric: 5}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Encarnación"}
+              - column: {name: value, value: "ENCARNACION"}
+              - column: {name: display_order, valueNumeric: 6}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Ciudad del Este"}
+              - column: {name: value, value: "CIUDAD_DEL_ESTE"}
+              - column: {name: display_order, valueNumeric: 7}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Capiata"}
+              - column: {name: value, value: "CAPIATA"}
+              - column: {name: display_order, valueNumeric: 8}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Ñemby"}
+              - column: {name: value, value: "NEMBY"}
+              - column: {name: display_order, valueNumeric: 9}
+        - insert:
+            tableName: preference_options
+            columns:
+              - column: {name: category_id, valueComputed: "(SELECT id FROM preference_categories WHERE code='ZONE')"}
+              - column: {name: label, value: "Mariano Roque Alonso"}
+              - column: {name: value, value: "MARIANO_ROQUE_ALONSO"}
+              - column: {name: display_order, valueNumeric: 10}
