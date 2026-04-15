@@ -7,6 +7,7 @@ import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.Location;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.repository.*;
+import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.mapper.PropertyMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,8 @@ class PropertySimilarTest {
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
+    @Mock private UserPreferenceRepository userPreferenceRepository;
+    @Mock private PropertyRelevanceService propertyRelevanceService;
 
     private PropertyService propertyService;
 
@@ -66,7 +69,8 @@ class PropertySimilarTest {
                 "Asuncion",         // locationName
                 new BigDecimal("-25.2637"), // lat
                 new BigDecimal("-57.5759"), // lng
-                null                // trashedAt
+                null,               // trashedAt
+                0                   // relevanceScore
         );
     }
 
@@ -80,7 +84,9 @@ class PropertySimilarTest {
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
                 propertyMapper,
-                notificationService
+                notificationService,
+                userPreferenceRepository,
+                propertyRelevanceService
         );
 
         Location location = Location.builder()

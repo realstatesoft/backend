@@ -1,0 +1,11 @@
+databaseChangeLog:
+  # ──────────────────────────────────────────────────────────────────
+  # 021 – Seed initial data for preference catalog
+  # ──────────────────────────────────────────────────────────────────
+  - changeSet:
+      id: 021-seed-preference-catalog-placeholder
+      author: openroof-team
+      comment: "Placeholder for preference catalog seeding"
+      changes:
+        - sql:
+            sql: "-- Data to be provided"
