@@ -49,7 +49,7 @@ public class UserService {
     }
 
     /**
-     * Busca un usuario por email exacto. Usado por agentes para vincular clientes existentes.
+     * Busca un usuario por email, ignorando mayúsculas/minúsculas. Usado por agentes para vincular clientes existentes.
      */
     public Optional<UserSearchResponse> searchByEmail(String email) {
         return userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
