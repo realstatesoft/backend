@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
 class AgentClientControllerTest {
 
         private MockMvc mockMvc;

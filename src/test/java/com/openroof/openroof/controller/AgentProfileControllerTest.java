@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentProfileController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
 class AgentProfileControllerTest {
 
     @Autowired

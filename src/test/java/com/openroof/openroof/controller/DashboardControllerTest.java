@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(DashboardController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
 class DashboardControllerTest {
 
     @Autowired

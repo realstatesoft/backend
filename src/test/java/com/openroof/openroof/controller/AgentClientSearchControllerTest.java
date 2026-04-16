@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
 class AgentClientSearchControllerTest {
 
     @Autowired

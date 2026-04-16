@@ -177,10 +177,7 @@ class ContractServiceTest {
                 null
             );
 
-            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
-            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
-            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
-            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            // Validation throws immediately, no mocks needed.
 
             assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))
                 .isInstanceOf(BadRequestException.class)
@@ -219,11 +216,7 @@ class ContractServiceTest {
                 null
             );
 
-            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
-            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
-            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
-            when(agentProfileRepository.findById(400L)).thenReturn(Optional.of(listingAgent));
-            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            // Validation throws immediately, no mocks needed.
 
             assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))
                 .isInstanceOf(BadRequestException.class)
