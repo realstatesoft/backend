@@ -17,6 +17,10 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.ContractRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.repository.ContractSignatureRepository;
+import com.openroof.openroof.model.contract.ContractSignature;
+import com.openroof.openroof.model.enums.SignatureRole;
+import com.openroof.openroof.model.enums.SignatureType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +60,9 @@ class ContractServiceIntegrationTest {
 
     @Autowired
     ContractRepository contractRepository;
+
+    @Autowired
+    ContractSignatureRepository contractSignatureRepository;
 
     private User agent;
     private User buyer;
@@ -406,6 +414,16 @@ class ContractServiceIntegrationTest {
                 new ContractStatusUpdateRequest(ContractStatus.SENT), agent.getEmail());
 
         // SENT → PARTIALLY_SIGNED (como comprador)
+        Contract contract = contractRepository.findById(created.id()).orElseThrow();
+        contractSignatureRepository.save(ContractSignature.builder()
+                .contract(contract)
+                .signer(buyer)
+                .role(SignatureRole.BUYER)
+                .signatureType(SignatureType.ELECTRONIC)
+                .signedAt(LocalDateTime.now())
+                .signatureData("evidence")
+                .build());
+
         ContractResponse updated = contractService.updateStatus(created.id(),
                 new ContractStatusUpdateRequest(ContractStatus.PARTIALLY_SIGNED), buyer.getEmail());
 
