@@ -54,6 +54,6 @@ public class UserController {
         return userService.searchByEmail(email.trim())
                 .map(result -> ResponseEntity.ok(ApiResponse.ok(result)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("No se encontro un usuario con ese email")));
+                        .body(ApiResponse.error("No se encontró un usuario con ese email")));
     }
 }
