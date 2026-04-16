@@ -79,3 +79,7 @@ databaseChangeLog:
   - include:
       file: changelogs/021-seed-preference-catalog.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/022-add-property-flags-and-reporting.yaml
+      relativeToChangelogFile: true
+
