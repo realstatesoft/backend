@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 20260415-property-flag-unique-active
-      author: antigravity
+      author: carlos
       comment: Prevent multiple active flags from the same user on same property
       preConditions:
         - onFail: MARK_RAN
