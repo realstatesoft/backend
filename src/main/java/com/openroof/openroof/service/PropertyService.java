@@ -54,6 +54,8 @@ public class PropertyService {
     private final InteriorFeatureRepository interiorFeatureRepository;
     private final PropertyMapper propertyMapper;
     private final NotificationService notificationService;
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final PropertyRelevanceService propertyRelevanceService;
 
     private static final double EARTH_RADIUS = 6371;
 
@@ -140,10 +142,17 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable) {
+    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
-        return propertyRepository.findAll(spec, sanitizePageable(pageable))
-                .map(propertyMapper::toSummaryResponse);
+        
+        // Si no hay usuario autenticado o se pidió un orden específico (no default), usamos JPA directo.
+        if (userId == null || !isDefaultSort(pageable)) {
+            return propertyRepository.findAll(spec, sanitizePageable(pageable))
+                    .map(propertyMapper::toSummaryResponse);
+        }
+
+        // Si hay usuario y es la lista por defecto, aplicamos relevancia
+        return getPageWithRelevance(spec, pageable, userId);
     }
 
     @Transactional(readOnly = true)
@@ -163,13 +172,15 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> search(String keyword, Pageable pageable) {
-        if (keyword == null || keyword.isBlank()) {
-            return propertyRepository.findAll(pageable)
+    public Page<PropertySummaryResponse> search(PropertyFilterRequest filter, Pageable pageable, Long userId) {
+        Specification<Property> spec = PropertySpecification.buildFilter(filter);
+
+        if (userId == null || !isDefaultSort(pageable)) {
+            return propertyRepository.findAll(spec, sanitizePageable(pageable))
                     .map(propertyMapper::toSummaryResponse);
         }
-        return propertyRepository.searchByKeyword(keyword.trim(), pageable)
-                .map(propertyMapper::toSummaryResponse);
+
+        return getPageWithRelevance(spec, pageable, userId);
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────
@@ -506,6 +517,54 @@ public class PropertyService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return EARTH_RADIUS * c;
+    }
+
+    // ─── RELEVANCE CALCULATION ───────────────────────────────────
+
+    private boolean isDefaultSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) return true;
+        // Consideramos "default" si ordena por createdAt DESC
+        return pageable.getSort().stream().anyMatch(o -> 
+            "createdAt".equals(o.getProperty()) && o.getDirection() == Sort.Direction.DESC);
+    }
+
+    private Page<PropertySummaryResponse> getPageWithRelevance(Specification<Property> spec, Pageable pageable, Long userId) {
+        // 1. Obtener preferencias del usuario
+        com.openroof.openroof.model.preference.UserPreference pref = userPreferenceRepository.findByUserId(userId).orElse(null);
+        
+        // Si no tiene preferencias, devolvemos el normal
+        if (pref == null || !pref.isOnboardingCompleted()) {
+            return propertyRepository.findAll(spec, sanitizePageable(pageable))
+                    .map(propertyMapper::toSummaryResponse);
+        }
+
+        // 2. Obtener TODAS las propiedades que matchean el filtro (limitado a 500 para performance)
+        // Nota: En una app real esto se haría con un Score en SQL, pero aquí lo hacemos en memoria.
+        List<Property> allMatches = propertyRepository.findAll(spec);
+
+        // 3. Calcular score y mapear
+        List<PropertySummaryResponse> scoredList = allMatches.stream()
+                .map(p -> {
+                    int score = propertyRelevanceService.calculateScore(p, pref);
+                    return propertyMapper.toSummaryResponse(p, score);
+                })
+                // 4. Ordenar por score (DESC) y luego por fecha (DESC)
+                .sorted((a, b) -> {
+                    int res = Integer.compare(b.relevanceScore(), a.relevanceScore());
+                    return res != 0 ? res : b.id().compareTo(a.id()); // id como fallback
+                })
+                .toList();
+
+        // 5. Paginar manualmente la lista resultante
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), scoredList.size());
+        
+        List<PropertySummaryResponse> content = (start <= scoredList.size()) 
+                ? scoredList.subList(start, end) 
+                : List.of();
+
+        return new org.springframework.data.domain.PageImpl<>(
+                content, pageable, scoredList.size());
     }
     
     // ─── Helpers privados ─────────────────────────────────────────

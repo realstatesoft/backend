@@ -79,6 +79,10 @@ public class PropertyMapper {
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p) {
+        return toSummaryResponse(p, 0);
+    }
+
+    public PropertySummaryResponse toSummaryResponse(Property p, Integer relevanceScore) {
         String primaryImage = Optional.ofNullable(p.getMedia())
                 .orElse(Collections.emptyList())
                 .stream()
@@ -102,7 +106,8 @@ public class PropertyMapper {
                 p.getLocation() != null ? p.getLocation().getName() : null,
                 p.getGeoLocation() != null ? p.getGeoLocation().getLat() : null,
                 p.getGeoLocation() != null ? p.getGeoLocation().getLng() : null,
-                p.getTrashedAt());
+                p.getTrashedAt(),
+                relevanceScore);
     }
 
     // ─── Request → Entity ─────────────────────────────────────────
