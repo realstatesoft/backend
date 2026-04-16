@@ -163,7 +163,7 @@ public class PropertyService {
 
     @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> getByAgentScope(String email, Pageable pageable) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
