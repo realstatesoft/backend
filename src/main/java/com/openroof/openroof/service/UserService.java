@@ -52,7 +52,7 @@ public class UserService {
      * Busca un usuario por email exacto. Usado por agentes para vincular clientes existentes.
      */
     public Optional<UserSearchResponse> searchByEmail(String email) {
-        return userRepository.findByEmailIgnoreCase(email)
+        return userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
                 .map(u -> new UserSearchResponse(u.getId(), u.getName(), u.getEmail()));
     }
 
