@@ -234,6 +234,47 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
+    // ─── DOCUMENTOS KYC ───────────────────────────────────────────────────────
+
+    @Async
+    public void sendDocumentApprovedEmail(String toEmail, String userName, String documentType) {
+        String subject = "✅ Tu documento fue aprobado — OpenRoof";
+        String body = buildHtml(
+                "Documento aprobado",
+                "¡Buenas noticias, " + escapeHtml(userName) + "!",
+                """
+                <p>Tu documento <strong>%s</strong> ha sido <strong>aprobado</strong>
+                por nuestro equipo de verificación.</p>
+                <p>Tu perfil ya cuenta con documentación verificada. Ahora podés acceder
+                a todas las funcionalidades de la plataforma.</p>
+                """.formatted(escapeHtml(documentType)),
+                "Ver mi perfil",
+                baseUrl + "/profile"
+        );
+        send(toEmail, subject, body);
+    }
+
+    @Async
+    public void sendDocumentRejectedEmail(String toEmail, String userName,
+                                           String documentType, String reason) {
+        String reasonHtml = (reason != null && !reason.isBlank())
+                ? "<p><strong>Motivo:</strong> " + escapeHtml(reason) + "</p>"
+                : "";
+        String subject = "❌ Tu documento fue rechazado — OpenRoof";
+        String body = buildHtml(
+                "Documento rechazado",
+                "Hola, " + escapeHtml(userName) + ".",
+                """
+                <p>Lamentablemente, tu documento <strong>%s</strong> no pudo ser aprobado.</p>
+                %s
+                <p>Por favor, revisá los requisitos y subí un nuevo documento desde tu perfil.</p>
+                """.formatted(escapeHtml(documentType), reasonHtml),
+                "Subir nuevo documento",
+                baseUrl + "/profile"
+        );
+        send(toEmail, subject, body);
+    }
+
     // ─── Core sender ──────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {

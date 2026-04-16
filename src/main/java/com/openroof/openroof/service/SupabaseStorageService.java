@@ -40,7 +40,7 @@ public class SupabaseStorageService implements StorageService {
             @Value("${supabase.service-role-key}") String serviceRoleKey,
             @Value("${supabase.storage.bucket}") String bucket,
             @Value("#{'${upload.allowed-types}'.split(',')}") List<String> allowedTypes,
-            @Value("${upload.max-file-size:5MB}") String maxFileSize
+            @Value("${upload.max-file-size:10MB}") String maxFileSize
     ) {
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
