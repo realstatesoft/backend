@@ -14,6 +14,7 @@ import com.openroof.openroof.repository.ExteriorFeatureRepository;
 import com.openroof.openroof.repository.InteriorFeatureRepository;
 import com.openroof.openroof.repository.LocationRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,10 @@ class PropertyServiceCrudFlowTest {
     private PropertyMapper propertyMapper;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private UserPreferenceRepository userPreferenceRepository;
+    @Mock
+    private PropertyRelevanceService propertyRelevanceService;
 
     private PropertyService propertyService;
 
@@ -67,7 +72,9 @@ class PropertyServiceCrudFlowTest {
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
                 propertyMapper,
-                notificationService
+                notificationService,
+                userPreferenceRepository,
+                propertyRelevanceService
         );
     }
 

@@ -71,5 +71,11 @@ databaseChangeLog:
       file: changelogs/018-add-listing-agent-to-contracts.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/022-add-unique-active-flag-constraint.yaml
+      file: changelogs/019-add-onboarding-completed-to-users.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/020-create-user-preferences-tables.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/021-seed-preference-catalog.yaml
       relativeToChangelogFile: true

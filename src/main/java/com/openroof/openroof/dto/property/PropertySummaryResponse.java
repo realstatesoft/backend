@@ -18,5 +18,6 @@ public record PropertySummaryResponse(
         String locationName,
         BigDecimal lat,
         BigDecimal lng,
-        LocalDateTime trashedAt) {
+        LocalDateTime trashedAt,
+        Integer relevanceScore) {
 }
