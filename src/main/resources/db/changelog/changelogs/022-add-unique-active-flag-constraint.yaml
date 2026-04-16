@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260415-property-flag-unique-active
+      author: antigravity
+      comment: Prevent multiple active flags from the same user on same property
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            - indexExists:
+                indexName: idx_unique_active_flag
+                tableName: property_flags
+      changes:
+        - createIndex:
+            indexName: idx_unique_active_flag
+            tableName: property_flags
+            unique: true
+            columns:
+              - column:
+                  name: property_id
+              - column:
+                  name: reported_by_id
+            where: resolved_at IS NULL

@@ -3,6 +3,7 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.flag.CreateFlagRequest;
 import com.openroof.openroof.dto.flag.FlagResponse;
+import com.openroof.openroof.dto.flag.FlagSummaryResponse;
 import com.openroof.openroof.dto.flag.ResolveFlagRequest;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyFlagService;
@@ -59,10 +60,10 @@ public class PropertyFlagController {
      */
     @GetMapping("/properties/{propertyId}/flags")
     @Operation(summary = "Obtener los reportes activos de una propiedad")
-    public ResponseEntity<ApiResponse<List<FlagResponse>>> getActiveFlags(
+    public ResponseEntity<ApiResponse<List<FlagSummaryResponse>>> getActiveFlags(
             @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId) {
 
-        List<FlagResponse> flags = propertyFlagService.getActiveFlagsByProperty(propertyId);
+        List<FlagSummaryResponse> flags = propertyFlagService.getActiveFlagsByProperty(propertyId);
         return ResponseEntity.ok(ApiResponse.ok(flags));
     }
 

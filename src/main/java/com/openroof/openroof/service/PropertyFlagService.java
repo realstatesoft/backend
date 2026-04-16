@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.flag.CreateFlagRequest;
 import com.openroof.openroof.dto.flag.FlagResponse;
+import com.openroof.openroof.dto.flag.FlagSummaryResponse;
 import com.openroof.openroof.dto.flag.ResolveFlagRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import com.openroof.openroof.repository.PropertyFlagRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +40,7 @@ public class PropertyFlagService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Propiedad no encontrada con ID: " + propertyId));
 
-        // Anti-spam: un usuario no puede reportar la misma propiedad dos veces
+        // Anti-spam: un usuario no puede reportar la misma propiedad dos veces (check-then-insert)
         propertyFlagRepository
                 .findByPropertyIdAndReportedByIdAndResolvedAtIsNull(propertyId, currentUser.getId())
                 .ifPresent(existing -> {
@@ -52,22 +54,29 @@ public class PropertyFlagService {
                 .reason(request.reason())
                 .build();
 
-        PropertyFlag saved = propertyFlagRepository.save(flag);
-        log.info("Propiedad {} reportada por usuario {} como {}",
-                propertyId, currentUser.getId(), request.flagType());
-
-        return toResponse(saved);
+        try {
+            PropertyFlag saved = propertyFlagRepository.save(flag);
+            // Asegurar que el flush ocurra dentro del try-catch para capturar violaciones de constraint
+            propertyFlagRepository.flush();
+            log.info("Propiedad {} reportada por usuario {} como {}",
+                    propertyId, currentUser.getId(), request.flagType());
+            return toResponse(saved);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Intento de reporte duplicado detectado por constraint de BD: property={}, user={}",
+                    propertyId, currentUser.getId());
+            throw new BadRequestException("Ya has reportado esta propiedad");
+        }
     }
 
     // ─── READ ─────────────────────────────────────────────────────
 
-    /** Devuelve todos los flags activos (no resueltos) de una propiedad. */
+    /** Devuelve todos los flags activos (no resueltos) de una propiedad. Publico (sin PII). */
     @Transactional(readOnly = true)
-    public List<FlagResponse> getActiveFlagsByProperty(Long propertyId) {
+    public List<FlagSummaryResponse> getActiveFlagsByProperty(Long propertyId) {
         return propertyFlagRepository
                 .findByPropertyIdAndResolvedAtIsNull(propertyId)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toSummaryResponse)
                 .toList();
     }
 
@@ -124,6 +133,17 @@ public class PropertyFlagService {
                 flag.getCreatedAt(),
                 flag.getResolvedAt(),
                 flag.getResolutionNotes()
+        );
+    }
+
+    private FlagSummaryResponse toSummaryResponse(PropertyFlag flag) {
+        return new FlagSummaryResponse(
+                flag.getId(),
+                flag.getProperty().getId(),
+                flag.getFlagType(),
+                flag.getReason(),
+                flag.getCreatedAt(),
+                flag.getResolvedAt()
         );
     }
 }

@@ -72,7 +72,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/flags/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
