@@ -2,6 +2,7 @@ package com.openroof.openroof.dto.contract;
 
 import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.SignatureType;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -25,4 +26,11 @@ public record SignContractRequest(
          */
         String signatureData
 ) {
+        @AssertTrue(message = "El campo signatureData es obligatorio para firmas DIGITAL o HANDWRITTEN_SCAN")
+        public boolean isSignatureDataValid() {
+                if (signatureType == SignatureType.DIGITAL || signatureType == SignatureType.HANDWRITTEN_SCAN) {
+                        return signatureData != null && !signatureData.trim().isEmpty();
+                }
+                return true;
+        }
 }
