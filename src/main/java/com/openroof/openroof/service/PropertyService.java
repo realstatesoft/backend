@@ -153,6 +153,16 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PropertySummaryResponse> getByAgentScope(String email, Pageable pageable) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+        return propertyRepository.findByAgentScope(agent.getId(), sanitizePageable(pageable))
+                .map(propertyMapper::toSummaryResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> search(String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             return propertyRepository.findAll(pageable)
