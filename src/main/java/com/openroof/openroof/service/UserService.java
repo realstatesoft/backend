@@ -2,12 +2,15 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.user.UpdateUserRequest;
 import com.openroof.openroof.dto.user.UserProfileResponse;
+import com.openroof.openroof.dto.user.UserSearchResponse;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +46,14 @@ public class UserService {
 
         userRepository.save(user);
         return UserProfileResponse.from(user);
+    }
+
+    /**
+     * Busca un usuario por email exacto. Usado por agentes para vincular clientes existentes.
+     */
+    public Optional<UserSearchResponse> searchByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .map(u -> new UserSearchResponse(u.getId(), u.getName(), u.getEmail()));
     }
 
     // ─── helper ───────────────────────────────────────────────────────────────
