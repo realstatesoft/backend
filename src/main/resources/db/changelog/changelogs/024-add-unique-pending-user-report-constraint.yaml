@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 024-add-unique-pending-user-report
       author: carlos
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: uk_user_report_pair_status
       changes:
         - addUniqueConstraint:
             columnNames: reported_user_id, reporter_user_id, status

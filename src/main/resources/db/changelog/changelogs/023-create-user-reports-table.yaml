@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 023-create-user-reports-table-1
       author: carlos
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: user_reports
       changes:
         - createTable:
             tableName: user_reports
