@@ -4,6 +4,7 @@ import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.report.CreateUserReportRequest;
 import com.openroof.openroof.dto.report.UpdateUserReportStatusRequest;
 import com.openroof.openroof.dto.report.UserReportResponse;
+import com.openroof.openroof.dto.report.UserReportSummary;
 import com.openroof.openroof.model.enums.ReportStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.UserReportService;
@@ -49,11 +50,11 @@ public class UserReportController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Solicitud inválida o reporte duplicado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Usuario reportado no encontrado")
     })
-    public ResponseEntity<ApiResponse<UserReportResponse>> createReport(
+    public ResponseEntity<ApiResponse<UserReportSummary>> createReport(
             @Valid @RequestBody CreateUserReportRequest request,
             @AuthenticationPrincipal User currentUser) {
 
-        UserReportResponse response = userReportService.createReport(request, currentUser);
+        UserReportSummary response = userReportService.createReport(request, currentUser);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Reporte creado exitosamente"));

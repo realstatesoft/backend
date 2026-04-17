@@ -16,6 +16,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class UserService {
 
+    public static final LocalDateTime INDEFINITE_SUSPENSION_DATE = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
     private final UserRepository userRepository;
 
     /**
@@ -63,7 +65,11 @@ public class UserService {
             throw new IllegalArgumentException("No se puede suspender a un administrador");
         }
 
-        user.setSuspendedUntil(suspendedUntil != null ? suspendedUntil : LocalDateTime.MAX);
+        if (suspendedUntil != null && suspendedUntil.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La fecha de suspensión debe ser en el futuro");
+        }
+
+        user.setSuspendedUntil(suspendedUntil != null ? suspendedUntil : INDEFINITE_SUSPENSION_DATE);
         user.setSuspensionReason(reason);
         userRepository.save(user);
     }

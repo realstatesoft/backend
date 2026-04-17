@@ -70,7 +70,7 @@ public class UserController {
     @PutMapping("/{id}/unsuspend")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> unsuspendUser(
-            @Parameter(description = "ID del usuario a des-suspender") @PathVariable Long id) {
+            @Parameter(description = "ID del usuario a levantar suspensión") @PathVariable Long id) {
 
         userService.unsuspendUser(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Suspensión levantada exitosamente"));

@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.report.CreateUserReportRequest;
 import com.openroof.openroof.dto.report.UserReportResponse;
+import com.openroof.openroof.dto.report.UserReportSummary;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.admin.UserReport;
@@ -31,7 +32,7 @@ public class UserReportService {
      * Valida que el usuario reportado exista, que no sea el mismo que reporta
      * y que no exista ya un reporte PENDIENTE del mismo reporter contra el mismo usuario.
      */
-    public UserReportResponse createReport(CreateUserReportRequest request, User reporter) {
+    public UserReportSummary createReport(CreateUserReportRequest request, User reporter) {
         if (reporter.getId().equals(request.reportedUserId())) {
             throw new BadRequestException("No puedes reportarte a ti mismo");
         }
@@ -55,7 +56,7 @@ public class UserReportService {
 
         UserReport saved = userReportRepository.save(report);
         log.info("Usuario {} reportado por usuario {} por motivo {}", reportedUser.getId(), reporter.getId(), request.reason());
-        return UserReportResponse.from(saved);
+        return UserReportSummary.from(saved);
     }
 
     // ─── READ (solo ADMIN) ─────────────────────────────────────────────────
