@@ -1,6 +1,7 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.JacksonConfig;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(DashboardController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class})
 class DashboardControllerTest {
 
     @Autowired

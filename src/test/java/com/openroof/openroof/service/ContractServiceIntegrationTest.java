@@ -2,9 +2,10 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.contract.ContractRequest;
 import com.openroof.openroof.dto.contract.ContractResponse;
+import com.openroof.openroof.dto.contract.ContractSummaryResponse;
 import com.openroof.openroof.dto.contract.ContractStatusUpdateRequest;
 import com.openroof.openroof.exception.BadRequestException;
-import com.openroof.openroof.exception.ResourceNotFoundException;
+
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.enums.ContractStatus;
@@ -327,7 +328,7 @@ class ContractServiceIntegrationTest {
 
         contractService.create(request, agent.getEmail());
 
-        List contracts = contractService.getAsListingAgent(agent.getEmail());
+        List<ContractSummaryResponse> contracts = contractService.getAsListingAgent(agent.getEmail());
 
         assertThat(contracts).isNotEmpty();
         assertThat(contracts.size()).isGreaterThan(0);
@@ -348,7 +349,7 @@ class ContractServiceIntegrationTest {
 
         contractService.create(request, seller.getEmail());
 
-        List contracts = contractService.getAsBuyer(buyer.getEmail());
+        List<ContractSummaryResponse> contracts = contractService.getAsBuyer(buyer.getEmail());
 
         assertThat(contracts).isNotEmpty();
     }
@@ -368,7 +369,7 @@ class ContractServiceIntegrationTest {
 
         contractService.create(request, seller.getEmail());
 
-        List contracts = contractService.getAsSeller(seller.getEmail());
+        List<ContractSummaryResponse> contracts = contractService.getAsSeller(seller.getEmail());
 
         assertThat(contracts).isNotEmpty();
     }
@@ -482,9 +483,9 @@ class ContractServiceIntegrationTest {
         // Eliminar
         contractService.delete(contractId, admin.getEmail());
 
-        // Después de eliminar (soft delete), no debería ser accesible
-        // Nota: Dentro de @Transactional, el rollback revierte el soft delete
-        // pero la lógica de eliminación fue ejecutada correctamente
-        assertThat(contractRepository.findById(contractId)).isPresent(); // Aún existe (transacción no commiteada)
+        // Después de eliminar (soft delete), debería tener deletedAt asignado
+        Contract deletedContract = contractRepository.findById(contractId).orElseThrow();
+        assertThat(deletedContract.getDeletedAt()).isNotNull();
     }
 }
+
