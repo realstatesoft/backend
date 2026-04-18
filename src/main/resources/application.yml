@@ -8,9 +8,9 @@ spring:
   # Para Supabase activar perfil: --spring.profiles.active=supabase
   # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/openroof}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -83,7 +83,9 @@ cors:
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
+      # Do NOT add a default here. Set JWT_SECRET in the environment.
+      # In local development use application-dev.yml to supply a fallback.
+      secret-key: ${JWT_SECRET}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -99,43 +101,29 @@ logging:
 # ==================== SUPABASE STORAGE ====================
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL:https://your-project.supabase.co}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
 # ==================== UPLOAD ====================
 upload:
+  # Generic image upload settings (used by SupabaseStorageService for property images, avatars, etc.)
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  # KYC / personal document upload settings (used by UserDocumentService)
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
-
-
+  max-file-size: 10MB
+  max-request-size: 20MB
 
 # =================== TRASHCAN ======================
 trashcan:
   retention-days: 10
-# ==================== MAIL (Gmail SMTP) ====================
-# Configurar en .env:
-#   MAIL_USERNAME=tucorreo@gmail.com
-#   MAIL_PASSWORD=xxxx xxxx xxxx xxxx   (App Password de Google)
-#   FRONTEND_URL=https://tu-frontend.vercel.app
-spring.mail:
-  host: smtp.gmail.com
-  port: 587
-  username: ${MAIL_USERNAME:}
-  password: ${MAIL_PASSWORD:}
-  properties:
-    mail:
-      smtp:
-        auth: true
-        starttls:
-          enable: true
-          required: true
 
 mail:
   from-name: OpenRoof
