@@ -58,6 +58,7 @@ public class UserController {
                 .map(result -> ResponseEntity.ok(ApiResponse.ok(result)))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("No se encontró un usuario con ese email")));
+    }
     // ─── Suspensión (solo ADMIN) ──────────────────────────────────────────────
 
     @Operation(summary = "Suspender usuario", description = "Suspende la cuenta de un usuario. Solo ADMIN.")
