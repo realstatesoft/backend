@@ -2,6 +2,8 @@ package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.enums.ContractStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,6 +27,13 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     List<Contract> findByBuyerAgent_Id(Long buyerAgentId);
 
+    @Query("""
+            SELECT c FROM Contract c JOIN c.property p
+            WHERE LOWER(COALESCE(p.title, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR c.id = :idOrNegOne
+            ORDER BY c.id DESC
+            """)
+    Page<Contract> searchForAuditPicker(@Param("q") String q, @Param("idOrNegOne") long idOrNegOne, Pageable pageable);
 
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.seller.id = :sellerId AND c.status = :status")
     long countBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") ContractStatus status);

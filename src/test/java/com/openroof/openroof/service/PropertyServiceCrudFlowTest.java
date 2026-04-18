@@ -54,6 +54,8 @@ class PropertyServiceCrudFlowTest {
     private PropertyMapper propertyMapper;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private AuditService auditService;
 
     private PropertyService propertyService;
 
@@ -67,7 +69,8 @@ class PropertyServiceCrudFlowTest {
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
                 propertyMapper,
-                notificationService
+                notificationService,
+                auditService
         );
     }
 
@@ -169,6 +172,7 @@ class PropertyServiceCrudFlowTest {
         );
 
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(userRepository.getReferenceById(ownerId)).thenReturn(owner);
         when(agentProfileRepository.findById(agentId)).thenReturn(Optional.of(agentProfile));
         when(propertyMapper.toEntity(createRequest)).thenReturn(property);
         when(propertyRepository.findById(propertyId)).thenReturn(Optional.of(property));
@@ -186,7 +190,7 @@ class PropertyServiceCrudFlowTest {
             return simpleResponse(p.getId(), p.getTitle(), p.getOwner().getId());
         });
 
-        PropertyResponse created = propertyService.create(createRequest);
+        PropertyResponse created = propertyService.create(createRequest, owner);
         assertNotNull(created);
         assertNotNull(created.id());
 
