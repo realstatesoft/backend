@@ -99,7 +99,6 @@ logging:
 # ==================== SUPABASE STORAGE ====================
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-
   url: ${SUPABASE_URL:https://your-project.supabase.co}
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
