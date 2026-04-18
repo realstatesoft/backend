@@ -1,0 +1,130 @@
+spring:
+  application:
+    name: OpenRoof
+  config:
+    import: optional:file:.env[.properties]
+
+  # ==================== DATASOURCE ====================
+  # Para Supabase activar perfil: --spring.profiles.active=supabase
+  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # ==================== JPA / HIBERNATE ====================
+  jpa:
+    hibernate:
+      ddl-auto: none  # Liquibase maneja el schema
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+  # ==================== LIQUIBASE ====================
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+    default-schema: public
+
+  # ==================== JACKSON ====================
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+  # ==================== MAIL (Gmail SMTP) ====================
+  # Configurar en Render Environment / .env:
+  #   MAIL_USERNAME=tucorreo@gmail.com
+  #   MAIL_PASSWORD=xxxx xxxx xxxx xxxx   (App Password de Google)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# ==================== SERVER ====================
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+
+# ==================== OPENAPI / SPRINGDOC ====================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+
+# ==================== CORS ====================
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
+
+# ==================== JWT ====================
+application:
+  security:
+    jwt:
+      # Do NOT add a default here. Set JWT_SECRET in the environment.
+      # In local development use application-dev.yml to supply a fallback.
+      secret-key: ${JWT_SECRET}
+      expiration: 86400000       # 24 horas en ms
+      refresh-expiration: 604800000  # 7 dias en ms
+
+# ==================== LOGGING ====================
+logging:
+  level:
+    root: INFO
+    com.openroof: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${HIBERNATE_BINDER_LOG_LEVEL:WARN}
+
+# ==================== SUPABASE STORAGE ====================
+# Obtener de: Supabase Dashboard → Project Settings → API
+supabase:
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+  storage:
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+
+# ==================== UPLOAD ====================
+upload:
+  # Generic image upload settings (used by SupabaseStorageService for property images, avatars, etc.)
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  # KYC / personal document upload settings (used by UserDocumentService)
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+
+# ==================== MULTIPART ====================
+spring.servlet.multipart:
+  max-file-size: 10MB
+  max-request-size: 20MB
+
+# =================== TRASHCAN ======================
+trashcan:
+  retention-days: 10
+
+mail:
+  from-name: OpenRoof
+  base-url: ${FRONTEND_URL:http://localhost:5173}
