@@ -27,5 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countActiveUsers(@Param("now") LocalDateTime now);
   
     List<User> findByRole(UserRole role);
+
+    List<User> findBySuspendedUntilAfter(LocalDateTime now);
 }
 
