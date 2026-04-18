@@ -397,11 +397,13 @@ public class EmailService {
         return switch (type) {
             case "ID_FRONT"         -> "DNI / Documento de identidad (frente)";
             case "ID_BACK"          -> "DNI / Documento de identidad (dorso)";
-            case "PASSPORT"         -> "Pasaporte";
-            case "PROOF_OF_ADDRESS" -> "Comprobante de domicilio";
             case "SELFIE"           -> "Selfi de verificación";
-            case "TAX_ID"           -> "Identificación fiscal (CUIT/CUIL)";
-            case "INCOME_PROOF"     -> "Comprobante de ingresos";
+            case "PROOF_OF_ADDRESS" -> "Comprobante de domicilio";
+            case "ID"               -> "Documento de identidad";
+            case "PROOF_OF_INCOME"  -> "Comprobante de ingresos";
+            case "TAX_RETURN"       -> "Declaración de impuestos";
+            case "BANK_STATEMENT"   -> "Extracto bancario";
+            case "OTHER"            -> "Otro documento";
             default                 -> type;
         };
     }

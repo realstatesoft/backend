@@ -56,13 +56,36 @@ public class SupabaseStorageService implements StorageService {
 
     @Override
     public UploadResult upload(MultipartFile file, String folder) {
-        // Validation is intentionally delegated to the calling service
-        // (e.g. UserDocumentService or PropertyImageService) so that each
-        // context can enforce its own allowed-types and size limits without
-        // SupabaseStorageService duplicating or conflicting with those rules.
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío o no fue proporcionado.");
+        }
 
         String originalFilename = file.getOriginalFilename();
         String extension = extractExtension(originalFilename);
+
+        // Permitimos sobrepasar límite si es carpeta de documentos o extensión PDF,
+        // asumiendo que el servicio invocador ya aplicó su propia regla de negocio.
+        boolean isKycOrPdf = (folder != null && folder.startsWith("documents/")) || ".pdf".equalsIgnoreCase(extension);
+
+        if (!isKycOrPdf && file.getSize() > maxFileSizeBytes) {
+            throw new IllegalArgumentException("El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
+        }
+
+        if (file.getContentType() == null) {
+            throw new IllegalArgumentException("El Content-Type del archivo no puede ser nulo.");
+        }
+        try {
+            MediaType.parseMediaType(file.getContentType());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Content-Type inválido: " + file.getContentType());
+        }
+
+        // Validation of specific allowed types is intentionally delegated to the calling service
+        // (e.g. UserDocumentService or PropertyImageService) so that each
+        // context can enforce its own allowed-types without
+        // SupabaseStorageService duplicating or conflicting with those rules.
+
+
         String key = buildKey(folder, extension);
 
         try {

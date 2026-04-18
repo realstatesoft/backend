@@ -23,6 +23,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
 /**
  * Endpoints para gestión de documentos personales del usuario autenticado.
@@ -113,7 +115,7 @@ public class UserDocumentController {
     @GetMapping("/documents")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<UserDocumentResponse>>> getAllDocuments(
-            @ParameterObject Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         Page<UserDocumentResponse> docs = documentService.getAllDocuments(pageable);
         return ResponseEntity.ok(ApiResponse.ok(docs));

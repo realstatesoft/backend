@@ -95,8 +95,8 @@ logging:
     root: INFO
     com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${HIBERNATE_BINDER_LOG_LEVEL:WARN}
 
 # ==================== SUPABASE STORAGE ====================
 # Obtener de: Supabase Dashboard → Project Settings → API

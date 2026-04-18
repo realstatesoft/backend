@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -107,7 +109,21 @@ public class UserDocumentService {
                 .build();
 
         doc = documentRepository.save(doc);
-        log.info("Documento {} subido por {} (tipo={})", doc.getId(), email, documentType);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    try {
+                        storageService.delete(result.filename());
+                    } catch (Exception ex) {
+                        log.warn("No se pudo purgar fichero '{}' tras rollback", result.filename(), ex);
+                    }
+                }
+            }
+        });
+
+        log.info("Documento {} subido por usuario {} (tipo={})", doc.getId(), user.getId(), documentType);
         return UserDocumentResponse.from(doc);
     }
 
@@ -140,20 +156,22 @@ public class UserDocumentService {
         doc.setNotes(null);
 
         doc = documentRepository.save(doc);
-        log.info("Documento {} reemplazado por {}", docId, email);
+        log.info("Documento {} reemplazado por usuario {}", docId, user.getId());
 
         // Delete the old binary from Supabase AFTER a successful save so we
-        // never lose the reference to the active file. Failures are logged but
-        // do not abort the response — the new file is already live.
-        // NOTE: binary deletion on soft-delete (delete()) is intentionally
-        // omitted to preserve audit evidence; only replace() purges the old copy.
+        // never lose the reference to the active file.
         if (oldFilename != null) {
-            try {
-                storageService.delete(oldFilename);
-            } catch (Exception ex) {
-                log.warn("No se pudo eliminar el fichero antiguo '{}' de Supabase tras reemplazar documento {}: {}",
-                        oldFilename, docId, ex.getMessage());
-            }
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        storageService.delete(oldFilename);
+                    } catch (Exception ex) {
+                        log.warn("No se pudo eliminar el fichero antiguo '{}' de Supabase tras reemplazar documento {}: {}",
+                                oldFilename, docId, ex.getMessage());
+                    }
+                }
+            });
         }
 
         return UserDocumentResponse.from(doc);
@@ -174,7 +192,7 @@ public class UserDocumentService {
 
         doc.setDeletedAt(LocalDateTime.now());
         documentRepository.save(doc);
-        log.info("Documento {} eliminado (soft delete) por {}", docId, email);
+        log.info("Documento {} eliminado (soft delete) por usuario {}", docId, user.getId());
     }
 
     // ─── Admin: cambio de estado ──────────────────────────────────────────────
@@ -210,16 +228,22 @@ public class UserDocumentService {
         log.info("Documento {} cambió a estado {} por admin", docId, newStatus);
 
         // Send email notification AFTER save. EmailService methods are @Async,
-        // so they execute in a separate thread and don’t block the transaction.
+        // so they execute in a separate thread, but deferring to afterCommit ensures
+        // they are only triggered if the transaction is successful.
         String userEmail = doc.getUser().getEmail();
         String userName  = doc.getUser().getName();
         String docType   = doc.getDocumentType().name();
 
-        if (newStatus == DocumentStatus.APPROVED) {
-            emailService.sendDocumentApprovedEmail(userEmail, userName, docType);
-        } else if (newStatus == DocumentStatus.REJECTED) {
-            emailService.sendDocumentRejectedEmail(userEmail, userName, docType, request.getNotes());
-        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                if (newStatus == DocumentStatus.APPROVED) {
+                    emailService.sendDocumentApprovedEmail(userEmail, userName, docType);
+                } else if (newStatus == DocumentStatus.REJECTED) {
+                    emailService.sendDocumentRejectedEmail(userEmail, userName, docType, request.getNotes());
+                }
+            }
+        });
 
         return UserDocumentResponse.from(doc);
     }
