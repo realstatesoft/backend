@@ -23,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Servicio para gestionar documentos personales del usuario.
@@ -72,15 +74,12 @@ public class UserDocumentService {
     }
 
     /**
-     * Retorna todos los documentos de todos los usuarios (para Admin).
+     * Retorna todos los documentos de todos los usuarios (para Admin) con paginación.
      */
     @Transactional(readOnly = true)
-    public List<UserDocumentResponse> getAllDocuments() {
-        return documentRepository.findAll()
-                .stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(UserDocumentResponse::from)
-                .toList();
+    public Page<UserDocumentResponse> getAllDocuments(Pageable pageable) {
+        return documentRepository.findAll(pageable)
+                .map(UserDocumentResponse::from);
     }
 
     // ─── Carga ─────────────────────────────────────────────────────────────────

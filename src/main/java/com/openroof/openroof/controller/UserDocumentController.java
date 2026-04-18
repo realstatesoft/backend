@@ -20,6 +20,9 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Endpoints para gestión de documentos personales del usuario autenticado.
@@ -109,8 +112,10 @@ public class UserDocumentController {
     )
     @GetMapping("/documents")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserDocumentResponse>>> getAllDocuments() {
-        List<UserDocumentResponse> docs = documentService.getAllDocuments();
+    public ResponseEntity<ApiResponse<Page<UserDocumentResponse>>> getAllDocuments(
+            @ParameterObject Pageable pageable
+    ) {
+        Page<UserDocumentResponse> docs = documentService.getAllDocuments(pageable);
         return ResponseEntity.ok(ApiResponse.ok(docs));
     }
 
