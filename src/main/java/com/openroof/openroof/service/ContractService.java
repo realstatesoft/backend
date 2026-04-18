@@ -20,6 +20,7 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.ContractTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class ContractService {
 
@@ -187,8 +189,12 @@ public class ContractService {
      */
     @Transactional
     public ContractResponse sign(Long id, SignContractRequest request, String email, String ip) {
-        Contract contract = findOrThrow(id);
+        Contract contract = contractRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
         User user = findUserByEmail(email);
+
+        // Capturar estado actual para detectar cambios
+        ContractStatus oldStatus = contract.getStatus();
 
         // 1. Validar estado
         if (contract.getStatus() != ContractStatus.SENT && contract.getStatus() != ContractStatus.PARTIALLY_SIGNED) {
@@ -227,11 +233,47 @@ public class ContractService {
         // 5. Evaluar cambio de estado
         evaluateCompletion(contract);
 
-        return contractMapper.toResponse(contractRepository.save(contract));
+        Contract saved = contractRepository.save(contract);
+
+        // 6. Notificar si el estado cambió
+        if (saved.getStatus() != oldStatus) {
+            String propertyTitle = saved.getProperty().getTitle();
+            String newStatus = saved.getStatus().name();
+            String buyerEmail      = saved.getBuyer().getEmail();
+            String buyerName       = saved.getBuyer().getName();
+            String sellerEmail     = saved.getSeller().getEmail();
+            String sellerName      = saved.getSeller().getName();
+            AgentProfile la = saved.getListingAgent();
+            AgentProfile ba = saved.getBuyerAgent();
+            String listingAgentEmail = la != null ? la.getUser().getEmail() : null;
+            String listingAgentName  = la != null ? la.getUser().getName()  : null;
+            String buyerAgentEmail   = ba != null ? ba.getUser().getEmail() : null;
+            String buyerAgentName    = ba != null ? ba.getUser().getName()  : null;
+            boolean sameAgent = la != null && ba != null && la.getId().equals(ba.getId());
+
+            afterCommit(() -> {
+                emailService.sendContractStatusChangedEmail(buyerEmail,  buyerName,  propertyTitle, newStatus, saved.getId());
+                emailService.sendContractStatusChangedEmail(sellerEmail, sellerName, propertyTitle, newStatus, saved.getId());
+                if (listingAgentEmail != null) {
+                    emailService.sendContractStatusChangedEmail(listingAgentEmail, listingAgentName, propertyTitle, newStatus, saved.getId());
+                }
+                if (buyerAgentEmail != null && !sameAgent) {
+                    emailService.sendContractStatusChangedEmail(buyerAgentEmail, buyerAgentName, propertyTitle, newStatus, saved.getId());
+                }
+            });
+        }
+
+        return contractMapper.toResponse(saved);
     }
 
-    public List<SignatureStatusResponse> getSignatures(Long id) {
+    public List<SignatureStatusResponse> getSignatures(Long id, String requesterEmail) {
         Contract contract = findOrThrow(id);
+        User requester = findUserByEmail(requesterEmail);
+
+        if (!canAccess(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para ver el estado de firmas de este contrato");
+        }
+
         List<ContractSignature> existingSigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(id);
         
         // Mapeo rápido para búsqueda
@@ -277,7 +319,7 @@ public class ContractService {
         boolean valid = false;
         Long userId = user.getId();
         
-        System.out.println("Validando firma - UserID: " + userId + ", Role: " + role + ", ContractID: " + contract.getId());
+        log.debug("Validando firma - UserID: {}, Role: {}, ContractID: {}", userId, role, contract.getId());
 
         switch (role) {
             case BUYER -> valid = userId.equals(contract.getBuyer().getId());
@@ -301,7 +343,8 @@ public class ContractService {
         }
 
         if (!valid) {
-            System.err.println("Falla validación de identidad para contrato " + contract.getId());
+            log.warn("Falla validación de identidad para contrato {} - Usuario {} no corresponde al rol {}", 
+                    contract.getId(), userId, role);
             throw new BadRequestException("El usuario no corresponde al rol de firma seleccionado");
         }
     }

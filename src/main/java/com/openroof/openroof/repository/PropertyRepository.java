@@ -73,7 +73,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Query("""
         SELECT p FROM Property p
         WHERE p.trashedAt IS NULL AND p.deletedAt IS NULL
-          AND p.agent.id = :agentId
+          AND (p.agent.id = :agentId OR p.owner.id IN (SELECT ac.user.id FROM AgentClient ac WHERE ac.agent.id = :agentId))
         """)
     Page<Property> findByAgentScope(@Param("agentId") Long agentId, Pageable pageable);
 

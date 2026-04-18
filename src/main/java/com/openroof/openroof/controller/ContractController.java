@@ -155,17 +155,23 @@ public class ContractController {
             jakarta.servlet.http.HttpServletRequest httpRequest,
             Authentication auth) {
 
-        String ip = httpRequest.getRemoteAddr();
+        String xForwardedFor = httpRequest.getHeader("X-Forwarded-For");
+        String ip = (xForwardedFor != null && !xForwardedFor.isBlank())
+                ? xForwardedFor.split(",")[0].trim()
+                : httpRequest.getRemoteAddr();
+
         ContractResponse response = contractService.sign(id, request, auth.getName(), ip);
         return ResponseEntity.ok(ApiResponse.ok(response, "Firma registrada exitosamente"));
     }
 
     @GetMapping("/{id}/signatures")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener el estado de firmas del contrato")
     public ResponseEntity<ApiResponse<List<SignatureStatusResponse>>> getSignatures(
-            @Parameter(description = "ID del contrato") @PathVariable Long id) {
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            Authentication auth) {
 
-        List<SignatureStatusResponse> list = contractService.getSignatures(id);
+        List<SignatureStatusResponse> list = contractService.getSignatures(id, auth.getName());
         return ResponseEntity.ok(ApiResponse.ok(list));
     }
 
