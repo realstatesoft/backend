@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-add-model3d-media-type
+      author: openroof
+      comment: "Add MODEL_3D to property_media type column for 3D model files (GLB/GLTF)"
+      changes:
+        - sql:
+            comment: "PostgreSQL uses VARCHAR with JPA enum validation, no DB constraint change needed.
+                      The enum constraint is enforced at the JPA/Hibernate level via @Enumerated(EnumType.STRING).
+                      This changeset serves as documentation that MODEL_3D is now a valid media type."
+            sql: "SELECT 1"

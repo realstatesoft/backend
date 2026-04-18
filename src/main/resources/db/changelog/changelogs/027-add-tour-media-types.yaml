@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027
+      author: openroof
+      comment: "Add IMAGE_360 and VIRTUAL_TOUR_CONFIG to valid media types. 
+                Note: The DB column is VARCHAR(20), so no schema change is needed.
+                Validation is handled at the JPA level via the MediaType enum."
+      changes:
+        - sql:
+            sql: "SELECT 1"

@@ -109,17 +109,21 @@ supabase:
 # ==================== UPLOAD ====================
 upload:
   # Generic image upload settings (used by SupabaseStorageService for property images, avatars, etc.)
-  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:20MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
   # KYC / personal document upload settings (used by UserDocumentService)
   documents:
     max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+  # 3D Model upload settings
+  models:
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 10MB
-  max-request-size: 20MB
+  max-file-size: 50MB
+  max-request-size: 60MB
 
 # =================== TRASHCAN ======================
 trashcan:
