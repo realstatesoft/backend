@@ -4,5 +4,7 @@ public enum SignatureRole {
     BUYER,
     SELLER,
     AGENT,
+    LISTING_AGENT,
+    BUYER_AGENT,
     WITNESS
 }

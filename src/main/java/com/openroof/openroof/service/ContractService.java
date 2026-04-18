@@ -6,12 +6,19 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.ContractMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
+import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
 import com.openroof.openroof.model.enums.ContractStatus;
+import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.repository.*;
+import com.openroof.openroof.repository.ContractRepository;
+import com.openroof.openroof.repository.ContractSignatureRepository;
+import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.ContractTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +28,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +40,7 @@ public class ContractService {
     private static final BigDecimal PERCENTAGE_TOLERANCE = BigDecimal.valueOf(0.01);
 
     private final ContractRepository contractRepository;
+    private final ContractSignatureRepository contractSignatureRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
     private final PropertyRepository propertyRepository;
@@ -111,7 +121,206 @@ public class ContractService {
         return saved;
     }
 
-    // ─── READ ─────────────────────────────────────────────────────────────────
+    // ─── UPDATE ───────────────────────────────────────────────────────────────
+
+    /**
+     * Actualiza un contrato existente. Solo se permite si el contrato está en
+     * estado DRAFT y el solicitante tiene permisos.
+     */
+    @Transactional
+    public ContractResponse update(Long id, ContractRequest request, String requesterEmail) {
+        Contract contract = findOrThrow(id);
+        User requester = findUserByEmail(requesterEmail);
+
+        if (!canAccess(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para editar este contrato");
+        }
+
+        if (contract.getStatus() != ContractStatus.DRAFT) {
+            throw new BadRequestException("Solo se pueden editar contratos en estado DRAFT");
+        }
+
+        // 1. Resolver nuevas entidades
+        Property property = propertyRepository.findById(request.propertyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
+        User buyer = userRepository.findById(request.buyerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Comprador no encontrado"));
+        User seller = userRepository.findById(request.sellerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vendedor no encontrado"));
+        AgentProfile listingAgent = resolveAgent(request.listingAgentId(), "Agente listador no encontrado");
+        AgentProfile buyerAgent   = resolveAgent(request.buyerAgentId(),   "Agente del comprador no encontrado");
+
+        // 2. Validar reglas de comisión
+        BigDecimal commissionPct   = coerceZero(request.commissionPct());
+        BigDecimal listingAgentPct = coerceZero(request.listingAgentCommissionPct());
+        BigDecimal buyerAgentPct   = coerceZero(request.buyerAgentCommissionPct());
+        validateCommissionRules(listingAgent, buyerAgent, commissionPct, listingAgentPct, buyerAgentPct);
+
+        // 3. Actualizar campos
+        contract.setProperty(property);
+        contract.setBuyer(buyer);
+        contract.setSeller(seller);
+        contract.setListingAgent(listingAgent);
+        contract.setBuyerAgent(buyerAgent);
+        contract.setContractType(request.contractType());
+        contract.setAmount(request.amount());
+        contract.setCommissionPct(commissionPct);
+        contract.setListingAgentCommissionPct(listingAgentPct);
+        contract.setBuyerAgentCommissionPct(buyerAgentPct);
+        contract.setStartDate(request.startDate());
+        contract.setEndDate(request.endDate());
+        contract.setTerms(request.terms());
+
+        if (request.templateId() != null) {
+            ContractTemplate template = contractTemplateRepository.findById(request.templateId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada"));
+            contract.setTemplate(template);
+        }
+
+        return contractMapper.toResponse(contractRepository.save(contract));
+    }
+
+    // ─── SIGNATURES ──────────────────────────────────────────────────────────
+
+    /**
+     * Registra una firma digital para el contrato.
+     */
+    @Transactional
+    public ContractResponse sign(Long id, SignContractRequest request, String email, String ip) {
+        Contract contract = findOrThrow(id);
+        User user = findUserByEmail(email);
+
+        // 1. Validar estado
+        if (contract.getStatus() != ContractStatus.SENT && contract.getStatus() != ContractStatus.PARTIALLY_SIGNED) {
+            throw new BadRequestException("El contrato no está en un estado que permita firmas");
+        }
+
+        // 2. Validar que el usuario sea la parte que dice ser y resolver rol específico
+        validateSignerIdentity(contract, user, request.role());
+        
+        SignatureRole finalizedRole = request.role();
+        if (finalizedRole == SignatureRole.AGENT) {
+            if (contract.getListingAgent() != null && user.getId().equals(contract.getListingAgent().getUser().getId())) {
+                finalizedRole = SignatureRole.LISTING_AGENT;
+            } else if (contract.getBuyerAgent() != null && user.getId().equals(contract.getBuyerAgent().getUser().getId())) {
+                finalizedRole = SignatureRole.BUYER_AGENT;
+            }
+        }
+
+        // 3. Validar que no haya firmado ya para ese rol específico
+        if (contractSignatureRepository.existsByContractIdAndRoleAndDeletedAtIsNull(id, finalizedRole)) {
+            throw new BadRequestException("Esta parte ya ha firmado el contrato");
+        }
+
+        // 4. Registrar firma
+        ContractSignature signature = ContractSignature.builder()
+                .contract(contract)
+                .signer(user)
+                .role(finalizedRole)
+                .signatureType(request.signatureType())
+                .signatureData(request.signatureData())
+                .ipAddress(ip)
+                .signedAt(LocalDateTime.now())
+                .build();
+        contractSignatureRepository.save(signature);
+
+        // 5. Evaluar cambio de estado
+        evaluateCompletion(contract);
+
+        return contractMapper.toResponse(contractRepository.save(contract));
+    }
+
+    public List<SignatureStatusResponse> getSignatures(Long id) {
+        Contract contract = findOrThrow(id);
+        List<ContractSignature> existingSigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(id);
+        
+        // Mapeo rápido para búsqueda
+        var signedMap = existingSigs.stream()
+                .collect(Collectors.toMap(ContractSignature::getRole, s -> s));
+
+        // Construir lista de todos los que DEBEN firmar
+        List<SignatureStatusResponse> results = new java.util.ArrayList<>();
+
+        // 1. Vendedor
+        results.add(mapSignatureStatus(SignatureRole.SELLER, contract.getSeller(), signedMap.get(SignatureRole.SELLER)));
+        
+        // 2. Comprador
+        results.add(mapSignatureStatus(SignatureRole.BUYER, contract.getBuyer(), signedMap.get(SignatureRole.BUYER)));
+        
+        // 3. Agente Listador (si existe)
+        if (contract.getListingAgent() != null) {
+            results.add(mapSignatureStatus(SignatureRole.LISTING_AGENT, contract.getListingAgent().getUser(), signedMap.get(SignatureRole.LISTING_AGENT)));
+        }
+        
+        // 4. Agente Comprador (si existe)
+        if (contract.getBuyerAgent() != null) {
+            results.add(mapSignatureStatus(SignatureRole.BUYER_AGENT, contract.getBuyerAgent().getUser(), signedMap.get(SignatureRole.BUYER_AGENT)));
+        }
+
+        return results;
+    }
+
+    private SignatureStatusResponse mapSignatureStatus(SignatureRole role, User user, ContractSignature sig) {
+        return new SignatureStatusResponse(
+                sig != null ? sig.getId() : null,
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                role,
+                sig != null ? sig.getSignatureType() : null,
+                sig != null ? sig.getSignedAt() : null,
+                sig != null
+        );
+    }
+
+    private void validateSignerIdentity(Contract contract, User user, SignatureRole role) {
+        boolean valid = false;
+        Long userId = user.getId();
+        
+        System.out.println("Validando firma - UserID: " + userId + ", Role: " + role + ", ContractID: " + contract.getId());
+
+        switch (role) {
+            case BUYER -> valid = userId.equals(contract.getBuyer().getId());
+            case SELLER -> valid = userId.equals(contract.getSeller().getId());
+            case LISTING_AGENT -> {
+                if (contract.getListingAgent() == null) break;
+                valid = userId.equals(contract.getListingAgent().getUser().getId());
+            }
+            case BUYER_AGENT -> {
+                if (contract.getBuyerAgent() == null) break;
+                valid = userId.equals(contract.getBuyerAgent().getUser().getId());
+            }
+            case AGENT -> {
+                boolean isListing = contract.getListingAgent() != null && 
+                                   userId.equals(contract.getListingAgent().getUser().getId());
+                boolean isBuyer = contract.getBuyerAgent() != null && 
+                                 userId.equals(contract.getBuyerAgent().getUser().getId());
+                valid = isListing || isBuyer;
+            }
+            default -> valid = false;
+        }
+
+        if (!valid) {
+            System.err.println("Falla validación de identidad para contrato " + contract.getId());
+            throw new BadRequestException("El usuario no corresponde al rol de firma seleccionado");
+        }
+    }
+
+    private void evaluateCompletion(Contract contract) {
+        List<ContractSignature> sigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(contract.getId());
+        Set<SignatureRole> signedRoles = sigs.stream().map(ContractSignature::getRole).collect(Collectors.toSet());
+
+        boolean buyerSigned = signedRoles.contains(SignatureRole.BUYER);
+        boolean sellerSigned = signedRoles.contains(SignatureRole.SELLER);
+        boolean listingAgentSigned = contract.getListingAgent() == null || signedRoles.contains(SignatureRole.LISTING_AGENT);
+        boolean buyerAgentSigned = contract.getBuyerAgent() == null || signedRoles.contains(SignatureRole.BUYER_AGENT);
+
+        if (buyerSigned && sellerSigned && listingAgentSigned && buyerAgentSigned) {
+            contract.setStatus(ContractStatus.SIGNED);
+        } else {
+            contract.setStatus(ContractStatus.PARTIALLY_SIGNED);
+        }
+    }
 
     /**
      * Obtiene un contrato por ID. Solo puede acceder quien es parte del contrato
@@ -219,13 +428,13 @@ public class ContractService {
         boolean sameAgent = la != null && ba != null && la.getId().equals(ba.getId());
 
         afterCommit(() -> {
-            emailService.sendContractStatusChangedEmail(buyerEmail,  buyerName,  propertyTitle, newStatus);
-            emailService.sendContractStatusChangedEmail(sellerEmail, sellerName, propertyTitle, newStatus);
+            emailService.sendContractStatusChangedEmail(buyerEmail,  buyerName,  propertyTitle, newStatus, contract.getId());
+            emailService.sendContractStatusChangedEmail(sellerEmail, sellerName, propertyTitle, newStatus, contract.getId());
             if (listingAgentEmail != null) {
-                emailService.sendContractStatusChangedEmail(listingAgentEmail, listingAgentName, propertyTitle, newStatus);
+                emailService.sendContractStatusChangedEmail(listingAgentEmail, listingAgentName, propertyTitle, newStatus, contract.getId());
             }
             if (buyerAgentEmail != null && !sameAgent) {
-                emailService.sendContractStatusChangedEmail(buyerAgentEmail, buyerAgentName, propertyTitle, newStatus);
+                emailService.sendContractStatusChangedEmail(buyerAgentEmail, buyerAgentName, propertyTitle, newStatus, contract.getId());
             }
         });
 
@@ -317,6 +526,8 @@ public class ContractService {
         } else {
             // BUYER / SELLER / OWNER: can only sign, reject, or cancel — cannot send a draft
             valid = switch (current) {
+                case DRAFT            -> next == ContractStatus.SENT
+                                      || next == ContractStatus.CANCELLED;
                 case SENT             -> next == ContractStatus.PARTIALLY_SIGNED
                                       || next == ContractStatus.REJECTED
                                       || next == ContractStatus.CANCELLED;
@@ -389,7 +600,10 @@ public class ContractService {
     private void afterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override public void afterCommit() { action.run(); }
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
             });
         } else {
             action.run();

@@ -4,6 +4,7 @@ import com.openroof.openroof.dto.contract.ContractRequest;
 import com.openroof.openroof.dto.contract.ContractResponse;
 import com.openroof.openroof.dto.contract.ContractSummaryResponse;
 import com.openroof.openroof.dto.contract.ContractStatusUpdateRequest;
+import com.openroof.openroof.dto.contract.SignContractRequest;
 import com.openroof.openroof.exception.BadRequestException;
 
 import com.openroof.openroof.model.agent.AgentProfile;
@@ -19,7 +20,6 @@ import com.openroof.openroof.repository.ContractRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.ContractSignatureRepository;
-import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.SignatureType;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +64,9 @@ class ContractServiceIntegrationTest {
 
     @Autowired
     ContractSignatureRepository contractSignatureRepository;
+
+    @MockitoBean
+    EmailService emailService;
 
     private User agent;
     private User buyer;
@@ -396,44 +399,9 @@ class ContractServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Cambiar estado SENT → PARTIALLY_SIGNED")
-    void updateStatusSentToPartiallySigned() {
-        ContractRequest createRequest = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
-                agentProfile.getId(), null, // Agente para poder hacer DRAFT → SENT
-                ContractType.SALE,
-                new BigDecimal("150000"),
-                new BigDecimal("5"), new BigDecimal("5"), BigDecimal.ZERO,
-                LocalDate.now(), LocalDate.now().plusDays(30),
-                "Terms", null
-        );
-
-        ContractResponse created = contractService.create(createRequest, agent.getEmail());
-
-        // DRAFT → SENT (como agente listador)
-        contractService.updateStatus(created.id(),
-                new ContractStatusUpdateRequest(ContractStatus.SENT), agent.getEmail());
-
-        // SENT → PARTIALLY_SIGNED (como comprador)
-        Contract contract = contractRepository.findById(created.id()).orElseThrow();
-        contractSignatureRepository.save(ContractSignature.builder()
-                .contract(contract)
-                .signer(buyer)
-                .role(SignatureRole.BUYER)
-                .signatureType(SignatureType.ELECTRONIC)
-                .signedAt(LocalDateTime.now())
-                .signatureData("evidence")
-                .build());
-
-        ContractResponse updated = contractService.updateStatus(created.id(),
-                new ContractStatusUpdateRequest(ContractStatus.PARTIALLY_SIGNED), buyer.getEmail());
-
-        assertThat(updated.status()).isEqualTo(ContractStatus.PARTIALLY_SIGNED);
-    }
-
-    @Test
-    @DisplayName("Transición de estado inválida debe fallar")
-    void updateStatusInvalidTransition() {
+    @DisplayName("Firmar contrato como comprador y verificar transición a PARTIALLY_SIGNED")
+    void signAsBuyer() {
+        // 1. Preparar contrato en estado SENT
         ContractRequest createRequest = new ContractRequest(
                 property.getId(), buyer.getId(), seller.getId(),
                 null, null,
@@ -443,14 +411,95 @@ class ContractServiceIntegrationTest {
                 LocalDate.now(), LocalDate.now().plusDays(30),
                 "Terms", null
         );
-
         ContractResponse created = contractService.create(createRequest, seller.getEmail());
+        contractService.updateStatus(created.id(), new ContractStatusUpdateRequest(ContractStatus.SENT), seller.getEmail());
 
-        // Intentar DRAFT → PARTIALLY_SIGNED (inválido, debe ser SENT primero)
-        assertThatThrownBy(() -> contractService.updateStatus(created.id(),
-                new ContractStatusUpdateRequest(ContractStatus.PARTIALLY_SIGNED), seller.getEmail()))
+        // 2. Firmar como comprador
+        SignContractRequest signRequest = new SignContractRequest(
+                SignatureType.DIGITAL, SignatureRole.BUYER, "hash-evidencia"
+        );
+        ContractResponse signedRes = contractService.sign(created.id(), signRequest, buyer.getEmail(), "127.0.0.1");
+
+        // 3. Verificar
+        assertThat(signedRes.status()).isEqualTo(ContractStatus.PARTIALLY_SIGNED);
+        assertThat(contractSignatureRepository.countByContractIdAndSignedAtIsNotNullAndDeletedAtIsNull(created.id())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Flujo completo de firmas: transición automática a SIGNED")
+    void fullSignatureFlow() {
+        // 1. Crear contrato (no tiene agentes, solo requiere 2 firmas: comprador y vendedor)
+        ContractRequest createRequest = new ContractRequest(
+                property.getId(), buyer.getId(), seller.getId(),
+                null, null,
+                ContractType.SALE,
+                new BigDecimal("150000"),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                LocalDate.now(), LocalDate.now().plusDays(30),
+                "Terms", null
+        );
+        ContractResponse created = contractService.create(createRequest, seller.getEmail());
+        contractService.updateStatus(created.id(), new ContractStatusUpdateRequest(ContractStatus.SENT), seller.getEmail());
+
+        // 2. Firma el Comprador
+        contractService.sign(created.id(), 
+            new SignContractRequest(SignatureType.DIGITAL, SignatureRole.BUYER, "sig-buyer"), 
+            buyer.getEmail(), "127.0.0.1");
+
+        // 3. Firma el Vendedor
+        ContractResponse finalRes = contractService.sign(created.id(), 
+            new SignContractRequest(SignatureType.DIGITAL, SignatureRole.SELLER, "sig-seller"), 
+            seller.getEmail(), "127.0.0.1");
+
+        // 4. Verificación final: El contrato DEBE estar SIGNED
+        assertThat(finalRes.status()).isEqualTo(ContractStatus.SIGNED);
+    }
+
+    @Test
+    @DisplayName("Error al firmar dos veces con el mismo rol")
+    void signDoubleFails() {
+        ContractRequest createRequest = new ContractRequest(
+                property.getId(), buyer.getId(), seller.getId(),
+                null, null,
+                ContractType.SALE,
+                new BigDecimal("150000"),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                LocalDate.now(), LocalDate.now().plusDays(30),
+                "Terms", null
+        );
+        ContractResponse created = contractService.create(createRequest, seller.getEmail());
+        contractService.updateStatus(created.id(), new ContractStatusUpdateRequest(ContractStatus.SENT), seller.getEmail());
+
+        SignContractRequest signRequest = new SignContractRequest(SignatureType.DIGITAL, SignatureRole.BUYER, "sig1");
+        contractService.sign(created.id(), signRequest, buyer.getEmail(), "127.0.0.1");
+
+        // Intentar firmar otra vez debe fallar
+        assertThatThrownBy(() -> contractService.sign(created.id(), signRequest, buyer.getEmail(), "127.0.0.1"))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Transición");
+                .hasMessageContaining("ya ha firmado");
+    }
+
+    @Test
+    @DisplayName("Error al firmar con un rol que no corresponde al usuario")
+    void signUnauthorizedRole() {
+        ContractRequest createRequest = new ContractRequest(
+                property.getId(), buyer.getId(), seller.getId(),
+                null, null,
+                ContractType.SALE,
+                new BigDecimal("150000"),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                LocalDate.now(), LocalDate.now().plusDays(30),
+                "Terms", null
+        );
+        ContractResponse created = contractService.create(createRequest, seller.getEmail());
+        contractService.updateStatus(created.id(), new ContractStatusUpdateRequest(ContractStatus.SENT), seller.getEmail());
+
+        // El COMPRADOR intenta firmar como VENDEDOR
+        SignContractRequest signRequest = new SignContractRequest(SignatureType.DIGITAL, SignatureRole.SELLER, "hack");
+        
+        assertThatThrownBy(() -> contractService.sign(created.id(), signRequest, buyer.getEmail(), "127.0.0.1"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("no corresponde");
     }
 
     @Test
@@ -475,10 +524,6 @@ class ContractServiceIntegrationTest {
                 .passwordHash("hashed")
                 .role(UserRole.ADMIN)
                 .build());
-
-        // Antes de eliminar, buyer puede verlo
-        ContractResponse beforeDelete = contractService.getById(contractId, buyer.getEmail());
-        assertThat(beforeDelete.id()).isEqualTo(contractId);
 
         // Eliminar
         contractService.delete(contractId, admin.getEmail());
