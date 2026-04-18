@@ -8,10 +8,9 @@ spring:
   # Para Supabase activar perfil: --spring.profiles.active=supabase
   # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.etpxedhtursffyoeapqr
-    password: OpenRoof$!*$up4Bas3#Pl4tf0rm2026*
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/openroof}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -101,8 +100,8 @@ logging:
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
 
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL:https://your-project.supabase.co}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
