@@ -83,12 +83,20 @@ databaseChangeLog:
       file: changelogs/022-add-unique-active-flag-constraint.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/025-create-user-documents-table.yaml
-      relativeToChangelogFile: true
-  - include:
       file: changelogs/023-create-user-reports-table.yaml
       relativeToChangelogFile: true
   - include:
       file: changelogs/024-add-unique-pending-user-report-constraint.yaml
       relativeToChangelogFile: true
-
+  - include:
+      file: changelogs/025-create-user-documents-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/026-add-model3d-media-type.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/027-add-tour-media-types.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/028-add-storage-key-to-media.yaml
+      relativeToChangelogFile: true
