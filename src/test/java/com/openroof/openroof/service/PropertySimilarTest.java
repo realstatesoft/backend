@@ -37,6 +37,7 @@ class PropertySimilarTest {
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
+    @Mock private AuditService auditService;
 
     private PropertyService propertyService;
 
@@ -80,7 +81,8 @@ class PropertySimilarTest {
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
                 propertyMapper,
-                notificationService
+                notificationService,
+                auditService
         );
 
         Location location = Location.builder()

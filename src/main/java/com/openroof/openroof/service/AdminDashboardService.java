@@ -146,7 +146,7 @@ public class AdminDashboardService {
                         "Logs del sistema",
                         "Monitoreo y auditoría",
                         "document",
-                        null));
+                        "/admin/audit-logs"));
 
         List<AdminAttentionItemDto> attentionItems = buildAttentionItems();
 
