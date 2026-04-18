@@ -83,7 +83,7 @@ databaseChangeLog:
       file: changelogs/022-add-unique-active-flag-constraint.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/019-create-user-documents-table.yaml
+      file: changelogs/025-create-user-documents-table.yaml
       relativeToChangelogFile: true
   - include:
       file: changelogs/023-create-user-reports-table.yaml

@@ -247,7 +247,7 @@ public class EmailService {
                 por nuestro equipo de verificación.</p>
                 <p>Tu perfil ya cuenta con documentación verificada. Ahora podés acceder
                 a todas las funcionalidades de la plataforma.</p>
-                """.formatted(escapeHtml(documentType)),
+                """.formatted(escapeHtml(translateDocumentType(documentType))),
                 "Ver mi perfil",
                 baseUrl + "/profile"
         );
@@ -268,7 +268,7 @@ public class EmailService {
                 <p>Lamentablemente, tu documento <strong>%s</strong> no pudo ser aprobado.</p>
                 %s
                 <p>Por favor, revisá los requisitos y subí un nuevo documento desde tu perfil.</p>
-                """.formatted(escapeHtml(documentType), reasonHtml),
+                """.formatted(escapeHtml(translateDocumentType(documentType)), reasonHtml),
                 "Subir nuevo documento",
                 baseUrl + "/profile"
         );
@@ -389,6 +389,20 @@ public class EmailService {
             case "EXPIRED"          -> "Expirado";
             case "CANCELLED"        -> "Cancelado";
             default                 -> status;
+        };
+    }
+
+    private String translateDocumentType(String type) {
+        if (type == null) return "";
+        return switch (type) {
+            case "ID_FRONT"         -> "DNI / Documento de identidad (frente)";
+            case "ID_BACK"          -> "DNI / Documento de identidad (dorso)";
+            case "PASSPORT"         -> "Pasaporte";
+            case "PROOF_OF_ADDRESS" -> "Comprobante de domicilio";
+            case "SELFIE"           -> "Selfi de verificación";
+            case "TAX_ID"           -> "Identificación fiscal (CUIT/CUIL)";
+            case "INCOME_PROOF"     -> "Comprobante de ingresos";
+            default                 -> type;
         };
     }
 }

@@ -10,17 +10,19 @@ import com.openroof.openroof.model.enums.DocumentType;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserDocumentRepository;
 import com.openroof.openroof.repository.UserRepository;
-import jakarta.transaction.Transactional;
-import com.openroof.openroof.model.enums.DocumentStatus;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar documentos personales del usuario.
@@ -42,12 +44,25 @@ public class UserDocumentService {
     @Value("${upload.documents.allowed-types:application/pdf,image/jpeg,image/png,image/webp}")
     private String allowedTypesRaw;
 
+    // Parsed once at startup to avoid repeated parsing on every request
+    private long maxFileSizeBytes;
+    private List<String> trimmedAllowedTypes;
+
+    @PostConstruct
+    void initConfig() {
+        maxFileSizeBytes = DataSize.parse(maxFileSizeRaw.trim()).toBytes();
+        trimmedAllowedTypes = Arrays.stream(allowedTypesRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
     // ─── Lectura ───────────────────────────────────────────────────────────────
 
     /**
      * Retorna todos los documentos activos del usuario autenticado.
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public List<UserDocumentResponse> getMyDocuments(String email) {
         User user = findUser(email);
         return documentRepository.findByUser_IdOrderByCreatedAtDesc(user.getId())
@@ -59,7 +74,7 @@ public class UserDocumentService {
     /**
      * Retorna todos los documentos de todos los usuarios (para Admin).
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public List<UserDocumentResponse> getAllDocuments() {
         return documentRepository.findAll()
                 .stream()
@@ -111,6 +126,10 @@ public class UserDocumentService {
         UserDocument doc = documentRepository.findByIdAndUser_Id(docId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado: " + docId));
 
+        // Capture the old filename before overwriting it so we can delete the
+        // orphaned binary from Supabase after a successful save.
+        String oldFilename = doc.getFilename();
+
         String folder = "documents/" + user.getId();
         StorageService.UploadResult result = storageService.upload(file, folder);
 
@@ -123,6 +142,21 @@ public class UserDocumentService {
 
         doc = documentRepository.save(doc);
         log.info("Documento {} reemplazado por {}", docId, email);
+
+        // Delete the old binary from Supabase AFTER a successful save so we
+        // never lose the reference to the active file. Failures are logged but
+        // do not abort the response — the new file is already live.
+        // NOTE: binary deletion on soft-delete (delete()) is intentionally
+        // omitted to preserve audit evidence; only replace() purges the old copy.
+        if (oldFilename != null) {
+            try {
+                storageService.delete(oldFilename);
+            } catch (Exception ex) {
+                log.warn("No se pudo eliminar el fichero antiguo '{}' de Supabase tras reemplazar documento {}: {}",
+                        oldFilename, docId, ex.getMessage());
+            }
+        }
+
         return UserDocumentResponse.from(doc);
     }
 
@@ -154,22 +188,37 @@ public class UserDocumentService {
         UserDocument doc = documentRepository.findById(docId)
                 .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado: " + docId));
 
-        doc.setDocumentStatus(request.getDocumentStatus());
+        DocumentStatus newStatus = request.getDocumentStatus();
+        DocumentStatus prevStatus = doc.getDocumentStatus();
+
+        // Admins must not set a document back to PENDING
+        if (newStatus == DocumentStatus.PENDING) {
+            throw new BadRequestException("Los administradores no pueden establecer el estado PENDING.");
+        }
+
+        // No-op: same state — skip save and email to avoid duplicate notifications
+        if (newStatus == prevStatus) {
+            log.info("Documento {} ya tiene estado {}; sin cambios.", docId, newStatus);
+            return UserDocumentResponse.from(doc);
+        }
+
+        doc.setDocumentStatus(newStatus);
         if (request.getNotes() != null) {
             doc.setNotes(request.getNotes());
         }
 
         doc = documentRepository.save(doc);
-        log.info("Documento {} cambió a estado {} por admin", docId, request.getDocumentStatus());
+        log.info("Documento {} cambió a estado {} por admin", docId, newStatus);
 
-        // Enviar notificación por email al usuario
+        // Send email notification AFTER save. EmailService methods are @Async,
+        // so they execute in a separate thread and don’t block the transaction.
         String userEmail = doc.getUser().getEmail();
         String userName  = doc.getUser().getName();
         String docType   = doc.getDocumentType().name();
 
-        if (request.getDocumentStatus() == DocumentStatus.APPROVED) {
+        if (newStatus == DocumentStatus.APPROVED) {
             emailService.sendDocumentApprovedEmail(userEmail, userName, docType);
-        } else if (request.getDocumentStatus() == DocumentStatus.REJECTED) {
+        } else if (newStatus == DocumentStatus.REJECTED) {
             emailService.sendDocumentRejectedEmail(userEmail, userName, docType, request.getNotes());
         }
 
@@ -183,15 +232,13 @@ public class UserDocumentService {
             throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
         }
 
-        long maxBytes = DataSize.parse(maxFileSizeRaw).toBytes();
-        if (file.getSize() > maxBytes) {
+        if (file.getSize() > maxFileSizeBytes) {
             throw new BadRequestException(
-                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeRaw + ".");
+                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeRaw.trim() + ".");
         }
 
         String contentType = file.getContentType();
-        List<String> allowed = List.of(allowedTypesRaw.split(","));
-        if (contentType == null || !allowed.contains(contentType.trim())) {
+        if (contentType == null || !trimmedAllowedTypes.contains(contentType.trim())) {
             throw new BadRequestException(
                     "Tipo de archivo no permitido: " + contentType
                             + ". Tipos aceptados: PDF, JPG, PNG, WebP.");

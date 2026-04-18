@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 019-create-user-documents-table
+      id: 025-create-user-documents-table
       author: openroof
       preConditions:
         - onFail: MARK_RAN
@@ -82,5 +82,17 @@ databaseChangeLog:
             indexName: idx_user_documents_status
             tableName: user_documents
             columns:
+              - column:
+                  name: document_status
+        # Composite index to speed up admin KYC queries filtering by both user
+        # and status (e.g. "all PENDING docs for user X").
+        # Covers the @SQLRestriction("deleted_at IS NULL") filter at the app level;
+        # add a partial index manually in Supabase if further selectivity is needed.
+        - createIndex:
+            indexName: idx_user_documents_user_status
+            tableName: user_documents
+            columns:
+              - column:
+                  name: user_id
               - column:
                   name: document_status

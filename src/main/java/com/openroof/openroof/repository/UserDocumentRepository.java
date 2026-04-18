@@ -17,6 +17,12 @@ public interface UserDocumentRepository extends JpaRepository<UserDocument, Long
     /** Buscar un documento específico asegurando que pertenezca al usuario (seguridad). */
     Optional<UserDocument> findByIdAndUser_Id(Long id, Long userId);
 
-    /** Verificar si el usuario ya tiene un documento de cierto tipo (sin borrado lógico). */
+    /**
+     * Verifica si el usuario ya tiene un documento activo (no borrado) de cierto tipo.
+     * <p>La consulta derivada respeta la restricción de soft delete definida en la entidad
+     * ({@code @SQLRestriction("deleted_at IS NULL")}), por lo que solo considera documentos
+     * cuyo campo {@code deleted_at} sea nulo. Como consecuencia, si un documento fue borrado
+     * lógicamente el usuario podrá volver a subir uno del mismo tipo.
+     */
     boolean existsByUser_IdAndDocumentType(Long userId, DocumentType documentType);
 }

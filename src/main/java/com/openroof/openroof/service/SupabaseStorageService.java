@@ -56,7 +56,10 @@ public class SupabaseStorageService implements StorageService {
 
     @Override
     public UploadResult upload(MultipartFile file, String folder) {
-        validateFile(file);
+        // Validation is intentionally delegated to the calling service
+        // (e.g. UserDocumentService or PropertyImageService) so that each
+        // context can enforce its own allowed-types and size limits without
+        // SupabaseStorageService duplicating or conflicting with those rules.
 
         String originalFilename = file.getOriginalFilename();
         String extension = extractExtension(originalFilename);
@@ -85,6 +88,26 @@ public class SupabaseStorageService implements StorageService {
         } catch (Exception e) {
             log.error("Error al subir archivo a Supabase Storage: {}", e.getMessage(), e);
             throw new StorageException("Error al subir archivo a Supabase Storage: " + e.getMessage(), e);
+        }
+    }
+
+    // ─── Delete ──────────────────────────────────────────────────────────
+
+    @Override
+    public void delete(String key) {
+        if (key == null || key.isBlank()) {
+            log.warn("delete() invocado con clave nula o vacía; operación ignorada.");
+            return;
+        }
+        try {
+            restClient.delete()
+                    .uri("/object/{bucket}/{key}", bucket, key)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Archivo eliminado de Supabase Storage: {}", key);
+        } catch (Exception e) {
+            log.error("Error al eliminar archivo '{}' de Supabase Storage: {}", key, e.getMessage(), e);
+            throw new StorageException("No se pudo eliminar el archivo '" + key + "': " + e.getMessage(), e);
         }
     }
 

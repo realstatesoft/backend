@@ -45,7 +45,7 @@ public class UserDocumentResponse {
                 .userName(user != null ? user.getName() : null)
                 .userEmail(user != null ? user.getEmail() : null)
                 .userPhone(user != null ? user.getPhone() : null)
-                .userRole(user != null ? user.getRole().name() : null)
+                .userRole(user != null && user.getRole() != null ? user.getRole().name() : null)
                 .userAvatarUrl(user != null ? user.getAvatarUrl() : null)
                 .userCreatedAt(user != null ? user.getCreatedAt() : null)
                 .documentType(doc.getDocumentType())

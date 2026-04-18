@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * Endpoints para gestión de documentos personales del usuario autenticado.
@@ -60,7 +61,10 @@ public class UserDocumentController {
             Principal principal
     ) {
         UserDocumentResponse doc = documentService.upload(principal.getName(), file, documentType);
-        URI location = URI.create("/users/me/documents/" + doc.getId());
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(doc.getId())
+                .toUri();
         return ResponseEntity.created(location).body(ApiResponse.ok(doc, "Documento subido exitosamente"));
     }
 
