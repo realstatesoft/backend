@@ -18,6 +18,15 @@ public interface StorageService {
     UploadResult upload(MultipartFile file, String folder);
 
     /**
+     * Elimina un archivo del storage por su clave (ruta relativa al bucket).
+     * Se usa para purgar binarios huérfanos cuando un documento es reemplazado.
+     * Los errores deben ser manejados por el llamador.
+     *
+     * @param key clave del archivo, tal como se obtuvo de {@link UploadResult#filename()}
+     */
+    void delete(String key);
+
+    /**
      * DTO con el resultado de la subida.
      */
     record UploadResult(

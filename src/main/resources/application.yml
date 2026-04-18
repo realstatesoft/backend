@@ -8,10 +8,9 @@ spring:
   # Para Supabase activar perfil: --spring.profiles.active=supabase
   # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
   datasource:
-
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.etpxedhtursffyoeapqr
-    password: OpenRoof$!*$up4Bas3#Pl4tf0rm2026*
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -84,7 +83,9 @@ cors:
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
+      # Do NOT add a default here. Set JWT_SECRET in the environment.
+      # In local development use application-dev.yml to supply a fallback.
+      secret-key: ${JWT_SECRET}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
 
@@ -94,30 +95,34 @@ logging:
     root: INFO
     com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${HIBERNATE_BINDER_LOG_LEVEL:WARN}
 
 # ==================== SUPABASE STORAGE ====================
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
 # ==================== UPLOAD ====================
 upload:
+  # Generic image upload settings (used by SupabaseStorageService for property images, avatars, etc.)
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  # KYC / personal document upload settings (used by UserDocumentService)
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
+  max-file-size: 10MB
+  max-request-size: 20MB
 
 # =================== TRASHCAN ======================
-trashcan: 
+trashcan:
   retention-days: 10
 
 mail:
