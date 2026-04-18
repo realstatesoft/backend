@@ -31,6 +31,7 @@ import static org.mockito.Mockito.*;
 class PropertySimilarTest {
 
     @Mock private PropertyRepository propertyRepository;
+    @Mock private PropertyViewRepository propertyViewRepository;
     @Mock private UserRepository userRepository;
     @Mock private LocationRepository locationRepository;
     @Mock private AgentProfileRepository agentProfileRepository;
@@ -78,6 +79,7 @@ class PropertySimilarTest {
     void setUp() {
         propertyService = new PropertyService(
                 propertyRepository,
+                propertyViewRepository,
                 userRepository,
                 locationRepository,
                 agentProfileRepository,

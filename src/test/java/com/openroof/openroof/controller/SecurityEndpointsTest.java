@@ -143,6 +143,17 @@ class SecurityEndpointsTest {
     }
 
     @Test
+    void propertyViewEndpoint_isPublic() throws Exception {
+        org.mockito.Mockito.when(propertyService.registerView(org.mockito.ArgumentMatchers.eq(1L), any(), any()))
+                .thenReturn(3L);
+
+        mockMvc.perform(post("/properties/1/views"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(true))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data").value(3));
+    }
+
+    @Test
     void propertyImageWriteEndpoints_requireLogin() throws Exception {
         mockMvc.perform(multipartPost("/properties/1/images"))
                 .andExpect(status().isUnauthorized());

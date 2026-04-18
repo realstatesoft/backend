@@ -1,6 +1,7 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.common.embeddable.RequestMetadata;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -47,6 +49,7 @@ public class PropertyService {
             "createdAt", "price", "bedrooms", "bathrooms", "surfaceArea", "title");
 
     private final PropertyRepository propertyRepository;
+    private final PropertyViewRepository propertyViewRepository;
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
     private final AgentProfileRepository agentProfileRepository;
@@ -139,6 +142,33 @@ public class PropertyService {
     public PropertyResponse getById(Long id) {
         Property property = findPropertyOrThrow(id);
         return propertyMapper.toResponse(property);
+    }
+
+    @Transactional
+    public long registerView(Long propertyId, User user, HttpServletRequest request) {
+        Property property = findPropertyOrThrow(propertyId);
+
+        PropertyView propertyView = PropertyView.builder()
+                .property(property)
+                .user(user)
+                .requestMetadata(buildRequestMetadata(request))
+                .referrer(request.getHeader("Referer"))
+                .sessionId(request.getSession(false) != null ? request.getSession(false).getId() : null)
+                .build();
+
+        propertyViewRepository.save(propertyView);
+
+        long count = propertyViewRepository.countByProperty_Id(propertyId);
+        property.setViewCount(Math.toIntExact(count));
+        propertyRepository.save(property);
+
+        return count;
+    }
+
+    @Transactional(readOnly = true)
+    public long getViewCount(Long propertyId) {
+        findPropertyOrThrow(propertyId);
+        return propertyViewRepository.countByProperty_Id(propertyId);
     }
 
     @Transactional(readOnly = true)
@@ -583,6 +613,19 @@ public class PropertyService {
                         "Propiedad no encontrada con ID: " + id));
     }
 
+    private RequestMetadata buildRequestMetadata(HttpServletRequest request) {
+        String ipAddress = request.getRemoteAddr();
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            ipAddress = xForwardedFor.split(",")[0];
+        }
+
+        return RequestMetadata.builder()
+                .ipAddress(ipAddress)
+                .userAgent(request.getHeader("User-Agent"))
+                .build();
+    }
+
     /**
      * Verifica que el llamante tenga permiso para operar sobre la propiedad dada.
      * - ADMIN: acceso irrestricto.
@@ -669,4 +712,3 @@ public class PropertyService {
         public double getMaxLng() { return Math.min(180, maxLng); }
     }
 }
-

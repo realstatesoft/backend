@@ -13,6 +13,7 @@ import com.openroof.openroof.repository.ExteriorFeatureRepository;
 import com.openroof.openroof.repository.InteriorFeatureRepository;
 import com.openroof.openroof.repository.LocationRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.when;
 class PropertyServiceOwnershipTest {
 
     @Mock private PropertyRepository propertyRepository;
+    @Mock private PropertyViewRepository propertyViewRepository;
     @Mock private UserRepository userRepository;
     @Mock private LocationRepository locationRepository;
     @Mock private AgentProfileRepository agentProfileRepository;
@@ -54,7 +56,7 @@ class PropertyServiceOwnershipTest {
     @BeforeEach
     void setUp() {
         propertyService = new PropertyService(
-                propertyRepository, userRepository, locationRepository,
+                propertyRepository, propertyViewRepository, userRepository, locationRepository,
                 agentProfileRepository, exteriorFeatureRepository,
                 interiorFeatureRepository, propertyMapper, notificationService,
                 userPreferenceRepository, propertyRelevanceService);

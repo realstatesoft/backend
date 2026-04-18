@@ -72,6 +72,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/properties/*/views").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
                                                 .anyRequest().authenticated())
