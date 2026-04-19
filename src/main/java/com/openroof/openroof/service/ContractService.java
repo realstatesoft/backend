@@ -110,7 +110,7 @@ public class ContractService {
                 .build();
 
         User requester = findUserByEmail(requesterEmail);
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
         }
 
@@ -144,7 +144,7 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para editar este contrato");
         }
 
@@ -424,28 +424,15 @@ public class ContractService {
 
     /** Todos los contratos de una propiedad si el usuario participa en alguno de ellos o es ADMIN. */
     public List<ContractSummaryResponse> getByProperty(Long propertyId, String requesterEmail) {
-        if (!propertyRepository.existsById(propertyId)) {
-            throw new ResourceNotFoundException("Propiedad no encontrada");
-        }
-
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
         User requester = findUserByEmail(requesterEmail);
-        List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
-
-        if (requester.getRole() == UserRole.ADMIN) {
-            return contracts.stream()
-                    .map(contractMapper::toSummaryResponse)
-                    .toList();
-        }
-
-        List<Contract> accessible = contracts.stream()
-                .filter(contract -> canAccess(contract, requester))
-                .toList();
-
-        if (accessible.isEmpty()) {
+        if (!canManagePropertyContracts(property, requester)) {
             throw new BadRequestException("No tiene permiso para ver los contratos de esta propiedad");
         }
 
-        return accessible.stream()
+        List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
+        return contracts.stream()
                 .map(contractMapper::toSummaryResponse)
                 .toList();
     }
@@ -457,7 +444,7 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
@@ -506,7 +493,7 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
@@ -630,6 +617,40 @@ public class ContractService {
                 if (aid.equals(safeId(contract.getBuyerAgent())))   return true;
             }
         }
+        return false;
+    }
+
+    private boolean canManageContract(Contract contract, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        Long uid = requester.getId();
+        if (uid.equals(safeId(contract.getSeller()))) return true;
+
+        if (requester.getRole() == UserRole.AGENT) {
+            AgentProfile agentProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            if (agentProfile != null) {
+                Long aid = agentProfile.getId();
+                if (aid.equals(safeId(contract.getListingAgent()))) return true;
+                if (aid.equals(safeId(contract.getBuyerAgent()))) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canManagePropertyContracts(Property property, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        Long uid = requester.getId();
+        if (property.getOwner() != null && uid.equals(property.getOwner().getId())) {
+            return true;
+        }
+
+        if (requester.getRole() == UserRole.AGENT && property.getAgent() != null) {
+            AgentProfile agentProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            return agentProfile != null && property.getAgent().getId().equals(agentProfile.getId());
+        }
+
         return false;
     }
 
