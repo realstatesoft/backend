@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Disabled;
 
 @WebMvcTest(LeadController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
 @Disabled("Failing due to unrelated security config issues")
 class LeadControllerTest {
 

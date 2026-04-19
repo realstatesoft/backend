@@ -108,6 +108,17 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+    @GetMapping("/agent/me")
+    @Operation(summary = "Listar propiedades del agente actual (asignadas + de sus clientes)")
+    @PreAuthorize("hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAgentScope(
+            @AuthenticationPrincipal User user,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<PropertySummaryResponse> page = propertyService.getByAgentScope(user.getEmail(), pageable);
+        return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
     @GetMapping("/search")
     @Operation(summary = "Buscar propiedades por texto (título o descripción) y filtros adicionales opcionales")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> search(
