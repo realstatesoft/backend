@@ -1,7 +1,6 @@
 package com.openroof.openroof.dto.report;
 
 import com.openroof.openroof.model.enums.ReportStatus;
-import com.openroof.openroof.model.enums.UserReportReason;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 

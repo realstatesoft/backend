@@ -43,6 +43,8 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
     @Mock
+    private AuditService auditService;
+    @Mock
     private HttpServletRequest httpRequest;
 
     private AuthService authService;
@@ -56,7 +58,8 @@ class AuthServiceTest {
                 userRepository,
                 userSessionRepository,
                 agentProfileRepository,
-                emailService
+                emailService,
+                auditService
         );
 
         when(passwordEncoder.encode(any())).thenReturn("encoded");

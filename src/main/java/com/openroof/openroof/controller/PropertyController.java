@@ -37,9 +37,10 @@ public class PropertyController {
     @Operation(summary = "Crear una nueva propiedad")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<PropertyResponse>> create(
-            @Valid @RequestBody CreatePropertyRequest request) {
+            @Valid @RequestBody CreatePropertyRequest request,
+            @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.create(request);
+        PropertyResponse response = propertyService.create(request, user);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Propiedad creada exitosamente"));
@@ -127,6 +128,17 @@ public class PropertyController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<PropertySummaryResponse> page = propertyService.getByOwner(user.getId(), pageable);
+        return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
+    @GetMapping("/agent/me")
+    @Operation(summary = "Listar propiedades del agente actual (asignadas + de sus clientes)")
+    @PreAuthorize("hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAgentScope(
+            @AuthenticationPrincipal User user,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<PropertySummaryResponse> page = propertyService.getByAgentScope(user.getEmail(), pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
@@ -247,7 +259,7 @@ public class PropertyController {
             @Valid @RequestBody ChangeStatusRequest request,
             @AuthenticationPrincipal User user) {
 
-        PropertyResponse response = propertyService.changeStatus(id, request.newStatus(), user.getRole());
+        PropertyResponse response = propertyService.changeStatus(id, request.newStatus(), user);
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 

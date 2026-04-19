@@ -46,6 +46,21 @@ public class ContractController {
                 .body(ApiResponse.ok(response, "Contrato creado exitosamente"));
     }
 
+    // ─── UPDATE (Edit Draft) ──────────────────────────────────────────────────
+
+    @PutMapping(value = "/{id}")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @Operation(summary = "Actualizar un borrador de contrato",
+               description = "Permite editar un contrato siempre que su estado sea DRAFT.")
+    public ResponseEntity<ApiResponse<ContractResponse>> update(
+            @PathVariable Long id,
+            @Valid @RequestBody ContractRequest request,
+            Authentication auth) {
+
+        ContractResponse response = contractService.update(id, request, auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(response, "Cambios guardados exitosamente"));
+    }
+
     // ─── READ ─────────────────────────────────────────────────────────────────
 
     @GetMapping("/{id}")
@@ -127,6 +142,37 @@ public class ContractController {
 
         ContractResponse response = contractService.updateStatus(id, request, auth.getName());
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado del contrato actualizado"));
+    }
+
+    // ─── SIGNATURES ──────────────────────────────────────────────────────────
+
+    @PostMapping("/{id}/sign")
+    @Operation(summary = "Firmar un contrato digitalmente",
+               description = "Permite a una de las partes registrar su firma. Cambia el estado a PARTIALLY_SIGNED o SIGNED.")
+    public ResponseEntity<ApiResponse<ContractResponse>> sign(
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            @Valid @RequestBody SignContractRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            Authentication auth) {
+
+        String xForwardedFor = httpRequest.getHeader("X-Forwarded-For");
+        String ip = (xForwardedFor != null && !xForwardedFor.isBlank())
+                ? xForwardedFor.split(",")[0].trim()
+                : httpRequest.getRemoteAddr();
+
+        ContractResponse response = contractService.sign(id, request, auth.getName(), ip);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Firma registrada exitosamente"));
+    }
+
+    @GetMapping("/{id}/signatures")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN', 'USER')")
+    @Operation(summary = "Obtener el estado de firmas del contrato")
+    public ResponseEntity<ApiResponse<List<SignatureStatusResponse>>> getSignatures(
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            Authentication auth) {
+
+        List<SignatureStatusResponse> list = contractService.getSignatures(id, auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(list));
     }
 
     // ─── DELETE ───────────────────────────────────────────────────────────────

@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         PropertyImageController.class,
         ImageUploadController.class
 })
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
 class SecurityEndpointsTest {
 
         @Autowired

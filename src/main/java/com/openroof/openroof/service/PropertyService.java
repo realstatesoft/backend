@@ -7,6 +7,8 @@ import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.AuditAction;
+import com.openroof.openroof.model.enums.AuditEntityType;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.*;
@@ -30,10 +32,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +61,7 @@ public class PropertyService {
     private final InteriorFeatureRepository interiorFeatureRepository;
     private final PropertyMapper propertyMapper;
     private final NotificationService notificationService;
+    private final AuditService auditService;
     private final UserPreferenceRepository userPreferenceRepository;
     private final PropertyRelevanceService propertyRelevanceService;
 
@@ -73,7 +78,7 @@ public class PropertyService {
 
     // ─── CREATE ───────────────────────────────────────────────────
 
-    public PropertyResponse create(CreatePropertyRequest request) {
+    public PropertyResponse create(CreatePropertyRequest request, User actor) {
         // Resolver owner (obligatorio)
         User owner = userRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -132,6 +137,9 @@ public class PropertyService {
         } catch (Exception e) {
             log.warn("Error al crear notificación para la propiedad ID {}: {}", property.getId(), e.getMessage());
         }
+
+        auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.CREATE, null,
+                propertyAuditSnapshot(property));
 
         return propertyMapper.toResponse(property);
     }
@@ -192,6 +200,16 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PropertySummaryResponse> getByAgentScope(String email, Pageable pageable) {
+        User user = userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+        return propertyRepository.findByAgentScope(agent.getId(), sanitizePageable(pageable))
+                .map(propertyMapper::toSummaryResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PropertySummaryResponse> search(PropertyFilterRequest filter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
 
@@ -205,10 +223,11 @@ public class PropertyService {
 
     // ─── UPDATE ───────────────────────────────────────────────────
 
-    public PropertyResponse update(Long id, UpdatePropertyRequest request, Long callerId, UserRole callerRole) {
+       public PropertyResponse update(Long id, UpdatePropertyRequest request, Long callerId, UserRole callerRole) {
         checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
 
+        Map<String, Object> before = propertyAuditSnapshot(property);
 
         // Actualizar campos básicos via mapper
         propertyMapper.updateEntity(property, request);
@@ -256,6 +275,9 @@ public class PropertyService {
         }
 
         property = propertyRepository.save(property);
+        auditService.log(userRepository.getReferenceById(callerId), AuditEntityType.PROPERTY, id, AuditAction.UPDATE,
+                before, propertyAuditSnapshot(property));
+
         return propertyMapper.toResponse(property);
     }
 
@@ -264,8 +286,11 @@ public class PropertyService {
     public void delete(Long id, Long callerId, UserRole callerRole) {
         checkOwnership(id, callerId, callerRole);
         Property property = findPropertyOrThrow(id);
+        Map<String, Object> before = propertyAuditSnapshot(property);
         property.softDelete();
         propertyRepository.save(property);
+        auditService.log(userRepository.getReferenceById(callerId), AuditEntityType.PROPERTY, id, AuditAction.DELETE,
+                before, propertyAuditSnapshot(property));
     }
 
     public PropertyResponse trash(Long id, Long callerId, UserRole callerRole) {
@@ -278,9 +303,12 @@ public class PropertyService {
         if (property.getTrashedAt() != null)
             throw new BadRequestException("La propiedad ya está en la papelera");
 
+        Map<String, Object> before = propertyAuditSnapshot(property);
         // else set trashed at date
         property.setTrashedAt(LocalDateTime.now());
         propertyRepository.save(property);
+        auditService.log(userRepository.getReferenceById(callerId), AuditEntityType.PROPERTY, id, AuditAction.TRASH,
+                before, propertyAuditSnapshot(property));
         return propertyMapper.toResponse(property);
     }
 
@@ -294,9 +322,12 @@ public class PropertyService {
         if (property.getTrashedAt() == null)
             throw new BadRequestException("La propiedad no se encuentra en la papelera");
 
+        Map<String, Object> before = propertyAuditSnapshot(property);
         // else set trashedAt == null
         property.setTrashedAt(null);
         propertyRepository.save(property);
+        auditService.log(userRepository.getReferenceById(callerId), AuditEntityType.PROPERTY, id, AuditAction.RESTORE,
+                before, propertyAuditSnapshot(property));
         return propertyMapper.toResponse(property);
     }
 
@@ -313,7 +344,11 @@ public class PropertyService {
         if (callerRole != UserRole.ADMIN && !callerId.equals(ownerId)) {
             throw new ForbiddenException("Solo puedes vaciar tu propia papelera");
         }
-        return propertyRepository.clearTrashcanByOwner(ownerId, LocalDateTime.now());
+        int deleted = propertyRepository.clearTrashcanByOwner(ownerId, LocalDateTime.now());
+        auditService.log(userRepository.getReferenceById(callerId), AuditEntityType.PROPERTY, null,
+                AuditAction.CLEAR_TRASH, null,
+                Map.of("ownerId", ownerId, "deletedCount", deleted));
+        return deleted;
     }
 
     @Transactional(readOnly = true)
@@ -324,8 +359,8 @@ public class PropertyService {
 
     // ─── CHANGE STATUS ────────────────────────────────────────────
 
-    public PropertyResponse changeStatus(Long id, PropertyStatus newStatus, UserRole callerRole) {
-        if (callerRole != UserRole.ADMIN) {
+    public PropertyResponse changeStatus(Long id, PropertyStatus newStatus, User caller) {
+        if (caller.getRole() != UserRole.ADMIN) {
             throw new ForbiddenException("Solo el administrador puede cambiar el estado de una propiedad");
         }
         Property property = findPropertyOrThrow(id);
@@ -341,7 +376,22 @@ public class PropertyService {
         }
 
         property = propertyRepository.save(property);
+        auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.STATUS_CHANGE,
+                Map.of("status", currentStatus.name()),
+                Map.of("status", validated.name()));
         return propertyMapper.toResponse(property);
+    }
+
+    private Map<String, Object> propertyAuditSnapshot(Property property) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", property.getId());
+        m.put("title", property.getTitle());
+        m.put("status", property.getStatus() != null ? property.getStatus().name() : null);
+        m.put("price", property.getPrice() != null ? property.getPrice().toPlainString() : null);
+        m.put("ownerId", property.getOwner() != null ? property.getOwner().getId() : null);
+        m.put("trashedAt", property.getTrashedAt() != null ? property.getTrashedAt().toString() : null);
+        m.put("deletedAt", property.getDeletedAt() != null ? property.getDeletedAt().toString() : null);
+        return m;
     }
 
     // ─── RECOMMENDATION ALGORITHM ─────────────────────────────────

@@ -67,14 +67,14 @@ public class EmailService {
                 <p>Ingresa a la plataforma para revisar los detalles, términos y estado del contrato.</p>
                 """.formatted(escapeHtml(propertyTitle)),
                 "Ver contrato",
-                baseUrl + "/contracts/" + contractId
+                baseUrl + "/contratos/" + contractId
         );
         send(toEmail, subject, body);
     }
 
     @Async
     public void sendContractStatusChangedEmail(String toEmail, String userName,
-                                                String propertyTitle, String newStatus) {
+                                                String propertyTitle, String newStatus, Long contractId) {
         String label = translateContractStatus(newStatus);
         String subject = "Contrato actualizado — " + propertyTitle;
         String body = buildHtml(
@@ -86,7 +86,7 @@ public class EmailService {
                 <p>Ingresa a la plataforma para ver los detalles actualizados.</p>
                 """.formatted(escapeHtml(propertyTitle), label),
                 "Ver contrato",
-                baseUrl + "/contracts"
+                baseUrl + "/contratos/" + contractId
         );
         send(toEmail, subject, body);
     }
