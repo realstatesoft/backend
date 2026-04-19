@@ -58,7 +58,7 @@ class PropertyServiceOwnershipTest {
                 propertyRepository, userRepository, locationRepository,
                 agentProfileRepository, exteriorFeatureRepository,
                 interiorFeatureRepository, propertyMapper, notificationService,
-                userPreferenceRepository, propertyRelevanceService, auditService);
+                auditService, userPreferenceRepository, propertyRelevanceService);
     }
 
     // ─── checkOwnership via delete() ──────────────────────────────
