@@ -275,6 +275,29 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
+
+    // ─── MENSAJES ───────────────────────────────────────────────────────────────
+
+    @Async
+    public void sendNewMessageEmailAsync(String toEmail, String senderName, String messageContent) {
+        String preview = messageContent.length() > 100
+            ? messageContent.substring(0, 100) + "..."
+            : messageContent;
+        String subject = "Nuevo mensaje de " + senderName;
+        String body = buildHtml(
+            "Nuevo mensaje",
+            "Hola.",
+            """
+            <p>Tienes un nuevo mensaje de <strong>%s</strong>:</p>
+            <blockquote style="border-left: 3px solid #1a3c5e; padding-left: 16px; color: #666; font-style: italic;">%s</blockquote>
+            <p>Ingresa a la plataforma para responder.</p>
+            """.formatted(escapeHtml(senderName), escapeHtml(preview)),
+            "Ver mensajes",
+            baseUrl + "/messages"
+        );
+        send(toEmail, subject, body);
+    }
+
     // ─── Core sender ──────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {

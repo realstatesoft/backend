@@ -1,4 +1,4 @@
-﻿package com.openroof.openroof.service;
+package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.message.ConversationResponse;
 import com.openroof.openroof.dto.message.MessageResponse;
@@ -107,21 +107,25 @@ public class MessageService {
         String senderName = sender.getName() != null ? sender.getName() : sender.getEmail();
         String senderRole = sender.getRole() != null ? sender.getRole().name().toLowerCase() : "user";
 
-        // Create in-app notification for the receiver
-        String preview = saved.getContent().length() > 50
-                ? saved.getContent().substring(0, 50) + "..."
-                : saved.getContent();
+// Create in-app notification ONLY if receiver is NOT in active conversation
+        boolean isActive = isReceiverActiveInConversation(receiver.getEmail(), sender.getId());
         
-        CreateNotificationRequest notificationRequest = new CreateNotificationRequest(
-                receiver.getId(),
-                NotificationType.MESSAGE,
-                "Nuevo mensaje de " + senderName,
-                preview,
-                Map.of("conversationId", sender.getId(), "messageId", saved.getId()),
-                "/messages?conversation=" + sender.getId()
-        );
-        
-        notificationService.create(notificationRequest, receiver.getEmail());
+        if (!isActive) {
+            String preview = saved.getContent().length() > 50
+                    ? saved.getContent().substring(0, 50) + "..."
+                    : saved.getContent();
+            
+            CreateNotificationRequest notificationRequest = new CreateNotificationRequest(
+                    receiver.getId(),
+                    NotificationType.MESSAGE,
+                    "Nuevo mensaje de " + senderName,
+                    preview,
+                    Map.of("conversationId", sender.getId(), "messageId", saved.getId()),
+                    "/messages?conversation=" + sender.getId()
+            );
+            
+            notificationService.create(notificationRequest, receiver.getEmail());
+        }
 
         // Send email notification asynchronously
         emailService.sendNewMessageEmailAsync(receiver.getEmail(), senderName, saved.getContent());
@@ -138,7 +142,7 @@ public class MessageService {
         );
     }
 
-    @Transactional
+@Transactional
     public void markAsRead(String email, Long peerId) {
         User user = findUserByEmail(email);
         messageRepository.findConversation(user.getId(), peerId).stream()
@@ -147,6 +151,12 @@ public class MessageService {
                     m.setReadAt(LocalDateTime.now());
                     messageRepository.save(m);
                 });
+    }
+
+    public boolean isReceiverActiveInConversation(String receiverEmail, Long senderId) {
+        User receiver = findUserByEmail(receiverEmail);
+        return messageRepository.hasRecentUnreadFromSender(
+                receiver.getId(), senderId, LocalDateTime.now().minusMinutes(5));
     }
 
     private User findUserByEmail(String email) {
