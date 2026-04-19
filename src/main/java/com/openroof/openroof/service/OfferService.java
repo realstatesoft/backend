@@ -1,5 +1,13 @@
 package com.openroof.openroof.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.openroof.openroof.dto.offer.OfferRequestDTO;
 import com.openroof.openroof.dto.offer.OfferResponseDTO;
 import com.openroof.openroof.dto.offer.UpdateOfferStatusDTO;
@@ -15,15 +23,8 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.OfferRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
