@@ -18,6 +18,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,15 +74,17 @@ public class PropertyController {
             @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
 
             @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
-
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication auth) {
 
         PropertyFilterRequest filter = new PropertyFilterRequest(
                 availability, propertyType, status,
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, null);
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable);
+        Long userId = (auth != null && auth.getPrincipal() instanceof User user) ? user.getId() : null;
+
+        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable, userId);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
@@ -106,6 +109,17 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+    @GetMapping("/agent/me")
+    @Operation(summary = "Listar propiedades del agente actual (asignadas + de sus clientes)")
+    @PreAuthorize("hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> getAgentScope(
+            @AuthenticationPrincipal User user,
+            @PageableDefault(size = 50, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<PropertySummaryResponse> page = propertyService.getByAgentScope(user.getEmail(), pageable);
+        return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
     @GetMapping("/search")
     @Operation(summary = "Buscar propiedades por texto (título o descripción) y filtros adicionales opcionales")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> search(
@@ -118,14 +132,17 @@ public class PropertyController {
             @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
             @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
             @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication auth) {
 
         PropertyFilterRequest filter = new PropertyFilterRequest(
                 availability, propertyType, status,
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, keyword);
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable);
+        Long userId = (auth != null && auth.getPrincipal() instanceof User user) ? user.getId() : null;
+
+        Page<PropertySummaryResponse> page = propertyService.search(filter, pageable, userId);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByEmailIgnoreCaseAndDeletedAtIsNull(String email);
+
     boolean existsByEmail(String email);
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.deletedAt IS NULL AND u.createdAt >= :start AND u.createdAt < :end")
@@ -35,5 +37,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             ORDER BY u.id DESC
             """)
     Page<User> searchForAuditPicker(@Param("q") String q, Pageable pageable);
+    List<User> findBySuspendedUntilAfter(LocalDateTime now);
 }
 

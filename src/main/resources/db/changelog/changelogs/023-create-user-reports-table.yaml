@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-create-user-reports-table-1
+      author: carlos
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: user_reports
+      changes:
+        - createTable:
+            tableName: user_reports
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: reported_user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reporter_user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: PENDIENTE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: user_reports
+            baseColumnNames: reported_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_reports_reported
+        - addForeignKeyConstraint:
+            baseTableName: user_reports
+            baseColumnNames: reporter_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_reports_reporter
+        - createIndex:
+            indexName: idx_user_reports_reported_user
+            tableName: user_reports
+            columns:
+              - column:
+                  name: reported_user_id
+        - createIndex:
+            indexName: idx_user_reports_reporter_user
+            tableName: user_reports
+            columns:
+              - column:
+                  name: reporter_user_id
+        - createIndex:
+            indexName: idx_user_reports_status
+            tableName: user_reports
+            columns:
+              - column:
+                  name: status

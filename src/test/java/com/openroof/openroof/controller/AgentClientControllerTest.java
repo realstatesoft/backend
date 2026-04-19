@@ -1,6 +1,8 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.exception.GlobalExceptionHandler;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
@@ -42,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, JacksonConfig.class, GlobalExceptionHandler.class })
 class AgentClientControllerTest {
 
         private MockMvc mockMvc;
