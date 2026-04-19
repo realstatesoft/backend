@@ -49,6 +49,10 @@ class ContractServiceTest {
     private ContractTemplateRepository contractTemplateRepository;
     @Mock
     private ContractMapper contractMapper;
+    @Mock
+    private EmailService emailService;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private ContractService contractService;
@@ -177,6 +181,9 @@ class ContractServiceTest {
                 null
             );
 
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
+            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
             // Validation throws immediately, no mocks needed.
 
             assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))
@@ -216,6 +223,10 @@ class ContractServiceTest {
                 null
             );
 
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(userRepository.findById(200L)).thenReturn(Optional.of(buyer));
+            when(userRepository.findById(300L)).thenReturn(Optional.of(seller));
+            when(agentProfileRepository.findById(400L)).thenReturn(Optional.of(listingAgent));
             // Validation throws immediately, no mocks needed.
 
             assertThatThrownBy(() -> contractService.create(request, "requester@test.com"))

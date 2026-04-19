@@ -67,6 +67,13 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Query("SELECT COUNT(p) FROM Property p WHERE p.owner.id = :ownerId AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     long countActiveByOwnerId(@Param("ownerId") Long ownerId);
 
+    @Query("""
+            SELECT p FROM Property p
+            WHERE LOWER(COALESCE(p.title, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+            ORDER BY p.id DESC
+            """)
+    Page<Property> searchByTitleForAuditPicker(@Param("q") String q, Pageable pageable);
+
     @Query("SELECT COUNT(p) FROM Property p WHERE p.agent.id = :agentId AND p.status = :status AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     long countByAgentIdAndStatus(@Param("agentId") Long agentId, @Param("status") PropertyStatus status);
 

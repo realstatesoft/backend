@@ -42,6 +42,7 @@ class PropertyServiceOwnershipTest {
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
+    @Mock private AuditService auditService;
     @Mock private UserPreferenceRepository userPreferenceRepository;
     @Mock private PropertyRelevanceService propertyRelevanceService;
 
@@ -57,7 +58,7 @@ class PropertyServiceOwnershipTest {
                 propertyRepository, userRepository, locationRepository,
                 agentProfileRepository, exteriorFeatureRepository,
                 interiorFeatureRepository, propertyMapper, notificationService,
-                userPreferenceRepository, propertyRelevanceService);
+                userPreferenceRepository, propertyRelevanceService, auditService);
     }
 
     // ─── checkOwnership via delete() ──────────────────────────────
@@ -69,6 +70,11 @@ class PropertyServiceOwnershipTest {
         Property property = property(OWNER_ID);
         when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
 
+        when(userRepository.getReferenceById(OTHER_ID)).thenAnswer(inv -> {
+            User u = User.builder().email("other@test.com").passwordHash("x").role(UserRole.ADMIN).build();
+            u.setId(OTHER_ID);
+            return u;
+        });
         assertDoesNotThrow(() -> propertyService.delete(PROPERTY_ID, OTHER_ID, UserRole.ADMIN));
     }
 
@@ -77,6 +83,11 @@ class PropertyServiceOwnershipTest {
         Property property = property(OWNER_ID);
         when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
 
+        when(userRepository.getReferenceById(OWNER_ID)).thenAnswer(inv -> {
+            User u = User.builder().email("owner@test.com").passwordHash("x").role(UserRole.USER).build();
+            u.setId(OWNER_ID);
+            return u;
+        });
         assertDoesNotThrow(() -> propertyService.delete(PROPERTY_ID, OWNER_ID, UserRole.USER));
     }
 
@@ -107,20 +118,26 @@ class PropertyServiceOwnershipTest {
         when(propertyRepository.save(property)).thenReturn(property);
         when(propertyMapper.toResponse(property)).thenReturn(null);
 
+        User admin = User.builder().email("admin@test.com").passwordHash("x").role(UserRole.ADMIN).build();
+        admin.setId(99L);
         assertDoesNotThrow(() ->
-                propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, UserRole.ADMIN));
+                propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, admin));
     }
 
     @Test
     void changeStatus_userThrowsForbidden() {
+        User user = User.builder().email("u@test.com").passwordHash("x").role(UserRole.USER).build();
+        user.setId(5L);
         assertThrows(ForbiddenException.class,
-                () -> propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, UserRole.USER));
+                () -> propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, user));
     }
 
     @Test
     void changeStatus_agentThrowsForbidden() {
+        User agent = User.builder().email("a@test.com").passwordHash("x").role(UserRole.AGENT).build();
+        agent.setId(6L);
         assertThrows(ForbiddenException.class,
-                () -> propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, UserRole.AGENT));
+                () -> propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, agent));
     }
 
     // ─── clearTrashcan ownership ───────────────────────────────────
@@ -132,6 +149,11 @@ class PropertyServiceOwnershipTest {
                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(3);
 
+        when(userRepository.getReferenceById(OWNER_ID)).thenAnswer(inv -> {
+            User u = User.builder().email("owner@test.com").passwordHash("x").role(UserRole.USER).build();
+            u.setId(OWNER_ID);
+            return u;
+        });
         assertDoesNotThrow(() ->
                 propertyService.clearTrashcanForUser(OWNER_ID, OWNER_ID, UserRole.USER));
     }
@@ -149,6 +171,11 @@ class PropertyServiceOwnershipTest {
                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(2);
 
+        when(userRepository.getReferenceById(OTHER_ID)).thenAnswer(inv -> {
+            User u = User.builder().email("admin@test.com").passwordHash("x").role(UserRole.ADMIN).build();
+            u.setId(OTHER_ID);
+            return u;
+        });
         assertDoesNotThrow(() ->
                 propertyService.clearTrashcanForUser(OWNER_ID, OTHER_ID, UserRole.ADMIN));
     }

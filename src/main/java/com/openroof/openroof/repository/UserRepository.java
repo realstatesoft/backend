@@ -2,6 +2,8 @@ package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +30,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
   
     List<User> findByRole(UserRole role);
 
+    @Query("""
+            SELECT u FROM User u
+            WHERE LOWER(COALESCE(u.name, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))
+            ORDER BY u.id DESC
+            """)
+    Page<User> searchForAuditPicker(@Param("q") String q, Pageable pageable);
     List<User> findBySuspendedUntilAfter(LocalDateTime now);
 }
 

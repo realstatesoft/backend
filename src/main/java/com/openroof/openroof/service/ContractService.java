@@ -26,9 +26,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.openroof.openroof.model.enums.AuditAction;
+import com.openroof.openroof.model.enums.AuditEntityType;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,6 +54,7 @@ public class ContractService {
     private final ContractTemplateRepository contractTemplateRepository;
     private final ContractMapper contractMapper;
     private final EmailService emailService;
+    private final AuditService auditService;
 
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
@@ -108,7 +114,11 @@ public class ContractService {
             throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
         }
 
-        ContractResponse saved = contractMapper.toResponse(contractRepository.save(contract));
+        contractRepository.save(contract);
+        ContractResponse saved = contractMapper.toResponse(contract);
+        auditService.log(requester, AuditEntityType.CONTRACT, contract.getId(), AuditAction.CREATE, null,
+                contractAuditSnapshot(contract));
+
         String propertyTitle = property.getTitle();
         emailService.sendContractCreatedEmail(buyer.getEmail(), buyer.getName(), propertyTitle, saved.id());
         emailService.sendContractCreatedEmail(seller.getEmail(), seller.getName(), propertyTitle, saved.id());
@@ -451,10 +461,15 @@ public class ContractService {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
-        validateStatusTransition(contract.getStatus(), request.status(), requester);
+        ContractStatus previousStatus = contract.getStatus();
+        validateStatusTransition(previousStatus, request.status(), requester);
 
         contract.setStatus(request.status());
         ContractResponse response = contractMapper.toResponse(contractRepository.save(contract));
+
+        auditService.log(requester, AuditEntityType.CONTRACT, id, AuditAction.STATUS_CHANGE,
+                Map.of("status", previousStatus.name()),
+                Map.of("status", request.status().name()));
 
         String propertyTitle = contract.getProperty().getTitle();
         String newStatus = request.status().name();
@@ -495,8 +510,20 @@ public class ContractService {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
+        Map<String, Object> before = contractAuditSnapshot(contract);
         contract.setDeletedAt(LocalDateTime.now());
         contractRepository.save(contract);
+        auditService.log(requester, AuditEntityType.CONTRACT, id, AuditAction.DELETE, before,
+                Map.of("deletedAt", contract.getDeletedAt().toString()));
+    }
+
+    private Map<String, Object> contractAuditSnapshot(Contract contract) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", contract.getId());
+        m.put("status", contract.getStatus() != null ? contract.getStatus().name() : null);
+        m.put("propertyId", contract.getProperty() != null ? contract.getProperty().getId() : null);
+        m.put("amount", contract.getAmount() != null ? contract.getAmount().toPlainString() : null);
+        return m;
     }
 
     // ─── Validaciones de comisión ─────────────────────────────────────────────
