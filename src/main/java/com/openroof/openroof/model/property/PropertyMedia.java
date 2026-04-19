@@ -45,4 +45,7 @@ public class PropertyMedia extends BaseEntity {
 
     @Column(length = 255)
     private String title;
+
+    @Column(name = "storage_key", length = 255)
+    private String storageKey;
 }

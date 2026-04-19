@@ -63,6 +63,10 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "suspension_reason", columnDefinition = "TEXT")
     private String suspensionReason;
 
+    @Column(name = "onboarding_completed", nullable = false)
+    @Builder.Default
+    private boolean onboardingCompleted = false;
+
     /*
      * Auth: Enrique Rios
      * Desc:

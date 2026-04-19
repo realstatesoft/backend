@@ -35,5 +35,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             ORDER BY u.id DESC
             """)
     Page<User> searchForAuditPicker(@Param("q") String q, Pageable pageable);
+    List<User> findBySuspendedUntilAfter(LocalDateTime now);
 }
 
