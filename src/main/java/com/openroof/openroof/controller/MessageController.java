@@ -1,4 +1,4 @@
-package com.openroof.openroof.controller;
+﻿package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.message.ConversationResponse;
@@ -31,6 +31,14 @@ public class MessageController {
     public ResponseEntity<ApiResponse<List<ConversationResponse>>> getConversations(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.ok(
                 messageService.getConversations(auth.getName())));
+    }
+
+    @GetMapping("/conversations/unread-count")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Obtener cantidad de mensajes sin leer")
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                messageService.getUnreadCount(auth.getName())));
     }
 
     @GetMapping("/conversations/{peerId}")

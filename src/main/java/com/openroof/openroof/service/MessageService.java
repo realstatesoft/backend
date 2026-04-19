@@ -1,9 +1,11 @@
-package com.openroof.openroof.service;
+﻿package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.message.ConversationResponse;
 import com.openroof.openroof.dto.message.MessageResponse;
 import com.openroof.openroof.dto.message.SendMessageRequest;
+import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.messaging.Message;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +29,8 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public List<ConversationResponse> getConversations(String email) {
         User user = findUserByEmail(email);
@@ -50,6 +55,11 @@ public class MessageService {
                     initials
             );
         }).collect(Collectors.toList());
+    }
+
+    public long getUnreadCount(String email) {
+        User user = findUserByEmail(email);
+        return messageRepository.countUnreadByUserId(user.getId());
     }
 
     public List<MessageResponse> getMessages(String email, Long peerId) {
@@ -96,6 +106,25 @@ public class MessageService {
 
         String senderName = sender.getName() != null ? sender.getName() : sender.getEmail();
         String senderRole = sender.getRole() != null ? sender.getRole().name().toLowerCase() : "user";
+
+        // Create in-app notification for the receiver
+        String preview = saved.getContent().length() > 50
+                ? saved.getContent().substring(0, 50) + "..."
+                : saved.getContent();
+        
+        CreateNotificationRequest notificationRequest = new CreateNotificationRequest(
+                receiver.getId(),
+                NotificationType.MESSAGE,
+                "Nuevo mensaje de " + senderName,
+                preview,
+                Map.of("conversationId", sender.getId(), "messageId", saved.getId()),
+                "/messages?conversation=" + sender.getId()
+        );
+        
+        notificationService.create(notificationRequest, receiver.getEmail());
+
+        // Send email notification asynchronously
+        emailService.sendNewMessageEmailAsync(receiver.getEmail(), senderName, saved.getContent());
 
         return new MessageResponse(
                 saved.getId(),
