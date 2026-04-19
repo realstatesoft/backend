@@ -68,6 +68,7 @@ class MessageServiceTest {
             assertThat(result).hasSize(1);
             assertThat(result.get(0).contactName()).isEqualTo("Maria Garcia");
             assertThat(result.get(0).unread()).isEqualTo(3);
+            assertThat(result.get(0).lastMessageOwn()).isTrue(); // sender == current user
         }
     }
 

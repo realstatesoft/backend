@@ -38,7 +38,7 @@ public class MessageService {
 
         List<Message> latestMessages = messageRepository.findLatestMessagePerConversation(userId);
 
-        return latestMessages.stream().map(m -> {
+return latestMessages.stream().map(m -> {
             User peer = m.getSender().getId().equals(userId) ? m.getReceiver() : m.getSender();
             String name = peer.getName() != null ? peer.getName() : peer.getEmail();
             String initials = buildInitials(name);
@@ -46,10 +46,12 @@ public class MessageService {
             // Count unread in this conversation
             long unread = messageRepository.countUnreadInConversation(userId, peer.getId());
 
+            boolean ownLast = m.getSender().getId().equals(userId);
             return new ConversationResponse(
                     peer.getId(),
                     name,
                     m.getContent().length() > 80 ? m.getContent().substring(0, 80) + "..." : m.getContent(),
+                    ownLast,
                     m.getCreatedAt(),
                     (int) unread,
                     initials
