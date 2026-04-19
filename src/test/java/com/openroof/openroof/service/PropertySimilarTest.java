@@ -38,6 +38,7 @@ class PropertySimilarTest {
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
+    @Mock private AuditService auditService;
     @Mock private UserPreferenceRepository userPreferenceRepository;
     @Mock private PropertyRelevanceService propertyRelevanceService;
 
@@ -85,6 +86,7 @@ class PropertySimilarTest {
                 interiorFeatureRepository,
                 propertyMapper,
                 notificationService,
+                auditService,
                 userPreferenceRepository,
                 propertyRelevanceService
         );
