@@ -25,5 +25,6 @@ public class PropertyMediaResponse {
     private Boolean isPrimary;
     private Integer orderIndex;
     private String title;
+    private String storageKey;
     private LocalDateTime createdAt;
 }
