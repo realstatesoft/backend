@@ -165,7 +165,7 @@ public class ContractController {
     }
 
     @GetMapping("/{id}/signatures")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN', 'USER')")
     @Operation(summary = "Obtener el estado de firmas del contrato")
     public ResponseEntity<ApiResponse<List<SignatureStatusResponse>>> getSignatures(
             @Parameter(description = "ID del contrato") @PathVariable Long id,
