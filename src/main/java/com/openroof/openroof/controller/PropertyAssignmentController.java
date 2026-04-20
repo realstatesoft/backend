@@ -27,7 +27,7 @@ public class PropertyAssignmentController {
     // ─── ASSIGN (owner solicita) ──────────────────────────────────
 
     @PostMapping("/properties/{propertyId}/assignments")
-    @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(summary = "Solicitar asignación de agente a una propiedad (solo OWNER/ADMIN)")
     public ResponseEntity<ApiResponse<PropertyAssignmentResponse>> assign(
             @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId,
@@ -69,7 +69,7 @@ public class PropertyAssignmentController {
     // ─── REVOKE (owner revoca) ────────────────────────────────────
 
     @PutMapping("/assignments/{assignmentId}/revoke")
-    @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(summary = "Revocar una asignación (solo OWNER/ADMIN)")
     public ResponseEntity<ApiResponse<PropertyAssignmentResponse>> revoke(
             @Parameter(description = "ID de la asignación") @PathVariable Long assignmentId,
