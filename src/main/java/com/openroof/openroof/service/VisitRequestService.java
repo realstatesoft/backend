@@ -246,6 +246,13 @@ public class VisitRequestService {
     }
 
     @Transactional(readOnly = true)
+    public List<VisitRequestResponse> getMyRequestsAsOwner(String currentUserEmail) {
+        User currentUser = getUserByEmail(currentUserEmail);
+        return visitRequestRepository.findByPropertyOwnerIdWithDetails(currentUser.getId())
+                .stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<VisitRequestResponse> getByProperty(Long propertyId, String currentUserEmail) {
         User currentUser = getUserByEmail(currentUserEmail);
         Property property = getProperty(propertyId);

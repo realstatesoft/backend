@@ -97,7 +97,7 @@ public class VisitRequestController {
     // ─── QUERIES ──────────────────────────────────────────────────
 
     @GetMapping("/me/buyer")
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Mis solicitudes como comprador")
     public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsBuyer(Principal principal) {
         List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsBuyer(principal.getName());
@@ -109,6 +109,14 @@ public class VisitRequestController {
     @Operation(summary = "Solicitudes asignadas a mí como agente (o todas si es ADMIN)")
     public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsAgent(Principal principal) {
         List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsAgent(principal.getName());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/me/owner")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Solicitudes recibidas de mis propiedades como propietario")
+    public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsOwner(Principal principal) {
+        List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsOwner(principal.getName());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

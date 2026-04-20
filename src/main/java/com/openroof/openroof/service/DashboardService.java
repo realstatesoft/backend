@@ -9,8 +9,12 @@ import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.mapper.ContractMapper;
+import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,10 @@ public class DashboardService {
         private final PropertyViewRepository propertyViewRepository;
         private final OfferRepository offerRepository;
         private final UserRepository userRepository;
+
+        private final PropertyMapper propertyMapper;
+        private final ContractMapper contractMapper;
+        private final VisitRequestService visitRequestService;
 
         // ─── Agent Dashboard Stats ────────────────────────────────────────────────
 
@@ -75,12 +83,44 @@ public class DashboardService {
                 long totalVisits = visitRequestRepository.countByPropertyOwnerId(ownerId);
                 long inquiries = offerRepository.countByPropertyOwnerId(ownerId);
                 long views = propertyViewRepository.countByPropertyOwnerId(ownerId);
+                BigDecimal earnings = contractRepository.sumAmountBySellerIdSigned(ownerId);
 
                 return new OwnerDashboardStatsResponse(
                                 CountStatItem.of(myProperties, 0),
                                 CountStatItem.of(totalVisits, 0),
                                 CountStatItem.of(inquiries, 0),
-                                CountStatItem.of(views, 0));
+                                CountStatItem.of(views, 0),
+                                MoneyStatItem.of(earnings, 0));
+        }
+
+        public OwnerDashboardOverviewResponse getOwnerOverview(String email) {
+                User user = findUserByEmail(email);
+                Long userId = user.getId();
+
+                // 1. Estadísticas
+                OwnerDashboardStatsResponse stats = getOwnerStats(email);
+
+                // 2. Propiedades recientes (últimas 5)
+                var pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+                List<com.openroof.openroof.dto.property.PropertySummaryResponse> recentProperties = propertyRepository
+                                .findByOwner_IdAndTrashedAtIsNull(userId, pageable)
+                                .map(propertyMapper::toSummaryResponse)
+                                .getContent();
+
+                // 3. Contratos urgentes (pendientes de firma por el usuario)
+                List<com.openroof.openroof.dto.contract.ContractSummaryResponse> urgentContracts = contractRepository
+                                .findPendingSignaturesForUser(userId).stream()
+                                .map(contractMapper::toSummaryResponse)
+                                .collect(Collectors.toList());
+                
+                // 4. Solicitudes de visita nuevas/pendientes
+                List<com.openroof.openroof.dto.visit.VisitRequestResponse> pendingVisits = visitRequestService
+                                .getMyRequestsAsOwner(email).stream()
+                                .filter(v -> v.status() == VisitRequestStatus.PENDING)
+                                .limit(5)
+                                .collect(Collectors.toList());
+
+                return new OwnerDashboardOverviewResponse(stats, recentProperties, urgentContracts, pendingVisits);
         }
 
         // ─── Sales List (from Contracts) ──────────────────────────────────────────
