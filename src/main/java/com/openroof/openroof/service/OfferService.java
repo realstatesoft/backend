@@ -23,7 +23,6 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.OfferRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
