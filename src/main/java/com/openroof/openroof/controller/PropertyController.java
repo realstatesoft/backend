@@ -4,6 +4,7 @@ import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
+import com.openroof.openroof.service.RentCalculationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,8 +30,9 @@ import org.springframework.web.bind.annotation.*;
 public class PropertyController {
 
     private final PropertyService propertyService;
+    private final RentCalculationService rentCalculationService;
 
-    // ─── CREATE ───────────────────────────────────────────────────
+    // --- CREATE ---------------------------------------------------
 
     @PostMapping
     @Operation(summary = "Crear una nueva propiedad")
@@ -45,7 +47,7 @@ public class PropertyController {
                 .body(ApiResponse.ok(response, "Propiedad creada exitosamente"));
     }
 
-    // ─── READ ─────────────────────────────────────────────────────
+    // --- READ -----------------------------------------------------
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una propiedad por ID")
@@ -65,15 +67,15 @@ public class PropertyController {
 
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
 
-            @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @Parameter(description = "Precio m�nimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
 
-            @Parameter(description = "Precio máximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @Parameter(description = "Precio m�ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
 
-            @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
+            @Parameter(description = "ID de la ubicaci�n/zona") @RequestParam(required = false) Long locationId,
 
-            @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+            @Parameter(description = "Cantidad m�nima de ba�os") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
 
-            @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Cantidad m�nima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -121,17 +123,17 @@ public class PropertyController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Buscar propiedades por texto (título o descripción) y filtros adicionales opcionales")
+    @Operation(summary = "Buscar propiedades por texto (t�tulo o descripci�n) y filtros adicionales opcionales")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> search(
-            @Parameter(description = "Palabra clave de búsqueda") @RequestParam(name = "q", required = false) String keyword,
+            @Parameter(description = "Palabra clave de b�squeda") @RequestParam(name = "q", required = false) String keyword,
             @Parameter(description = "Disponibilidad (IMMEDIATE, IN_30_DAYS, IN_60_DAYS, TO_NEGOTIATE)") @RequestParam(required = false) String availability,
             @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
-            @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
-            @Parameter(description = "Precio máximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
-            @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
-            @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
-            @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Precio m�nimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @Parameter(description = "Precio m�ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @Parameter(description = "ID de la ubicaci�n/zona") @RequestParam(required = false) Long locationId,
+            @Parameter(description = "Cantidad m�nima de ba�os") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+            @Parameter(description = "Cantidad m�nima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -146,7 +148,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────
+    // --- UPDATE ---------------------------------------------------
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
@@ -160,8 +162,8 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad actualizada exitosamente"));
     }
 
-    // ─── DELETE & TRASHCAN METHODS
-    // ────────────────────────────────────────────────
+    // --- DELETE & TRASHCAN METHODS
+    // ------------------------------------------------
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
@@ -206,8 +208,8 @@ public class PropertyController {
         int deletedCount = propertyService.clearTrashcanForUser(user.getId(), user.getId(), user.getRole());
 
         String message = deletedCount > 0
-                ? "Se vació la papelera. Propiedades eliminadas: " + deletedCount
-                : "La papelera ya estaba vacía.";
+                ? "Se vaci� la papelera. Propiedades eliminadas: " + deletedCount
+                : "La papelera ya estaba vac�a.";
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
@@ -227,7 +229,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    // ─── CHANGE STATUS ────────────────────────────────────────────
+    // --- CHANGE STATUS --------------------------------------------
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Cambiar el estado de una propiedad (solo ADMIN)")
@@ -241,7 +243,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
-    // ─── SIMILAR ────────────────────────────────────────────
+    // --- SIMILAR --------------------------------------------
     @GetMapping("/{id}/similar")
     @Operation(summary = "Obtener propiedades similares")
     public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> findSimilar(
@@ -249,5 +251,14 @@ public class PropertyController {
             @RequestParam int size) {
         List <PropertySummaryResponse> properties = propertyService.findSimilarProperties(id, size);
         return ResponseEntity.ok(ApiResponse.ok(properties));
+    }
+
+    // --- RENT COST --------------------------------------------
+    @GetMapping("/{id}/rent-cost")
+    @Operation(summary = "Calcular costo inicial de alquiler")
+    public ResponseEntity<ApiResponse<RentCostBreakdownResponse>> getRentCost(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        RentCostBreakdownResponse response = rentCalculationService.calculateInitialCost(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
