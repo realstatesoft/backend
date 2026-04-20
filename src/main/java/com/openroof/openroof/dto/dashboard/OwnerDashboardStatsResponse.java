@@ -4,5 +4,6 @@ public record OwnerDashboardStatsResponse(
     CountStatItem myProperties,
     CountStatItem totalVisits,
     CountStatItem inquiries,
-    CountStatItem views
+    CountStatItem views,
+    MoneyStatItem totalEarnings
 ) {}

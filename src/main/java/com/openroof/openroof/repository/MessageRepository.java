@@ -38,4 +38,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            ") sub ORDER BY created_at DESC",
            nativeQuery = true)
     List<Message> findLatestMessagePerConversation(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(m) > 0 FROM Message m WHERE m.receiver.id = :receiverId " +
+           "AND m.sender.id = :senderId AND m.readAt IS NULL AND m.createdAt > :since")
+    boolean hasRecentUnreadFromSender(
+            @Param("receiverId") Long receiverId,
+            @Param("senderId") Long senderId,
+            @Param("since") java.time.LocalDateTime since);
 }

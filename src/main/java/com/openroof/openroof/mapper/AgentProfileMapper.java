@@ -46,6 +46,7 @@ public class AgentProfileMapper {
         User user = agent.getUser();
         return new AgentProfileSummaryResponse(
                 agent.getId(),
+                user != null ? user.getId() : null,
                 user != null ? user.getName() : null,
                 user != null ? user.getPhone() : null,
                 user != null ? user.getAvatarUrl() : null,

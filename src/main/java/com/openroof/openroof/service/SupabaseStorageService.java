@@ -134,26 +134,6 @@ public class SupabaseStorageService implements StorageService {
         }
     }
 
-    // ─── Validación ──────────────────────────────────────────────────────
-
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
-        }
-
-        if (file.getSize() > maxFileSizeBytes) {
-            throw new BadRequestException(
-                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !allowedTypes.contains(contentType)) {
-            throw new BadRequestException(
-                    "Tipo de archivo no permitido: " + contentType
-                            + ". Permitidos: " + String.join(", ", allowedTypes));
-        }
-    }
-
     // ─── Helpers ─────────────────────────────────────────────────────────
 
     private String extractExtension(String filename) {

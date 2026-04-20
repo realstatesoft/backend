@@ -90,4 +90,20 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
         @Param("currentYear") int currentYear,
         @Param("previousYear") int previousYear
     );
+
+    @Query("""
+        SELECT c FROM Contract c
+        WHERE (c.seller.id = :userId OR c.buyer.id = :userId)
+          AND c.status IN (
+            com.openroof.openroof.model.enums.ContractStatus.SENT,
+            com.openroof.openroof.model.enums.ContractStatus.PARTIALLY_SIGNED
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM ContractSignature cs
+              WHERE cs.contract.id = c.id
+                AND cs.signer.id = :userId
+                AND cs.deletedAt IS NULL
+          )
+    """)
+    List<Contract> findPendingSignaturesForUser(@Param("userId") Long userId);
 }

@@ -138,6 +138,24 @@ class ContractServiceIntegrationTest {
     }
 
     @Test
+    @DisplayName("El comprador no puede crear un contrato si no gestiona la operación")
+    void buyerCannotCreateContract() {
+        ContractRequest request = new ContractRequest(
+                property.getId(), buyer.getId(), seller.getId(),
+                null, null,
+                ContractType.SALE,
+                new BigDecimal("150000"),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                LocalDate.now(), LocalDate.now().plusDays(30),
+                "Terms", null
+        );
+
+        assertThatThrownBy(() -> contractService.create(request, buyer.getEmail()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("permiso");
+    }
+
+    @Test
     @DisplayName("Crear contrato con agente listador")
     void createWithListingAgent() {
         ContractRequest request = new ContractRequest(
@@ -375,6 +393,14 @@ class ContractServiceIntegrationTest {
         List<ContractSummaryResponse> contracts = contractService.getAsSeller(seller.getEmail());
 
         assertThat(contracts).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("Obtener contratos por propiedad devuelve vacío para el propietario cuando aún no existen contratos")
+    void getByPropertyAsOwnerWithoutContracts() {
+        List<ContractSummaryResponse> contracts = contractService.getByProperty(property.getId(), seller.getEmail());
+
+        assertThat(contracts).isEmpty();
     }
 
     @Test

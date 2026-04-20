@@ -110,7 +110,8 @@ class DashboardControllerTest {
                 CountStatItem.of(3, 0),
                 CountStatItem.of(12, 0),
                 CountStatItem.of(4, 0),
-                CountStatItem.of(200, 0)
+                CountStatItem.of(200, 0),
+                MoneyStatItem.of(new BigDecimal("5000"), 0)
         );
 
         when(dashboardService.getOwnerStats("owner@test.com")).thenReturn(response);
@@ -121,6 +122,30 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.myProperties.value").value(3))
                 .andExpect(jsonPath("$.data.totalVisits.value").value(12));
+    }
+
+    @Test
+    @DisplayName("GET /dashboard/owner/overview → 200 con vista general completa")
+    void getOwnerOverview_returns200() throws Exception {
+        OwnerDashboardStatsResponse stats = new OwnerDashboardStatsResponse(
+                CountStatItem.of(3, 0),
+                CountStatItem.of(12, 0),
+                CountStatItem.of(4, 0),
+                CountStatItem.of(200, 0),
+                MoneyStatItem.of(new BigDecimal("5000"), 0)
+        );
+        OwnerDashboardOverviewResponse response = new OwnerDashboardOverviewResponse(
+                stats, List.of(), List.of(), List.of()
+        );
+
+        when(dashboardService.getOwnerOverview("owner@test.com")).thenReturn(response);
+
+        mockMvc.perform(get("/dashboard/owner/overview")
+                        .with(user("owner@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.stats.totalVisits.value").value(12))
+                .andExpect(jsonPath("$.data.pendingVisits").isArray());
     }
 
     @Test
