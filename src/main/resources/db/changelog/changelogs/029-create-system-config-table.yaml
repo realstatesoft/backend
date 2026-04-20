@@ -55,8 +55,12 @@ databaseChangeLog:
             columns:
               - column: { name: config_key, value: RENT_DEPOSIT_MONTHS }
               - column: { name: config_value, value: "1" }
+              - column: { name: created_at, valueComputed: "CURRENT_TIMESTAMP" }
+              - column: { name: version, valueNumeric: 0 }
         - insert:
             tableName: system_config
             columns:
               - column: { name: config_key, value: RENT_COMMISSION_PERCENT }
               - column: { name: config_value, value: "5.00" }
+              - column: { name: created_at, valueComputed: "CURRENT_TIMESTAMP" }
+              - column: { name: version, valueNumeric: 0 }
