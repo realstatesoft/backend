@@ -92,8 +92,8 @@ class MessageServiceTest {
             when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
             when(userRepository.findByEmail(receiver.getEmail())).thenReturn(Optional.of(receiver));
             when(messageRepository.hasRecentUnreadFromSender(
-                    eq(1L),
                     eq(2L),
+                    eq(1L),
                     argThat(instant -> instant != null)
             )).thenReturn(false);
 
@@ -115,7 +115,7 @@ class MessageServiceTest {
                     argThat(req ->
                         req != null
                         && req.type() == NotificationType.MESSAGE
-                        && req.recipientId() != null
+                        && req.userId() != null
                     ),
                     eq(receiver.getEmail())
             );
@@ -130,8 +130,8 @@ class MessageServiceTest {
             when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
             when(userRepository.findByEmail(receiver.getEmail())).thenReturn(Optional.of(receiver));
             when(messageRepository.hasRecentUnreadFromSender(
-                    eq(1L),
                     eq(2L),
+                    eq(1L),
                     argThat(instant -> instant != null)
             )).thenReturn(true);
 
@@ -160,8 +160,8 @@ class MessageServiceTest {
             when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
             when(userRepository.findByEmail(receiver.getEmail())).thenReturn(Optional.of(receiver));
             when(messageRepository.hasRecentUnreadFromSender(
-                    eq(1L),
                     eq(2L),
+                    eq(1L),
                     argThat(instant -> instant != null)
             )).thenReturn(false);
 
