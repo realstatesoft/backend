@@ -27,8 +27,8 @@ public class ContractController {
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
-    @Operation(summary = "Crear un contrato (solo AGENT o ADMIN)",
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
+    @Operation(summary = "Crear un contrato",
                description = """
                Escenarios soportados:
                A) Directo propietario→usuario: sin agentes, commissionPct=0
@@ -49,7 +49,7 @@ public class ContractController {
     // ─── UPDATE (Edit Draft) ──────────────────────────────────────────────────
 
     @PutMapping(value = "/{id}")
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
     @Operation(summary = "Actualizar un borrador de contrato",
                description = "Permite editar un contrato siempre que su estado sea DRAFT.")
     public ResponseEntity<ApiResponse<ContractResponse>> update(
@@ -113,8 +113,8 @@ public class ContractController {
     }
 
     @GetMapping("/property/{propertyId}")
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
-    @Operation(summary = "Todos los contratos de una propiedad (AGENT o ADMIN)")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
+    @Operation(summary = "Todos los contratos de una propiedad para el propietario o agentes relacionados")
     public ResponseEntity<ApiResponse<List<ContractSummaryResponse>>> getByProperty(
             @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId,
             Authentication auth) {

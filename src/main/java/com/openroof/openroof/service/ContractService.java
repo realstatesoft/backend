@@ -110,8 +110,8 @@ public class ContractService {
                 .build();
 
         User requester = findUserByEmail(requesterEmail);
-        if (!canAccess(contract, requester)) {
-            throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
+        if (!canCreateContractForProperty(property, request, requester)) {
+            throw new BadRequestException("No tiene permiso para crear un contrato para esta propiedad o los participantes no coinciden");
         }
 
         contractRepository.save(contract);
@@ -144,7 +144,7 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para editar este contrato");
         }
 
@@ -162,13 +162,18 @@ public class ContractService {
         AgentProfile listingAgent = resolveAgent(request.listingAgentId(), "Agente listador no encontrado");
         AgentProfile buyerAgent   = resolveAgent(request.buyerAgentId(),   "Agente del comprador no encontrado");
 
-        // 2. Validar reglas de comisión
+        // 2. Re-validar autorización contra los nuevos participantes e invariantes
+        if (!canCreateContractForProperty(property, request, requester)) {
+             throw new BadRequestException("No tiene permiso para actualizar el contrato con estos participantes");
+        }
+
+        // 3. Validar reglas de comisión
         BigDecimal commissionPct   = coerceZero(request.commissionPct());
         BigDecimal listingAgentPct = coerceZero(request.listingAgentCommissionPct());
         BigDecimal buyerAgentPct   = coerceZero(request.buyerAgentCommissionPct());
         validateCommissionRules(listingAgent, buyerAgent, commissionPct, listingAgentPct, buyerAgentPct);
 
-        // 3. Actualizar campos
+        // 4. Actualizar campos
         contract.setProperty(property);
         contract.setBuyer(buyer);
         contract.setSeller(seller);
@@ -424,28 +429,15 @@ public class ContractService {
 
     /** Todos los contratos de una propiedad si el usuario participa en alguno de ellos o es ADMIN. */
     public List<ContractSummaryResponse> getByProperty(Long propertyId, String requesterEmail) {
-        if (!propertyRepository.existsById(propertyId)) {
-            throw new ResourceNotFoundException("Propiedad no encontrada");
-        }
-
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
         User requester = findUserByEmail(requesterEmail);
-        List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
-
-        if (requester.getRole() == UserRole.ADMIN) {
-            return contracts.stream()
-                    .map(contractMapper::toSummaryResponse)
-                    .toList();
-        }
-
-        List<Contract> accessible = contracts.stream()
-                .filter(contract -> canAccess(contract, requester))
-                .toList();
-
-        if (accessible.isEmpty()) {
+        if (!canManagePropertyContracts(property, requester)) {
             throw new BadRequestException("No tiene permiso para ver los contratos de esta propiedad");
         }
 
-        return accessible.stream()
+        List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
+        return contracts.stream()
                 .map(contractMapper::toSummaryResponse)
                 .toList();
     }
@@ -457,12 +449,16 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
         ContractStatus previousStatus = contract.getStatus();
         validateStatusTransition(previousStatus, request.status(), requester);
+
+        if (request.status() == ContractStatus.SIGNED) {
+            throw new BadRequestException("No se puede establecer manualmente el estado como SIGNED. Use el flujo de firmas.");
+        }
 
         contract.setStatus(request.status());
         ContractResponse response = contractMapper.toResponse(contractRepository.save(contract));
@@ -506,7 +502,11 @@ public class ContractService {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
 
-        if (!canAccess(contract, requester)) {
+        if (requester.getRole() != UserRole.ADMIN) {
+            throw new BadRequestException("Solo los administradores pueden eliminar contratos");
+        }
+
+        if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
         }
 
@@ -630,6 +630,67 @@ public class ContractService {
                 if (aid.equals(safeId(contract.getBuyerAgent())))   return true;
             }
         }
+        return false;
+    }
+
+    private boolean canManageContract(Contract contract, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        Long uid = requester.getId();
+        if (uid.equals(safeId(contract.getSeller()))) return true;
+
+        if (requester.getRole() == UserRole.AGENT) {
+            AgentProfile agentProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            if (agentProfile != null) {
+                Long aid = agentProfile.getId();
+                if (aid.equals(safeId(contract.getListingAgent()))) return true;
+                if (aid.equals(safeId(contract.getBuyerAgent()))) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canCreateContractForProperty(Property property, ContractRequest request, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        // Validar que el vendedor en el DTO sea el dueño real de la propiedad
+        if (property.getOwner() == null || !property.getOwner().getId().equals(request.sellerId())) {
+            return false;
+        }
+
+        Long uid = requester.getId();
+        
+        // El dueño puede crear contratos directos
+        if (uid.equals(property.getOwner().getId())) {
+            return true;
+        }
+
+        // Si es agente, solo el agente asignado a la propiedad puede crear el contrato
+        if (requester.getRole() == UserRole.AGENT) {
+            AgentProfile requesterProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            if (requesterProfile != null && property.getAgent() != null && 
+                property.getAgent().getId().equals(requesterProfile.getId())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canManagePropertyContracts(Property property, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        Long uid = requester.getId();
+        if (property.getOwner() != null && uid.equals(property.getOwner().getId())) {
+            return true;
+        }
+
+        if (requester.getRole() == UserRole.AGENT && property.getAgent() != null) {
+            AgentProfile agentProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            return agentProfile != null && property.getAgent().getId().equals(agentProfile.getId());
+        }
+
         return false;
     }
 

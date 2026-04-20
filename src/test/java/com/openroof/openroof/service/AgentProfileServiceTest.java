@@ -99,7 +99,7 @@ class AgentProfileServiceTest {
         );
 
         testSummary = new AgentProfileSummaryResponse(
-                10L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
+                10L, 1L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
                 BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
@@ -272,6 +272,7 @@ class AgentProfileServiceTest {
             assertThat(result.getTotalElements()).isEqualTo(1);
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).userName()).isEqualTo("Test Agent");
+            assertThat(result.getContent().get(0).userId()).isEqualTo(1L);
         }
 
         @Test
