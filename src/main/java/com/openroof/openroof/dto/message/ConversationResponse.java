@@ -6,6 +6,7 @@ public record ConversationResponse(
     Long id,
     String contactName,
     String lastMessage,
+    boolean lastMessageOwn,
     LocalDateTime timestamp,
     int unread,
     String avatar

@@ -33,6 +33,14 @@ public class MessageController {
                 messageService.getConversations(auth.getName())));
     }
 
+    @GetMapping("/conversations/unread-count")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Obtener cantidad de mensajes sin leer")
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                messageService.getUnreadCount(auth.getName())));
+    }
+
     @GetMapping("/conversations/{peerId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener mensajes de una conversación")

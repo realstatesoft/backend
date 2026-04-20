@@ -34,7 +34,7 @@ public class EmailService {
 
     // ─── AUTH ─────────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendWelcomeEmail(String toEmail, String userName) {
         String subject = "¡Bienvenido a OpenRoof, " + userName + "!";
         String body = buildHtml(
@@ -54,7 +54,7 @@ public class EmailService {
 
     // ─── CONTRATOS ────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendContractCreatedEmail(String toEmail, String userName,
                                           String propertyTitle, Long contractId) {
         String subject = "Nuevo contrato en OpenRoof — " + propertyTitle;
@@ -72,7 +72,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendContractStatusChangedEmail(String toEmail, String userName,
                                                 String propertyTitle, String newStatus, Long contractId) {
         String label = translateContractStatus(newStatus);
@@ -93,7 +93,7 @@ public class EmailService {
 
     // ─── VISITAS ──────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestCreatedEmail(String toEmail, String recipientName,
                                               String propertyTitle, String buyerName,
                                               LocalDateTime proposedAt) {
@@ -112,7 +112,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestAcceptedEmail(String toEmail, String buyerName,
                                                String propertyTitle, LocalDateTime scheduledAt) {
         String subject = "¡Tu visita fue confirmada! — " + propertyTitle;
@@ -131,7 +131,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestRejectedEmail(String toEmail, String buyerName,
                                                String propertyTitle) {
         String subject = "Solicitud de visita rechazada — " + propertyTitle;
@@ -149,7 +149,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitCounterProposedEmail(String toEmail, String buyerName,
                                                String propertyTitle,
                                                LocalDateTime counterProposedAt,
@@ -173,7 +173,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestCancelledEmail(String toEmail, String recipientName,
                                                 String propertyTitle, String buyerName) {
         String subject = "Solicitud de visita cancelada — " + propertyTitle;
@@ -192,7 +192,7 @@ public class EmailService {
 
     // ─── ASIGNACIONES DE PROPIEDAD ────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendPropertyAssignmentEmail(String toEmail, String agentName,
                                              String propertyTitle, String ownerName) {
         String subject = "Nueva propiedad asignada — " + propertyTitle;
@@ -210,7 +210,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendPropertyAssignmentResponseEmail(String toEmail, String ownerName,
                                                      String propertyTitle, String agentName,
                                                      String status) {
@@ -236,7 +236,7 @@ public class EmailService {
 
     // ─── DOCUMENTOS KYC ───────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendDocumentApprovedEmail(String toEmail, String userName, String documentType) {
         String subject = "✅ Tu documento fue aprobado — OpenRoof";
         String body = buildHtml(
@@ -254,7 +254,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendDocumentRejectedEmail(String toEmail, String userName,
                                            String documentType, String reason) {
         String reasonHtml = (reason != null && !reason.isBlank())
@@ -271,6 +271,29 @@ public class EmailService {
                 """.formatted(escapeHtml(translateDocumentType(documentType)), reasonHtml),
                 "Subir nuevo documento",
                 baseUrl + "/profile"
+        );
+        send(toEmail, subject, body);
+    }
+
+
+    // ─── MENSAJES ───────────────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendNewMessageEmailAsync(String toEmail, String senderName, String messageContent) {
+        String preview = messageContent.length() > 100
+            ? messageContent.substring(0, 100) + "..."
+            : messageContent;
+        String subject = "Nuevo mensaje de " + senderName;
+        String body = buildHtml(
+            "Nuevo mensaje",
+            "Hola.",
+            """
+            <p>Tienes un nuevo mensaje de <strong>%s</strong>:</p>
+            <blockquote style="border-left: 3px solid #1a3c5e; padding-left: 16px; color: #666; font-style: italic;">%s</blockquote>
+            <p>Ingresa a la plataforma para responder.</p>
+            """.formatted(escapeHtml(senderName), escapeHtml(preview)),
+            "Ver mensajes",
+            baseUrl + "/messages"
         );
         send(toEmail, subject, body);
     }
