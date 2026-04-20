@@ -2,16 +2,25 @@ package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.enums.ContractStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ContractRepository extends JpaRepository<Contract, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Contract c WHERE c.id = :id")
+    Optional<Contract> findByIdForUpdate(@Param("id") Long id);
 
     List<Contract> findByBuyer_Id(Long buyerId);
 
@@ -25,6 +34,13 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 
     List<Contract> findByBuyerAgent_Id(Long buyerAgentId);
 
+    @Query("""
+            SELECT c FROM Contract c JOIN c.property p
+            WHERE LOWER(COALESCE(p.title, '')) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR c.id = :idOrNegOne
+            ORDER BY c.id DESC
+            """)
+    Page<Contract> searchForAuditPicker(@Param("q") String q, @Param("idOrNegOne") long idOrNegOne, Pageable pageable);
 
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.seller.id = :sellerId AND c.status = :status")
     long countBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") ContractStatus status);
@@ -74,4 +90,20 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
         @Param("currentYear") int currentYear,
         @Param("previousYear") int previousYear
     );
+
+    @Query("""
+        SELECT c FROM Contract c
+        WHERE (c.seller.id = :userId OR c.buyer.id = :userId)
+          AND c.status IN (
+            com.openroof.openroof.model.enums.ContractStatus.SENT,
+            com.openroof.openroof.model.enums.ContractStatus.PARTIALLY_SIGNED
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM ContractSignature cs
+              WHERE cs.contract.id = c.id
+                AND cs.signer.id = :userId
+                AND cs.deletedAt IS NULL
+          )
+    """)
+    List<Contract> findPendingSignaturesForUser(@Param("userId") Long userId);
 }

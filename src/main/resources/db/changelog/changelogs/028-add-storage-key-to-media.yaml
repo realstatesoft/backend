@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-add-storage-key-to-media
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: property_media
+            columns:
+              - column:
+                  name: storage_key
+                  type: VARCHAR(255)

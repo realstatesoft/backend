@@ -18,6 +18,8 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.Auth.UserSessionRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.AuditAction;
+import com.openroof.openroof.model.enums.AuditEntityType;
 import com.openroof.openroof.security.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +28,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /* * Auth: Enrique Rios
  * Desc: Servicio central de autenticación que gestiona el ciclo de vida de usuarios y sus sesiones.
@@ -40,6 +43,7 @@ public class AuthService {
         private final UserSessionRepository userSessionRepository;
         private final AgentProfileRepository agentProfileRepository;
         private final EmailService emailService;
+        private final AuditService auditService;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
@@ -52,7 +56,10 @@ public class AuthService {
 
                 var user = (User) auth.getPrincipal();
 
-                return generateFullAuthResponse(user, httpRequest);
+                var response = generateFullAuthResponse(user, httpRequest);
+                auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.LOGIN, null,
+                                Map.of("email", user.getEmail()));
+                return response;
         }
 
         /* * Desc: Registra un nuevo usuario y crea su sesión inicial. */
@@ -97,7 +104,10 @@ public class AuthService {
                         agentProfileRepository.save(agentProfile);
                 }
 
-                return generateFullAuthResponse(user, httpRequest);
+                var response = generateFullAuthResponse(user, httpRequest);
+                auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.REGISTER, null,
+                                Map.of("email", user.getEmail(), "role", selectedRole.name()));
+                return response;
         }
 
         /*

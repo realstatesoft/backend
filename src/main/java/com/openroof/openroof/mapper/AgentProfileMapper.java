@@ -18,8 +18,9 @@ public class AgentProfileMapper {
 
     // ─── Entity → Response ────────────────────────────────────────
 
-    public AgentProfileResponse toResponse(AgentProfile agent) {
+    public AgentProfileResponse toResponse(AgentProfile agent, AgentProfileResponse.AgentStatsDto stats) {
         User user = agent.getUser();
+
         return new AgentProfileResponse(
                 agent.getId(),
                 user != null ? user.getId() : null,
@@ -35,6 +36,7 @@ public class AgentProfileMapper {
                 agent.getTotalReviews(),
                 mapSpecialties(agent.getSpecialties()),
                 mapSocialMedia(agent.getSocialMedia()),
+                stats,
                 agent.getCreatedAt(),
                 agent.getUpdatedAt()
         );
@@ -44,6 +46,7 @@ public class AgentProfileMapper {
         User user = agent.getUser();
         return new AgentProfileSummaryResponse(
                 agent.getId(),
+                user != null ? user.getId() : null,
                 user != null ? user.getName() : null,
                 user != null ? user.getPhone() : null,
                 user != null ? user.getAvatarUrl() : null,

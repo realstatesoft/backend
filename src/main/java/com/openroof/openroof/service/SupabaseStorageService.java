@@ -40,7 +40,7 @@ public class SupabaseStorageService implements StorageService {
             @Value("${supabase.service-role-key}") String serviceRoleKey,
             @Value("${supabase.storage.bucket}") String bucket,
             @Value("#{'${upload.allowed-types}'.split(',')}") List<String> allowedTypes,
-            @Value("${upload.max-file-size:5MB}") String maxFileSize
+            @Value("${upload.max-file-size:10MB}") String maxFileSize
     ) {
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
@@ -56,10 +56,36 @@ public class SupabaseStorageService implements StorageService {
 
     @Override
     public UploadResult upload(MultipartFile file, String folder) {
-        validateFile(file);
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo está vacío o no fue proporcionado.");
+        }
 
         String originalFilename = file.getOriginalFilename();
         String extension = extractExtension(originalFilename);
+
+        // Permitimos sobrepasar límite si es carpeta de documentos o extensión PDF,
+        // asumiendo que el servicio invocador ya aplicó su propia regla de negocio.
+        boolean isKycOrPdf = (folder != null && folder.startsWith("documents/")) || ".pdf".equalsIgnoreCase(extension);
+
+        if (!isKycOrPdf && file.getSize() > maxFileSizeBytes) {
+            throw new IllegalArgumentException("El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
+        }
+
+        if (file.getContentType() == null) {
+            throw new IllegalArgumentException("El Content-Type del archivo no puede ser nulo.");
+        }
+        try {
+            MediaType.parseMediaType(file.getContentType());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Content-Type inválido: " + file.getContentType());
+        }
+
+        // Validation of specific allowed types is intentionally delegated to the calling service
+        // (e.g. UserDocumentService or PropertyImageService) so that each
+        // context can enforce its own allowed-types without
+        // SupabaseStorageService duplicating or conflicting with those rules.
+
+
         String key = buildKey(folder, extension);
 
         try {
@@ -88,23 +114,23 @@ public class SupabaseStorageService implements StorageService {
         }
     }
 
-    // ─── Validación ──────────────────────────────────────────────────────
+    // ─── Delete ──────────────────────────────────────────────────────────
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
+    @Override
+    public void delete(String key) {
+        if (key == null || key.isBlank()) {
+            log.warn("delete() invocado con clave nula o vacía; operación ignorada.");
+            return;
         }
-
-        if (file.getSize() > maxFileSizeBytes) {
-            throw new BadRequestException(
-                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !allowedTypes.contains(contentType)) {
-            throw new BadRequestException(
-                    "Tipo de archivo no permitido: " + contentType
-                            + ". Permitidos: " + String.join(", ", allowedTypes));
+        try {
+            restClient.delete()
+                    .uri("/object/{bucket}/{key}", bucket, key)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Archivo eliminado de Supabase Storage: {}", key);
+        } catch (Exception e) {
+            log.error("Error al eliminar archivo '{}' de Supabase Storage: {}", key, e.getMessage(), e);
+            throw new StorageException("No se pudo eliminar el archivo '" + key + "': " + e.getMessage(), e);
         }
     }
 

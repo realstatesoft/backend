@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.JacksonConfig;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -41,7 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentProfileController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JacksonConfig.class})
 class AgentProfileControllerTest {
 
     @Autowired
@@ -90,13 +91,14 @@ class AgentProfileControllerTest {
                 "Test Realty", "Experienced agent", 5, "LIC-001",
                 BigDecimal.ZERO, 0,
                 Collections.emptyList(), Collections.emptyList(),
+                new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                 LocalDateTime.now(), LocalDateTime.now()
         );
     }
 
     private AgentProfileSummaryResponse sampleSummary() {
         return new AgentProfileSummaryResponse(
-                10L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
+                10L, 1L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
                 BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
@@ -242,7 +244,8 @@ class AgentProfileControllerTest {
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content", hasSize(1)))
                     .andExpect(jsonPath("$.data.page.totalElements").value(1))
-                    .andExpect(jsonPath("$.data.content[0].userName").value("Test Agent"));
+                    .andExpect(jsonPath("$.data.content[0].userName").value("Test Agent"))
+                    .andExpect(jsonPath("$.data.content[0].userId").value(1));
         }
 
         @Test
@@ -305,6 +308,7 @@ class AgentProfileControllerTest {
                     "New Company", "New bio", 10, "LIC-001",
                     BigDecimal.ZERO, 0,
                     Collections.emptyList(), Collections.emptyList(),
+                    new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                     LocalDateTime.now(), LocalDateTime.now()
             );
 

@@ -2,8 +2,8 @@ package com.openroof.openroof.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -14,14 +14,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
 
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -34,7 +34,7 @@ public class EmailService {
 
     // ─── AUTH ─────────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendWelcomeEmail(String toEmail, String userName) {
         String subject = "¡Bienvenido a OpenRoof, " + userName + "!";
         String body = buildHtml(
@@ -54,7 +54,7 @@ public class EmailService {
 
     // ─── CONTRATOS ────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendContractCreatedEmail(String toEmail, String userName,
                                           String propertyTitle, Long contractId) {
         String subject = "Nuevo contrato en OpenRoof — " + propertyTitle;
@@ -67,14 +67,14 @@ public class EmailService {
                 <p>Ingresa a la plataforma para revisar los detalles, términos y estado del contrato.</p>
                 """.formatted(escapeHtml(propertyTitle)),
                 "Ver contrato",
-                baseUrl + "/contracts/" + contractId
+                baseUrl + "/contratos/" + contractId
         );
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendContractStatusChangedEmail(String toEmail, String userName,
-                                                String propertyTitle, String newStatus) {
+                                                String propertyTitle, String newStatus, Long contractId) {
         String label = translateContractStatus(newStatus);
         String subject = "Contrato actualizado — " + propertyTitle;
         String body = buildHtml(
@@ -86,14 +86,14 @@ public class EmailService {
                 <p>Ingresa a la plataforma para ver los detalles actualizados.</p>
                 """.formatted(escapeHtml(propertyTitle), label),
                 "Ver contrato",
-                baseUrl + "/contracts"
+                baseUrl + "/contratos/" + contractId
         );
         send(toEmail, subject, body);
     }
 
     // ─── VISITAS ──────────────────────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestCreatedEmail(String toEmail, String recipientName,
                                               String propertyTitle, String buyerName,
                                               LocalDateTime proposedAt) {
@@ -112,7 +112,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestAcceptedEmail(String toEmail, String buyerName,
                                                String propertyTitle, LocalDateTime scheduledAt) {
         String subject = "¡Tu visita fue confirmada! — " + propertyTitle;
@@ -131,7 +131,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestRejectedEmail(String toEmail, String buyerName,
                                                String propertyTitle) {
         String subject = "Solicitud de visita rechazada — " + propertyTitle;
@@ -149,7 +149,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitCounterProposedEmail(String toEmail, String buyerName,
                                                String propertyTitle,
                                                LocalDateTime counterProposedAt,
@@ -173,7 +173,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendVisitRequestCancelledEmail(String toEmail, String recipientName,
                                                 String propertyTitle, String buyerName) {
         String subject = "Solicitud de visita cancelada — " + propertyTitle;
@@ -192,7 +192,7 @@ public class EmailService {
 
     // ─── ASIGNACIONES DE PROPIEDAD ────────────────────────────────────────────
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendPropertyAssignmentEmail(String toEmail, String agentName,
                                              String propertyTitle, String ownerName) {
         String subject = "Nueva propiedad asignada — " + propertyTitle;
@@ -210,7 +210,7 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
-    @Async
+    @Async("emailTaskExecutor")
     public void sendPropertyAssignmentResponseEmail(String toEmail, String ownerName,
                                                      String propertyTitle, String agentName,
                                                      String status) {
@@ -234,9 +234,77 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
+    // ─── DOCUMENTOS KYC ───────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendDocumentApprovedEmail(String toEmail, String userName, String documentType) {
+        String subject = "✅ Tu documento fue aprobado — OpenRoof";
+        String body = buildHtml(
+                "Documento aprobado",
+                "¡Buenas noticias, " + escapeHtml(userName) + "!",
+                """
+                <p>Tu documento <strong>%s</strong> ha sido <strong>aprobado</strong>
+                por nuestro equipo de verificación.</p>
+                <p>Tu perfil ya cuenta con documentación verificada. Ahora podés acceder
+                a todas las funcionalidades de la plataforma.</p>
+                """.formatted(escapeHtml(translateDocumentType(documentType))),
+                "Ver mi perfil",
+                baseUrl + "/profile"
+        );
+        send(toEmail, subject, body);
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendDocumentRejectedEmail(String toEmail, String userName,
+                                           String documentType, String reason) {
+        String reasonHtml = (reason != null && !reason.isBlank())
+                ? "<p><strong>Motivo:</strong> " + escapeHtml(reason) + "</p>"
+                : "";
+        String subject = "❌ Tu documento fue rechazado — OpenRoof";
+        String body = buildHtml(
+                "Documento rechazado",
+                "Hola, " + escapeHtml(userName) + ".",
+                """
+                <p>Lamentablemente, tu documento <strong>%s</strong> no pudo ser aprobado.</p>
+                %s
+                <p>Por favor, revisá los requisitos y subí un nuevo documento desde tu perfil.</p>
+                """.formatted(escapeHtml(translateDocumentType(documentType)), reasonHtml),
+                "Subir nuevo documento",
+                baseUrl + "/profile"
+        );
+        send(toEmail, subject, body);
+    }
+
+
+    // ─── MENSAJES ───────────────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendNewMessageEmailAsync(String toEmail, String senderName, String messageContent) {
+        String preview = messageContent.length() > 100
+            ? messageContent.substring(0, 100) + "..."
+            : messageContent;
+        String subject = "Nuevo mensaje de " + senderName;
+        String body = buildHtml(
+            "Nuevo mensaje",
+            "Hola.",
+            """
+            <p>Tienes un nuevo mensaje de <strong>%s</strong>:</p>
+            <blockquote style="border-left: 3px solid #1a3c5e; padding-left: 16px; color: #666; font-style: italic;">%s</blockquote>
+            <p>Ingresa a la plataforma para responder.</p>
+            """.formatted(escapeHtml(senderName), escapeHtml(preview)),
+            "Ver mensajes",
+            baseUrl + "/messages"
+        );
+        send(toEmail, subject, body);
+    }
+
     // ─── Core sender ──────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {
+        if (mailSender == null) {
+            log.warn("JavaMailSender no disponible — email omitido para {}", maskEmail(to));
+            return;
+        }
         if (fromEmail == null || fromEmail.isBlank()) {
             log.warn("MAIL_USERNAME no configurado — email omitido para {}", maskEmail(to));
             return;
@@ -344,6 +412,22 @@ public class EmailService {
             case "EXPIRED"          -> "Expirado";
             case "CANCELLED"        -> "Cancelado";
             default                 -> status;
+        };
+    }
+
+    private String translateDocumentType(String type) {
+        if (type == null) return "";
+        return switch (type) {
+            case "ID_FRONT"         -> "DNI / Documento de identidad (frente)";
+            case "ID_BACK"          -> "DNI / Documento de identidad (dorso)";
+            case "SELFIE"           -> "Selfi de verificación";
+            case "PROOF_OF_ADDRESS" -> "Comprobante de domicilio";
+            case "ID"               -> "Documento de identidad";
+            case "PROOF_OF_INCOME"  -> "Comprobante de ingresos";
+            case "TAX_RETURN"       -> "Declaración de impuestos";
+            case "BANK_STATEMENT"   -> "Extracto bancario";
+            case "OTHER"            -> "Otro documento";
+            default                 -> type;
         };
     }
 }

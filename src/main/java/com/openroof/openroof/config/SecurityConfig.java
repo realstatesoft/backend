@@ -73,6 +73,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -5,6 +5,7 @@ import java.util.List;
 
 public record AgentProfileSummaryResponse(
         Long id,
+        Long userId,
         String userName,
         String userPhone,
         String userAvatarUrl,
