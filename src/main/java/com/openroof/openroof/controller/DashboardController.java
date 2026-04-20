@@ -40,7 +40,7 @@ public class DashboardController {
     }
 
     @GetMapping("/owner/overview")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Vista general del dashboard del propietario (Estadísticas + Propiedades + Firmas Pendientes)")
     public ResponseEntity<ApiResponse<OwnerDashboardOverviewResponse>> getOwnerOverview(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.ok(
