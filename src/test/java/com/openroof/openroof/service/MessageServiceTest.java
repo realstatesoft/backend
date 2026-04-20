@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +32,8 @@ class MessageServiceTest {
     @Mock private MessageRepository messageRepository;
     @Mock private UserRepository userRepository;
     @Mock private PropertyRepository propertyRepository;
+    @Mock private NotificationService notificationService;
+    @Mock private EmailService emailService;
 
     @InjectMocks
     private MessageService messageService;
@@ -79,10 +82,12 @@ class MessageServiceTest {
         @DisplayName("Enviar mensaje → guarda en repo y retorna DTO")
         void sendMessage_success() {
             var request = new SendMessageRequest(2L, "Holi", null);
-            
+
             when(userRepository.findByEmail(senderEmail)).thenReturn(Optional.of(sender));
             when(userRepository.findById(2L)).thenReturn(Optional.of(receiver));
-            
+            when(userRepository.findByEmail(receiver.getEmail())).thenReturn(Optional.of(receiver));
+            when(messageRepository.hasRecentUnreadFromSender(any(), any(), any())).thenReturn(false);
+
             Message saved = Message.builder()
                     .sender(sender)
                     .receiver(receiver)
@@ -97,6 +102,7 @@ class MessageServiceTest {
             assertThat(res.text()).isEqualTo("Holi");
             assertThat(res.ownMessage()).isTrue();
             verify(messageRepository).save(any());
+            verify(notificationService).create(any(), eq(receiver.getEmail()));
         }
     }
 

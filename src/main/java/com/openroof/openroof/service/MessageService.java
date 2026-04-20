@@ -15,6 +15,8 @@ import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -87,11 +89,14 @@ return latestMessages.stream().map(m -> {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+@Transactional
     public MessageResponse send(String email, SendMessageRequest request) {
         User sender = findUserByEmail(email);
         User receiver = userRepository.findById(request.receiverId())
                 .orElseThrow(() -> new ResourceNotFoundException("Destinatario no encontrado"));
+
+        // Check BEFORE saving so the new message doesn't influence the result
+        boolean isActive = isReceiverActiveInConversation(receiver.getEmail(), sender.getId());
 
         Message.MessageBuilder builder = Message.builder()
                 .sender(sender)
@@ -109,9 +114,7 @@ return latestMessages.stream().map(m -> {
         String senderName = sender.getName() != null ? sender.getName() : sender.getEmail();
         String senderRole = sender.getRole() != null ? sender.getRole().name().toLowerCase() : "user";
 
-// Create in-app notification ONLY if receiver is NOT in active conversation
-        boolean isActive = isReceiverActiveInConversation(receiver.getEmail(), sender.getId());
-        
+        // Create in-app notification ONLY if receiver is NOT in active conversation
         if (!isActive) {
             String preview = saved.getContent().length() > 50
                     ? saved.getContent().substring(0, 50) + "..."
@@ -129,8 +132,10 @@ return latestMessages.stream().map(m -> {
             notificationService.create(notificationRequest, receiver.getEmail());
         }
 
-        // Send email notification asynchronously
-        emailService.sendNewMessageEmailAsync(receiver.getEmail(), senderName, saved.getContent());
+        // Send email notification only after transaction commits successfully
+        String receiverEmail = receiver.getEmail();
+        String messageContent = saved.getContent();
+        afterCommit(() -> emailService.sendNewMessageEmailAsync(receiverEmail, senderName, messageContent));
 
         return new MessageResponse(
                 saved.getId(),
@@ -166,12 +171,25 @@ return latestMessages.stream().map(m -> {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
-    private String buildInitials(String name) {
+private String buildInitials(String name) {
         if (name == null || name.isBlank()) return "??";
         String[] parts = name.trim().split("\\s+");
         if (parts.length >= 2) {
             return (parts[0].charAt(0) + "" + parts[1].charAt(0)).toUpperCase();
         }
         return name.substring(0, Math.min(2, name.length())).toUpperCase();
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

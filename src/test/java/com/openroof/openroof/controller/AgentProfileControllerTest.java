@@ -98,7 +98,7 @@ class AgentProfileControllerTest {
 
     private AgentProfileSummaryResponse sampleSummary() {
         return new AgentProfileSummaryResponse(
-                10L, 99L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
+                10L, 1L, "Test Agent", null, null, "Test Realty", 5, "LIC-001",
                 BigDecimal.ZERO, 0, List.of("residencial", "casas")
         );
     }
@@ -244,7 +244,8 @@ class AgentProfileControllerTest {
                     .andExpect(jsonPath("$.data.content").isArray())
                     .andExpect(jsonPath("$.data.content", hasSize(1)))
                     .andExpect(jsonPath("$.data.page.totalElements").value(1))
-                    .andExpect(jsonPath("$.data.content[0].userName").value("Test Agent"));
+                    .andExpect(jsonPath("$.data.content[0].userName").value("Test Agent"))
+                    .andExpect(jsonPath("$.data.content[0].userId").value(1));
         }
 
         @Test
