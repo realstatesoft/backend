@@ -112,6 +112,14 @@ public class VisitRequestController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/me/owner")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @Operation(summary = "Solicitudes recibidas de mis propiedades como propietario")
+    public ResponseEntity<ApiResponse<List<VisitRequestResponse>>> getMyRequestsAsOwner(Principal principal) {
+        List<VisitRequestResponse> response = visitRequestService.getMyRequestsAsOwner(principal.getName());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/property/{propertyId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Solicitudes de una propiedad (owner/agent/admin)")

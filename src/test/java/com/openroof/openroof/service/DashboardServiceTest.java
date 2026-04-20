@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +41,9 @@ class DashboardServiceTest {
     @Mock private PropertyViewRepository propertyViewRepository;
     @Mock private OfferRepository offerRepository;
     @Mock private UserRepository userRepository;
+    @Mock private VisitRequestService visitRequestService;
+    @Mock private com.openroof.openroof.mapper.PropertyMapper propertyMapper;
+    @Mock private com.openroof.openroof.mapper.ContractMapper contractMapper;
 
     @InjectMocks
     private DashboardService dashboardService;
@@ -125,6 +129,54 @@ class DashboardServiceTest {
             assertThat(stats.totalVisits().value()).isEqualTo(10L);
             assertThat(stats.inquiries().value()).isEqualTo(4L);
             assertThat(stats.views().value()).isEqualTo(100L);
+        }
+    }
+
+    @Nested
+    @DisplayName("getOwnerOverview()")
+    class GetOwnerOverviewTests {
+        @Test
+        @DisplayName("Obtener vista general → retorna DTO agregado con propiedades, contratos y visitas")
+        void getOwnerOverview_returnsAggregatedData() {
+            when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+            
+            // Mock stats (getOwnerStats is called internally)
+            when(propertyRepository.countActiveByOwnerId(1L)).thenReturn(2L);
+            when(visitRequestRepository.countByPropertyOwnerId(1L)).thenReturn(10L);
+            when(offerRepository.countByPropertyOwnerId(1L)).thenReturn(4L);
+            when(propertyViewRepository.countByPropertyOwnerId(1L)).thenReturn(100L);
+            when(contractRepository.sumAmountBySellerIdSigned(1L)).thenReturn(new BigDecimal("5000"));
+
+            // Mock properties
+            Property p1 = Property.builder().title("Prop 1").build();
+            p1.setId(100L);
+            org.springframework.data.domain.Page<Property> page = new org.springframework.data.domain.PageImpl<>(List.of(p1));
+            when(propertyRepository.findByOwner_IdAndTrashedAtIsNull(any(), any())).thenReturn(page);
+            when(propertyMapper.toSummaryResponse(p1)).thenReturn(
+                new com.openroof.openroof.dto.property.PropertySummaryResponse(
+                    100L, "Prop 1", null, null, null, null, null, null, null, null, null, null, null, null, null, null));
+
+            // Mock contracts
+            Contract c1 = Contract.builder().build();
+            c1.setId(200L);
+            when(contractRepository.findPendingSignaturesForUser(1L)).thenReturn(List.of(c1));
+            when(contractMapper.toSummaryResponse(c1)).thenReturn(
+                new com.openroof.openroof.dto.contract.ContractSummaryResponse(
+                    200L, 100L, "Prop 1", null, null, null, null, null, null, null, null, null, null));
+
+            // Mock visits
+            com.openroof.openroof.dto.visit.VisitRequestResponse v1 = new com.openroof.openroof.dto.visit.VisitRequestResponse(
+                1L, 100L, "Prop 1", 2L, "Buyer", "buyer@test.com", null, null, null, null, null, null, com.openroof.openroof.model.enums.VisitRequestStatus.PENDING, null, null, null, null);
+            when(visitRequestService.getMyRequestsAsOwner(testEmail)).thenReturn(List.of(v1));
+
+            OwnerDashboardOverviewResponse overview = dashboardService.getOwnerOverview(testEmail);
+
+            assertThat(overview).isNotNull();
+            assertThat(overview.stats().myProperties().value()).isEqualTo(2L);
+            assertThat(overview.recentProperties()).hasSize(1);
+            assertThat(overview.urgentContracts()).hasSize(1);
+            assertThat(overview.pendingVisits()).hasSize(1);
+            assertThat(overview.pendingVisits().get(0).status()).isEqualTo(com.openroof.openroof.model.enums.VisitRequestStatus.PENDING);
         }
     }
 

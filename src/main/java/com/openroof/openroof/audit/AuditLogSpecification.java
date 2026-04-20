@@ -37,7 +37,7 @@ public final class AuditLogSpecification {
                 if (filterByUserId) {
                     predicates.add(cb.equal(userJoin.get("id"), userId));
                 }
-                if (filterByUserSearch) {
+                if (userSearch != null && !userSearch.isBlank()) {
                     String term = userSearch.trim().toLowerCase(Locale.ROOT);
                     String pattern = "%" + term + "%";
                     predicates.add(cb.or(
