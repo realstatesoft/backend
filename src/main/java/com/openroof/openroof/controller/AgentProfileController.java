@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,13 +19,16 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/agents")
 @RequiredArgsConstructor
+@Validated
 @Tag(name = "Agents", description = "CRUD de perfiles de agentes inmobiliarios")
 public class AgentProfileController {
 
@@ -66,9 +71,17 @@ public class AgentProfileController {
     @GetMapping("/search")
     @Operation(summary = "Buscar agentes por texto, especialidad y puntuación mínima")
     public ResponseEntity<ApiResponse<Page<AgentProfileSummaryResponse>>> search(
+            @Parameter(description = "Texto libre (nombre, empresa, licencia)")
             @RequestParam(name = "q",         required = false) String keyword,
+
+            @Parameter(description = "Especialidad a filtrar (nombre exacto)")
             @RequestParam(name = "specialty",  required = false) String specialty,
-            @RequestParam(name = "minRating",  required = false) java.math.BigDecimal minRating,
+
+            @Parameter(description = "Puntuación mínima (0.00–5.00)")
+            @DecimalMin(value = "0.00", message = "minRating debe ser al menos 0.00")
+            @DecimalMax(value = "5.00", message = "minRating no puede superar 5.00")
+            @RequestParam(name = "minRating",  required = false) BigDecimal minRating,
+
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<AgentProfileSummaryResponse> page =
