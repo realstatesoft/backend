@@ -5,12 +5,14 @@ spring:
     import: optional:file:.env[.properties]
 
   # ==================== DATASOURCE ====================
-  # Para Supabase activar perfil: --spring.profiles.active=supabase
-  # o poner las variables de entorno SUPABASE_DB_URL, SUPABASE_DB_USER, SUPABASE_DB_PASSWORD
+  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
+  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
+
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -33,29 +35,11 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
-    default-schema: public
 
   # ==================== JACKSON ====================
   jackson:
     default-property-inclusion: non_null
     time-zone: UTC
-
-  # ==================== MAIL (Gmail SMTP) ====================
-  # Configurar en Render Environment / .env:
-  #   MAIL_USERNAME=tucorreo@gmail.com
-  #   MAIL_PASSWORD=xxxx xxxx xxxx xxxx   (App Password de Google)
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
 
 # ==================== SERVER ====================
 server:
@@ -75,16 +59,10 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== CORS ====================
-cors:
-  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app
-
 # ==================== JWT ====================
 application:
   security:
     jwt:
-      # Do NOT add a default here. Set JWT_SECRET in the environment.
-      # In local development use application-dev.yml to supply a fallback.
       secret-key: ${JWT_SECRET}
       expiration: 86400000       # 24 horas en ms
       refresh-expiration: 604800000  # 7 dias en ms
@@ -95,10 +73,11 @@ logging:
     root: INFO
     com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
-    org.hibernate.type.descriptor.sql.BasicBinder: ${HIBERNATE_BINDER_LOG_LEVEL:WARN}
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 # ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: ${SUPABASE_URL}
@@ -108,27 +87,10 @@ supabase:
 
 # ==================== UPLOAD ====================
 upload:
-  # Generic image upload settings (used by SupabaseStorageService for property images, avatars, etc.)
-  max-file-size: ${UPLOAD_MAX_FILE_SIZE:20MB}
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
-  # KYC / personal document upload settings (used by UserDocumentService)
-  documents:
-    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
-    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
-  # 3D Model upload settings
-  models:
-    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
-    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 50MB
-  max-request-size: 60MB
-
-# =================== TRASHCAN ======================
-trashcan:
-  retention-days: 10
-
-mail:
-  from-name: OpenRoof
-  base-url: ${FRONTEND_URL:http://localhost:5173}
+  max-file-size: 5MB
+  max-request-size: 10MB
