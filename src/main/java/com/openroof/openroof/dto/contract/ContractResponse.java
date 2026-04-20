@@ -45,6 +45,9 @@ public record ContractResponse(
         String terms,
         String documentUrl,
 
+        Long templateId,
+        String templateName,
+
         // ─── Comisiones (% configurados) ──────────────────────────
         BigDecimal commissionPct,
         BigDecimal listingAgentCommissionPct,

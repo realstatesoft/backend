@@ -9,6 +9,7 @@ import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
 import com.openroof.openroof.model.enums.ContractStatus;
+import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
@@ -86,11 +87,7 @@ public class ContractService {
 
         validateCommissionRules(listingAgent, buyerAgent, commissionPct, listingAgentPct, buyerAgentPct);
 
-        ContractTemplate template = null;
-        if (request.templateId() != null) {
-            template = contractTemplateRepository.findById(request.templateId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada"));
-        }
+        ContractTemplate template = resolveTemplateForContract(request.templateId(), request.contractType());
 
         Contract contract = Contract.builder()
                 .property(property)
@@ -184,8 +181,7 @@ public class ContractService {
         contract.setTerms(request.terms());
 
         if (request.templateId() != null) {
-            ContractTemplate template = contractTemplateRepository.findById(request.templateId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada"));
+            ContractTemplate template = resolveTemplateForContract(request.templateId(), request.contractType());
             contract.setTemplate(template);
         }
 
@@ -634,6 +630,24 @@ public class ContractService {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Resuelve la plantilla solo si está activa y coincide con el tipo de contrato.
+     */
+    private ContractTemplate resolveTemplateForContract(Long templateId, ContractType contractType) {
+        if (templateId == null) {
+            return null;
+        }
+        ContractTemplate template = contractTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada"));
+        if (!Boolean.TRUE.equals(template.getActive())) {
+            throw new BadRequestException("Solo se pueden usar plantillas activas");
+        }
+        if (template.getContractType() != contractType) {
+            throw new BadRequestException("La plantilla no corresponde al tipo de contrato seleccionado");
+        }
+        return template;
+    }
 
     private Contract findOrThrow(Long id) {
         return contractRepository.findById(id)
