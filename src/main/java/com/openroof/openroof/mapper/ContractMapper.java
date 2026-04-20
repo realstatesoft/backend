@@ -55,6 +55,9 @@ public class ContractMapper {
                 c.getTerms(),
                 c.getDocumentUrl(),
 
+                c.getTemplate() != null ? c.getTemplate().getId() : null,
+                c.getTemplate() != null ? c.getTemplate().getName() : null,
+
                 totalPct,
                 listingPct,
                 buyerPct,

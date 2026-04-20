@@ -98,7 +98,7 @@ class ContractControllerTest {
     void updateStatus_withAgent_returns200() throws Exception {
         ContractStatusUpdateRequest request = new ContractStatusUpdateRequest(ContractStatus.SENT);
 
-        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.SENT, new BigDecimal("150000"), null, null, "Terms", null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
+        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.SENT, new BigDecimal("150000"), null, null, "Terms", null, null, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
 
         when(contractService.updateStatus(eq(1L), any(ContractStatusUpdateRequest.class), eq("agent"))).thenReturn(response);
 
@@ -114,7 +114,7 @@ class ContractControllerTest {
     @Test
     @DisplayName("GET /{id} - Obtener contrato existente retorna 200")
     void getById_returns200() throws Exception {
-        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.PARTIALLY_SIGNED, new BigDecimal("150000"), null, null, "Terms", null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
+        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.PARTIALLY_SIGNED, new BigDecimal("150000"), null, null, "Terms", null, null, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
 
         when(contractService.getById(eq(1L), eq("buyer"))).thenReturn(response);
 
