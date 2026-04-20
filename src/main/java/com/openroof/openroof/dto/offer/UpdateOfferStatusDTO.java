@@ -16,5 +16,6 @@ public class UpdateOfferStatusDTO {
 
     private String rejectionReason;
 
+    @jakarta.validation.constraints.Positive(message = "El monto de la contraoferta debe ser positivo")
     private BigDecimal counterOfferAmount;
 }

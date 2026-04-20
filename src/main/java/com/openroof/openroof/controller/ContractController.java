@@ -27,7 +27,7 @@ public class ContractController {
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'OWNER', 'AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
     @Operation(summary = "Crear un contrato",
                description = """
                Escenarios soportados:
@@ -49,7 +49,7 @@ public class ContractController {
     // ─── UPDATE (Edit Draft) ──────────────────────────────────────────────────
 
     @PutMapping(value = "/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'OWNER', 'AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
     @Operation(summary = "Actualizar un borrador de contrato",
                description = "Permite editar un contrato siempre que su estado sea DRAFT.")
     public ResponseEntity<ApiResponse<ContractResponse>> update(
@@ -113,7 +113,7 @@ public class ContractController {
     }
 
     @GetMapping("/property/{propertyId}")
-    @PreAuthorize("hasAnyRole('USER', 'OWNER', 'AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
     @Operation(summary = "Todos los contratos de una propiedad para el propietario o agentes relacionados")
     public ResponseEntity<ApiResponse<List<ContractSummaryResponse>>> getByProperty(
             @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId,
@@ -126,7 +126,7 @@ public class ContractController {
     // ─── UPDATE STATUS ────────────────────────────────────────────────────────
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('USER', 'OWNER', 'AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
     @Operation(summary = "Actualizar el estado de un contrato",
                description = """
                Transiciones válidas para AGENT:

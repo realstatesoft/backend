@@ -12,6 +12,7 @@ import com.openroof.openroof.dto.offer.OfferRequestDTO;
 import com.openroof.openroof.dto.offer.OfferResponseDTO;
 import com.openroof.openroof.dto.offer.UpdateOfferStatusDTO;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.OfferStatus;
@@ -93,16 +94,29 @@ public class OfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Oferta no encontrada"));
 
         validateManagementPermission(offer, user);
-
-        // Validar transición de estado
-        offer.setStatus(offer.getStatus().transitionTo(request.getStatus()));
+        
+        try {
+            // Validar transición de estado
+            offer.setStatus(offer.getStatus().transitionTo(request.getStatus()));
+        } catch (IllegalStateException e) {
+            throw new BadRequestException("Transición de estado inválida: " + e.getMessage());
+        }
         
         if (request.getStatus() == OfferStatus.REJECTED) {
+            if (request.getRejectionReason() == null || request.getRejectionReason().isBlank()) {
+                throw new BadRequestException("Debe proporcionar un motivo de rechazo");
+            }
             offer.setRejectionReason(request.getRejectionReason());
         }
         
-        if (request.getCounterOfferAmount() != null) {
+        if (request.getStatus() == OfferStatus.NEGOTIATING) {
+            if (request.getCounterOfferAmount() == null) {
+                throw new BadRequestException("Debe proporcionar el monto de la contraoferta");
+            }
             offer.setCounterOfferAmount(request.getCounterOfferAmount());
+        } else {
+            // Ignorar el monto si no es una contraoferta
+            offer.setCounterOfferAmount(null);
         }
 
         return toResponseDTO(offerRepository.save(offer));
@@ -127,7 +141,7 @@ public class OfferService {
                 .orElseThrow(() -> new ResourceNotFoundException("Oferta no encontrada"));
 
         if (!offer.getBuyer().getId().equals(user.getId())) {
-            throw new BadRequestException("No puedes editar una oferta que no realizaste");
+            throw new ForbiddenException("No puedes editar una oferta que no realizaste");
         }
 
         if (offer.getStatus() != OfferStatus.SENT && offer.getStatus() != OfferStatus.VIEWED) {
@@ -138,29 +152,24 @@ public class OfferService {
         offer.setMessage(request.getMessage());
         offer.setStatus(OfferStatus.SENT); // Volver a enviada al ser modificada
         
+        // Limpiar campos de negociación previos
+        offer.setRejectionReason(null);
+        offer.setCounterOfferAmount(null);
+        
         return toResponseDTO(offerRepository.save(offer));
     }
 
     // ─── HELPERS ──────────────────────────────────────────────────
 
     private void validateManagementPermission(Offer offer, User user) {
-        if (user.getRole() == UserRole.ADMIN) return;
-
-        boolean isOwner = offer.getProperty().getOwner().getId().equals(user.getId());
-        boolean isAgent = false;
-        
-        if (offer.getProperty().getAgent() != null) {
-            isAgent = agentProfileRepository.findByUser_Id(user.getId())
-                    .map(a -> a.getId().equals(offer.getProperty().getAgent().getId()))
-                    .orElse(false);
-        }
-
-        if (!isOwner && !isAgent) {
-            throw new BadRequestException("No tienes permiso para gestionar esta oferta");
-        }
+        hasPropertyManagementPermission(offer.getProperty(), user, "No tienes permiso para gestionar esta oferta");
     }
 
     private void validatePropertyAccess(Property property, User user) {
+        hasPropertyManagementPermission(property, user, "No tienes permiso para ver las ofertas de esta propiedad");
+    }
+
+    private void hasPropertyManagementPermission(Property property, User user, String errorMessage) {
         if (user.getRole() == UserRole.ADMIN) return;
 
         boolean isOwner = property.getOwner().getId().equals(user.getId());
@@ -173,7 +182,7 @@ public class OfferService {
         }
 
         if (!isOwner && !isAgent) {
-            throw new BadRequestException("No tienes permiso para ver las ofertas de esta propiedad");
+            throw new ForbiddenException(errorMessage);
         }
     }
 

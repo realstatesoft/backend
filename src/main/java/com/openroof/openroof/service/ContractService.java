@@ -110,8 +110,8 @@ public class ContractService {
                 .build();
 
         User requester = findUserByEmail(requesterEmail);
-        if (!canManageContract(contract, requester)) {
-            throw new BadRequestException("No tiene permiso para crear un contrato con estos participantes");
+        if (!canCreateContractForProperty(property, request, requester)) {
+            throw new BadRequestException("No tiene permiso para crear un contrato para esta propiedad o los participantes no coinciden");
         }
 
         contractRepository.save(contract);
@@ -162,13 +162,18 @@ public class ContractService {
         AgentProfile listingAgent = resolveAgent(request.listingAgentId(), "Agente listador no encontrado");
         AgentProfile buyerAgent   = resolveAgent(request.buyerAgentId(),   "Agente del comprador no encontrado");
 
-        // 2. Validar reglas de comisión
+        // 2. Re-validar autorización contra los nuevos participantes e invariantes
+        if (!canCreateContractForProperty(property, request, requester)) {
+             throw new BadRequestException("No tiene permiso para actualizar el contrato con estos participantes");
+        }
+
+        // 3. Validar reglas de comisión
         BigDecimal commissionPct   = coerceZero(request.commissionPct());
         BigDecimal listingAgentPct = coerceZero(request.listingAgentCommissionPct());
         BigDecimal buyerAgentPct   = coerceZero(request.buyerAgentCommissionPct());
         validateCommissionRules(listingAgent, buyerAgent, commissionPct, listingAgentPct, buyerAgentPct);
 
-        // 3. Actualizar campos
+        // 4. Actualizar campos
         contract.setProperty(property);
         contract.setBuyer(buyer);
         contract.setSeller(seller);
@@ -451,6 +456,10 @@ public class ContractService {
         ContractStatus previousStatus = contract.getStatus();
         validateStatusTransition(previousStatus, request.status(), requester);
 
+        if (request.status() == ContractStatus.SIGNED) {
+            throw new BadRequestException("No se puede establecer manualmente el estado como SIGNED. Use el flujo de firmas.");
+        }
+
         contract.setStatus(request.status());
         ContractResponse response = contractMapper.toResponse(contractRepository.save(contract));
 
@@ -492,6 +501,10 @@ public class ContractService {
     public void delete(Long id, String requesterEmail) {
         Contract contract = findOrThrow(id);
         User requester = findUserByEmail(requesterEmail);
+
+        if (requester.getRole() != UserRole.ADMIN) {
+            throw new BadRequestException("Solo los administradores pueden eliminar contratos");
+        }
 
         if (!canManageContract(contract, requester)) {
             throw new BadRequestException("No tiene permiso para modificar este contrato");
@@ -632,6 +645,33 @@ public class ContractService {
                 Long aid = agentProfile.getId();
                 if (aid.equals(safeId(contract.getListingAgent()))) return true;
                 if (aid.equals(safeId(contract.getBuyerAgent()))) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean canCreateContractForProperty(Property property, ContractRequest request, User requester) {
+        if (requester.getRole() == UserRole.ADMIN) return true;
+
+        // Validar que el vendedor en el DTO sea el dueño real de la propiedad
+        if (property.getOwner() == null || !property.getOwner().getId().equals(request.sellerId())) {
+            return false;
+        }
+
+        Long uid = requester.getId();
+        
+        // El dueño puede crear contratos directos
+        if (uid.equals(property.getOwner().getId())) {
+            return true;
+        }
+
+        // Si es agente, solo el agente asignado a la propiedad puede crear el contrato
+        if (requester.getRole() == UserRole.AGENT) {
+            AgentProfile requesterProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
+            if (requesterProfile != null && property.getAgent() != null && 
+                property.getAgent().getId().equals(requesterProfile.getId())) {
+                return true;
             }
         }
 

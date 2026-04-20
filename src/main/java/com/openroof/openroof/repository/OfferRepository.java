@@ -13,7 +13,11 @@ import java.util.List;
 @Repository
 public interface OfferRepository extends JpaRepository<Offer, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"property", "buyer"})
     Page<Offer> findByBuyer_Id(Long buyerId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"property", "buyer"})
+    Page<Offer> findAll(Pageable pageable);
 
     @Query("SELECT o FROM Offer o WHERE o.property.owner.id = :ownerId ORDER BY o.createdAt DESC")
     List<Offer> findByPropertyOwnerId(@Param("ownerId") Long ownerId);
@@ -21,10 +25,12 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
     @Query("SELECT COUNT(o) FROM Offer o WHERE o.property.owner.id = :ownerId")
     long countByPropertyOwnerId(@Param("ownerId") Long ownerId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"property", "buyer"})
     List<Offer> findByProperty_Id(Long propertyId);
 
     List<Offer> findByProperty_Agent_Id(Long agentId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"property", "buyer"})
     @Query("SELECT o FROM Offer o WHERE o.property.owner.id = :ownerId OR (o.property.agent IS NOT NULL AND o.property.agent.id = :agentId) ORDER BY o.createdAt DESC")
     Page<Offer> findReceivedOffers(@Param("ownerId") Long ownerId, @Param("agentId") Long agentId, Pageable pageable);
 }
