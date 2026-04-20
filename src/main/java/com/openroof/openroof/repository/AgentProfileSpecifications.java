@@ -29,16 +29,25 @@ public final class AgentProfileSpecifications {
      */
     public static Specification<AgentProfile> hasKeyword(String rawKeyword) {
         return (root, query, cb) -> {
-            // Always fetch the user join so we don't trigger N+1 on the result page
-            root.fetch("user", JoinType.INNER);
-
             String escaped = rawKeyword.trim()
                     .replace("\\", "\\\\")
                     .replace("%",  "\\%")
                     .replace("_",  "\\_");
             String pattern = "%" + escaped.toLowerCase() + "%";
 
-            Join<?, ?> user = root.join("user", JoinType.INNER);
+            // Fetch the user eagerly on data queries to avoid N+1.
+            // Count queries use Long as result type — skip fetch there to
+            // prevent "query specified join fetching, but the owner of the
+            // fetched association was not present" exceptions.
+            final Join<?, ?> user;
+            if (Long.class.equals(query.getResultType())) {
+                // Count query: plain join, no fetch
+                user = root.join("user", JoinType.INNER);
+            } else {
+                // Data query: fetch (which is also a join)
+                user = (Join<?, ?>) root.fetch("user", JoinType.INNER);
+            }
+
             return cb.or(
                     cb.like(cb.lower(user.get("name")),          pattern, '\\'),
                     cb.like(cb.lower(root.get("companyName")),   pattern, '\\'),
