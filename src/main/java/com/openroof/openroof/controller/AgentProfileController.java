@@ -64,13 +64,15 @@ public class AgentProfileController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Buscar agentes por texto (nombre, empresa, licencia)")
+    @Operation(summary = "Buscar agentes por texto, especialidad y puntuación mínima")
     public ResponseEntity<ApiResponse<Page<AgentProfileSummaryResponse>>> search(
-            @Parameter(description = "Palabra clave de búsqueda")
-            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "q",         required = false) String keyword,
+            @RequestParam(name = "specialty",  required = false) String specialty,
+            @RequestParam(name = "minRating",  required = false) java.math.BigDecimal minRating,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<AgentProfileSummaryResponse> page = agentProfileService.search(keyword, pageable);
+        Page<AgentProfileSummaryResponse> page =
+                agentProfileService.searchWithFilters(keyword, specialty, minRating, pageable);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

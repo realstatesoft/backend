@@ -90,6 +90,24 @@ public class AgentProfileService {
                 .map(agentProfileMapper::toSummaryResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AgentProfileSummaryResponse> searchWithFilters(
+            String keyword, String specialty, java.math.BigDecimal minRating, Pageable pageable) {
+
+        String kw = (keyword  != null && !keyword.isBlank())
+                ? "%" + keyword.trim() + "%"
+                : "%";                                      // '%' matches everything
+        String sp = (specialty != null && !specialty.isBlank())
+                ? specialty.trim()
+                : "";                                       // '' means no specialty filter
+        java.math.BigDecimal rating = (minRating != null)
+                ? minRating
+                : java.math.BigDecimal.valueOf(-1);         // -1 means no rating filter
+
+        return agentProfileRepository.searchWithFilters(kw, sp, rating, pageable)
+                .map(agentProfileMapper::toSummaryResponse);
+    }
+
     // ─── UPDATE ───────────────────────────────────────────────────
 
     public AgentProfileResponse update(Long id, UpdateAgentProfileRequest request) {
