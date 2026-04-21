@@ -139,6 +139,8 @@ class PropertyServiceOwnershipTest {
         // property disappears from every listing that filters `trashedAt IS NULL`.
         Property property = property(OWNER_ID);
         property.setStatus(PropertyStatus.APPROVED);
+        java.time.LocalDateTime existingTrashedAt = java.time.LocalDateTime.now().minusSeconds(3600);
+        property.setTrashedAt(existingTrashedAt);
         when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
         when(propertyRepository.save(property)).thenReturn(property);
         when(propertyMapper.toResponse(property)).thenReturn(null);
@@ -149,7 +151,7 @@ class PropertyServiceOwnershipTest {
         propertyService.changeStatus(PROPERTY_ID, PropertyStatus.PUBLISHED, admin);
 
         assertThat(property.getStatus()).isEqualTo(PropertyStatus.PUBLISHED);
-        assertThat(property.getTrashedAt()).isNull();
+        assertThat(property.getTrashedAt()).isEqualTo(existingTrashedAt);
     }
 
     @Test
