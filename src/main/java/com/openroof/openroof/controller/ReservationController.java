@@ -4,6 +4,7 @@ import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.reservation.CancelReservationRequest;
 import com.openroof.openroof.dto.reservation.CreateReservationRequest;
 import com.openroof.openroof.dto.reservation.ReservationResponse;
+import com.openroof.openroof.model.enums.ReservationStatus;
 import com.openroof.openroof.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,9 +54,10 @@ public class ReservationController {
     @Operation(summary = "Mis reservas")
     public ResponseEntity<ApiResponse<Page<ReservationResponse>>> myReservations(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) ReservationStatus status,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
-                reservationService.getMyReservations(principal.getName(), pageable)));
+                reservationService.getMyReservations(principal.getName(), status, pageable)));
     }
 
     @GetMapping("/owner")
@@ -63,9 +65,21 @@ public class ReservationController {
     @Operation(summary = "Reservas sobre propiedades del dueño autenticado")
     public ResponseEntity<ApiResponse<Page<ReservationResponse>>> ownerReservations(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) ReservationStatus status,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
-                reservationService.getReservationsAsOwner(principal.getName(), pageable)));
+                reservationService.getReservationsAsOwner(principal.getName(), status, pageable)));
+    }
+
+    @GetMapping("/assigned")
+    @PreAuthorize("hasRole('AGENT')")
+    @Operation(summary = "Reservas sobre propiedades asignadas al agente autenticado")
+    public ResponseEntity<ApiResponse<Page<ReservationResponse>>> assignedReservations(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) ReservationStatus status,
+            Principal principal) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                reservationService.getReservationsAsAgent(principal.getName(), status, pageable)));
     }
 
     @GetMapping("/my/property/{propertyId}")

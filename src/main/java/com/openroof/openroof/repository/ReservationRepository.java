@@ -19,7 +19,40 @@ import java.util.Optional;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     @EntityGraph(attributePaths = {"property", "buyer"})
-    Page<Reservation> findByBuyer_IdOrderByCreatedAtDesc(Long buyerId, Pageable pageable);
+    @Query("""
+           SELECT r FROM Reservation r
+           WHERE r.buyer.id = :buyerId
+             AND (:status IS NULL OR r.status = :status)
+           ORDER BY r.createdAt DESC
+           """)
+    Page<Reservation> findByBuyerFiltered(
+            @Param("buyerId") Long buyerId,
+            @Param("status") ReservationStatus status,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"property", "buyer"})
+    @Query("""
+           SELECT r FROM Reservation r
+           WHERE r.property.owner.id = :ownerId
+             AND (:status IS NULL OR r.status = :status)
+           ORDER BY r.createdAt DESC
+           """)
+    Page<Reservation> findByPropertyOwnerFiltered(
+            @Param("ownerId") Long ownerId,
+            @Param("status") ReservationStatus status,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"property", "buyer"})
+    @Query("""
+           SELECT r FROM Reservation r
+           WHERE r.property.agent.user.id = :agentUserId
+             AND (:status IS NULL OR r.status = :status)
+           ORDER BY r.createdAt DESC
+           """)
+    Page<Reservation> findByPropertyAgentUserFiltered(
+            @Param("agentUserId") Long agentUserId,
+            @Param("status") ReservationStatus status,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"property", "buyer"})
     List<Reservation> findByProperty_IdOrderByCreatedAtDesc(Long propertyId);
@@ -33,22 +66,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("propertyId") Long propertyId,
             @Param("blockingStatuses") Collection<ReservationStatus> blockingStatuses);
 
-@Query("""
+    @Query("""
            SELECT r FROM Reservation r
            WHERE r.status IN :activeStatuses
              AND r.expiresAt IS NOT NULL
              AND r.expiresAt < :now
          """)
-     List<Reservation> findExpired(
-             @Param("activeStatuses") Collection<ReservationStatus> activeStatuses,
-             @Param("now") LocalDateTime now);
+    List<Reservation> findExpired(
+            @Param("activeStatuses") Collection<ReservationStatus> activeStatuses,
+            @Param("now") LocalDateTime now);
 
-@EntityGraph(attributePaths = {"property", "buyer"})
+    @EntityGraph(attributePaths = {"property", "buyer"})
     Optional<Reservation> findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
             Long propertyId,
             Long buyerId,
             Collection<ReservationStatus> statuses);
-
-    @EntityGraph(attributePaths = {"property", "buyer"})
-    Page<Reservation> findByProperty_Owner_IdOrderByCreatedAtDesc(Long ownerId, Pageable pageable);
 }

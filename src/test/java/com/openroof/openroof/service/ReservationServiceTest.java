@@ -368,7 +368,7 @@ class ReservationServiceTest {
     class OwnerReservationsTests {
 
         @Test
-        @DisplayName("Retorna las reservas de propiedades del owner, mapeadas a DTO")
+        @DisplayName("Retorna todas las reservas del owner cuando status es null")
         void returnsReservationsForOwnedProperties() {
             when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
             Reservation r = Reservation.builder()
@@ -379,14 +379,59 @@ class ReservationServiceTest {
             r.setId(88L);
             org.springframework.data.domain.Pageable pageable =
                     org.springframework.data.domain.PageRequest.of(0, 10);
-            when(reservationRepository.findByProperty_Owner_IdOrderByCreatedAtDesc(eq(owner.getId()), eq(pageable)))
+            when(reservationRepository.findByPropertyOwnerFiltered(eq(owner.getId()), eq(null), eq(pageable)))
                     .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(r)));
 
-            var page = service.getReservationsAsOwner("owner@test.com", pageable);
+            var page = service.getReservationsAsOwner("owner@test.com", null, pageable);
 
             assertThat(page.getTotalElements()).isEqualTo(1);
             assertThat(page.getContent().get(0).id()).isEqualTo(88L);
             assertThat(page.getContent().get(0).status()).isEqualTo(ReservationStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("Filtra por estado cuando se pasa status no nulo")
+        void filtersReservationsByStatus() {
+            when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+            org.springframework.data.domain.Pageable pageable =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            when(reservationRepository.findByPropertyOwnerFiltered(
+                    eq(owner.getId()), eq(ReservationStatus.PENDING), eq(pageable)))
+                    .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
+
+            var page = service.getReservationsAsOwner("owner@test.com", ReservationStatus.PENDING, pageable);
+
+            assertThat(page.getTotalElements()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("getReservationsAsAgent()")
+    class AgentReservationsTests {
+
+        @Test
+        @DisplayName("Retorna reservas de propiedades asignadas al agente")
+        void returnsReservationsForAssignedProperties() {
+            User agent = User.builder().name("Agente").email("agent@test.com")
+                    .role(UserRole.AGENT).build();
+            agent.setId(30L);
+            when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agent));
+
+            Reservation r = Reservation.builder()
+                    .property(property).buyer(buyer)
+                    .reservationAmount(new BigDecimal("1500"))
+                    .status(ReservationStatus.PENDING)
+                    .build();
+            r.setId(55L);
+            org.springframework.data.domain.Pageable pageable =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            when(reservationRepository.findByPropertyAgentUserFiltered(eq(30L), eq(null), eq(pageable)))
+                    .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(r)));
+
+            var page = service.getReservationsAsAgent("agent@test.com", null, pageable);
+
+            assertThat(page.getTotalElements()).isEqualTo(1);
+            assertThat(page.getContent().get(0).id()).isEqualTo(55L);
         }
     }
 }

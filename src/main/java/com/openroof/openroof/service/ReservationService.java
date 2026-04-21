@@ -172,9 +172,9 @@ public class ReservationService {
         return toResponse(reservation);
     }
 
-    public Page<ReservationResponse> getMyReservations(String currentUserEmail, Pageable pageable) {
+    public Page<ReservationResponse> getMyReservations(String currentUserEmail, ReservationStatus status, Pageable pageable) {
         User buyer = getUserByEmail(currentUserEmail);
-        return reservationRepository.findByBuyer_IdOrderByCreatedAtDesc(buyer.getId(), pageable)
+        return reservationRepository.findByBuyerFiltered(buyer.getId(), status, pageable)
                 .map(this::toResponse);
     }
 
@@ -195,10 +195,17 @@ public class ReservationService {
                 .map(this::toResponse);
     }
 
-    public Page<ReservationResponse> getReservationsAsOwner(String currentUserEmail, Pageable pageable) {
+    public Page<ReservationResponse> getReservationsAsOwner(String currentUserEmail, ReservationStatus status, Pageable pageable) {
         User owner = getUserByEmail(currentUserEmail);
         return reservationRepository
-                .findByProperty_Owner_IdOrderByCreatedAtDesc(owner.getId(), pageable)
+                .findByPropertyOwnerFiltered(owner.getId(), status, pageable)
+                .map(this::toResponse);
+    }
+
+    public Page<ReservationResponse> getReservationsAsAgent(String currentUserEmail, ReservationStatus status, Pageable pageable) {
+        User agent = getUserByEmail(currentUserEmail);
+        return reservationRepository
+                .findByPropertyAgentUserFiltered(agent.getId(), status, pageable)
                 .map(this::toResponse);
     }
 
