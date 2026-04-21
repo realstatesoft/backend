@@ -61,6 +61,9 @@ public class NotificationService {
         } else if ("PROPERTY".equalsIgnoreCase(filter)) {
             return notificationRepository.findByUser_IdAndTypeOrderByCreatedAtDesc(userId, NotificationType.PROPERTY, pageable)
                     .map(this::toResponse);
+        } else if ("RESERVATION".equalsIgnoreCase(filter)) {
+            return notificationRepository.findByUser_IdAndTypeOrderByCreatedAtDesc(userId, NotificationType.RESERVATION, pageable)
+                    .map(this::toResponse);
         } else {
             return notificationRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
                     .map(this::toResponse);
@@ -115,6 +118,8 @@ public class NotificationService {
             return notificationRepository.deleteAllReadByUser(userId, now);
         } else if ("PROPERTY".equalsIgnoreCase(filter)) {
             return notificationRepository.deleteAllByTypeByUser(userId, NotificationType.PROPERTY, now);
+        } else if ("RESERVATION".equalsIgnoreCase(filter)) {
+            return notificationRepository.deleteAllByTypeByUser(userId, NotificationType.RESERVATION, now);
         } else {
             throw new BadRequestException("Filtro no válido para eliminación: " + filter);
         }
