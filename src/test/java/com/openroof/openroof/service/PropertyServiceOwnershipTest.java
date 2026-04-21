@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -130,6 +131,25 @@ class PropertyServiceOwnershipTest {
         user.setId(5L);
         assertThrows(ForbiddenException.class,
                 () -> propertyService.changeStatus(PROPERTY_ID, PropertyStatus.APPROVED, user));
+    }
+
+    @Test
+    void changeStatus_publishDoesNotSetTrashedAt() {
+        // Regression: publishing a property must NOT set trashedAt, otherwise the
+        // property disappears from every listing that filters `trashedAt IS NULL`.
+        Property property = property(OWNER_ID);
+        property.setStatus(PropertyStatus.APPROVED);
+        when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+        when(propertyRepository.save(property)).thenReturn(property);
+        when(propertyMapper.toResponse(property)).thenReturn(null);
+
+        User admin = User.builder().email("admin@test.com").passwordHash("x").role(UserRole.ADMIN).build();
+        admin.setId(99L);
+
+        propertyService.changeStatus(PROPERTY_ID, PropertyStatus.PUBLISHED, admin);
+
+        assertThat(property.getStatus()).isEqualTo(PropertyStatus.PUBLISHED);
+        assertThat(property.getTrashedAt()).isNull();
     }
 
     @Test

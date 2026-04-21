@@ -340,11 +340,6 @@ public class PropertyService {
         PropertyStatus validated = currentStatus.transitionTo(newStatus);
         property.setStatus(validated);
 
-        // Si se publica, registrar fecha de publicación
-        if (validated == PropertyStatus.PUBLISHED && property.getTrashedAt() == null) {
-            property.setTrashedAt(LocalDateTime.now());
-        }
-
         property = propertyRepository.save(property);
         auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.STATUS_CHANGE,
                 Map.of("status", currentStatus.name()),
