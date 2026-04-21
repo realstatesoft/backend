@@ -93,7 +93,7 @@ public class ReservationController {
     }
 
     @GetMapping("/property/{propertyId}")
-    @PreAuthorize("@propertySecurity.canModify(#propertyId, principal)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#propertyId, principal)")
     @Operation(summary = "Reservas de una propiedad")
     public ResponseEntity<ApiResponse<List<ReservationResponse>>> byProperty(
             @PathVariable Long propertyId, Principal principal) {
