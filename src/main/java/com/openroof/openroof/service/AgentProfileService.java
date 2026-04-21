@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -94,6 +95,48 @@ public class AgentProfileService {
                     .map(agentProfileMapper::toSummaryResponse);
         }
         return agentProfileRepository.searchByKeyword(keyword.trim(), pageable)
+                .map(agentProfileMapper::toSummaryResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AgentProfileSummaryResponse> searchWithFilters(
+            String keyword, String specialty, BigDecimal minRating, Pageable pageable) {
+
+        // ── Keyword: escape LIKE wildcards so user input is literal ──────────
+        String kw;
+        if (keyword != null && !keyword.isBlank()) {
+            String escaped = keyword.trim()
+                    .replace("\\", "\\\\")
+                    .replace("%",  "\\%")
+                    .replace("_",  "\\_");
+            kw = "%" + escaped + "%";
+        } else {
+            kw = null;                                      // null → skip keyword filter
+        }
+
+        // ── Specialty sentinel ───────────────────────────────────────────────
+        String sp = (specialty != null && !specialty.isBlank()) ? specialty.trim() : ""; // '' = no filter
+
+        // ── Rating: clamp negatives to 0 so clients can’t abuse the sentinel ─
+        BigDecimal rating;
+        if (minRating == null) {
+            rating = BigDecimal.valueOf(-1);                // -1 = no filter
+        } else if (minRating.signum() < 0) {
+            rating = BigDecimal.ZERO;                       // clamp negatives
+        } else {
+            rating = minRating;
+        }
+
+        // ── No keyword → use the null-safe path ──────────────────────────────
+        if (kw == null && sp.isEmpty() && rating.signum() < 0) {
+            return agentProfileRepository.findAllWithUser(pageable)
+                    .map(agentProfileMapper::toSummaryResponse);
+        }
+
+        // Pass '%' wildcard when keyword is absent so the query skips the LIKE branch
+        String kwParam = (kw != null) ? kw : "%";
+
+        return agentProfileRepository.searchWithFilters(kwParam, sp, rating, pageable)
                 .map(agentProfileMapper::toSummaryResponse);
     }
 
