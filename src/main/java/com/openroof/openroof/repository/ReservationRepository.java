@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -32,13 +33,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("propertyId") Long propertyId,
             @Param("blockingStatuses") Collection<ReservationStatus> blockingStatuses);
 
-    @Query("""
+@Query("""
            SELECT r FROM Reservation r
            WHERE r.status IN :activeStatuses
              AND r.expiresAt IS NOT NULL
              AND r.expiresAt < :now
-           """)
-    List<Reservation> findExpired(
-            @Param("activeStatuses") Collection<ReservationStatus> activeStatuses,
-            @Param("now") LocalDateTime now);
-}
+         """)
+     List<Reservation> findExpired(
+             @Param("activeStatuses") Collection<ReservationStatus> activeStatuses,
+             @Param("now") LocalDateTime now);
+
+     @EntityGraph(attributePaths = {"property", "buyer"})
+     Optional<Reservation> findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
+             Long propertyId,
+             Long buyerId,
+             Collection<ReservationStatus> statuses);
+ }

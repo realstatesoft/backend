@@ -304,4 +304,43 @@ class ReservationServiceTest {
         r.setUpdatedAt(LocalDateTime.now());
         return r;
     }
+
+    @Nested
+    @DisplayName("getMyReservationForProperty()")
+    class MyReservationForPropertyTests {
+
+        @Test
+        @DisplayName("Devuelve la reserva PENDIENTE/ACTIVA del comprador para la propiedad")
+        void returnsActiveReservationForBuyer() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            Reservation r = Reservation.builder()
+                    .property(property).buyer(buyer)
+                    .reservationAmount(new BigDecimal("1000"))
+                    .status(ReservationStatus.PENDING)
+                    .build();
+            r.setId(77L);
+            when(reservationRepository.findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
+                    eq(property.getId()), eq(buyer.getId()), anyCollection()))
+                    .thenReturn(Optional.of(r));
+
+            Optional<ReservationResponse> result =
+                    service.getMyReservationForProperty(property.getId(), "buyer@test.com");
+
+            assertThat(result).isPresent();
+            assertThat(result.get().id()).isEqualTo(77L);
+            assertThat(result.get().status()).isEqualTo(ReservationStatus.PENDING);
+        }
+
+        @Test
+        @DisplayName("Devuelve vacío cuando el comprador no tiene reserva activa para la propiedad")
+        void returnsEmptyWhenNoActiveReservation() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(reservationRepository.findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
+                    anyLong(), anyLong(), anyCollection()))
+                    .thenReturn(Optional.empty());
+
+            assertThat(service.getMyReservationForProperty(property.getId(), "buyer@test.com"))
+                    .isEmpty();
+        }
+    }
 }

@@ -58,6 +58,16 @@ public class ReservationController {
                 reservationService.getMyReservations(principal.getName(), pageable)));
     }
 
+    @GetMapping("/my/property/{propertyId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Mi reserva activa para una propiedad (si existe)")
+    public ResponseEntity<ApiResponse<ReservationResponse>> myReservationForProperty(
+            @PathVariable Long propertyId, Principal principal) {
+        return reservationService.getMyReservationForProperty(propertyId, principal.getName())
+                .map(r -> ResponseEntity.ok(ApiResponse.ok(r)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+    }
+
     @GetMapping("/property/{propertyId}")
     @PreAuthorize("@propertySecurity.canModify(#propertyId, principal)")
     @Operation(summary = "Reservas de una propiedad")

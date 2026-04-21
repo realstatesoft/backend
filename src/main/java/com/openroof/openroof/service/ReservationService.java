@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -184,6 +185,14 @@ public class ReservationService {
         }
         return reservationRepository.findByProperty_IdOrderByCreatedAtDesc(propertyId)
                 .stream().map(this::toResponse).toList();
+    }
+
+    public Optional<ReservationResponse> getMyReservationForProperty(Long propertyId, String currentUserEmail) {
+        User buyer = getUserByEmail(currentUserEmail);
+        return reservationRepository
+                .findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
+                        propertyId, buyer.getId(), BLOCKING_STATUSES)
+                .map(this::toResponse);
     }
 
     private Reservation getReservationOrThrow(Long id) {
