@@ -94,3 +94,9 @@ upload:
 spring.servlet.multipart:
   max-file-size: 5MB
   max-request-size: 10MB
+
+# ==================== RESERVATION ====================
+openroof:
+  reservation:
+    ttl-hours: 72
+    default-percent: 1.00
