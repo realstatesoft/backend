@@ -33,7 +33,7 @@ public class PropertyModelService {
     private final PropertyMediaRepository mediaRepository;
     private final SupabaseStorageService storageService;
 
-    @Value("${upload.models.allowed-types}")
+    @Value("${upload.models.allowed-types:model/gltf-binary,model/gltf+json}")
     private String allowedTypesCsv;
 
     @Value("${upload.models.max-file-size:20MB}")
