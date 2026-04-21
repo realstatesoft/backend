@@ -343,4 +343,31 @@ class ReservationServiceTest {
                     .isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("getReservationsAsOwner()")
+    class OwnerReservationsTests {
+
+        @Test
+        @DisplayName("Retorna las reservas de propiedades del owner, mapeadas a DTO")
+        void returnsReservationsForOwnedProperties() {
+            when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+            Reservation r = Reservation.builder()
+                    .property(property).buyer(buyer)
+                    .reservationAmount(new BigDecimal("2000"))
+                    .status(ReservationStatus.ACTIVE)
+                    .build();
+            r.setId(88L);
+            org.springframework.data.domain.Pageable pageable =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            when(reservationRepository.findByProperty_Owner_IdOrderByCreatedAtDesc(eq(owner.getId()), eq(pageable)))
+                    .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(r)));
+
+            var page = service.getReservationsAsOwner("owner@test.com", pageable);
+
+            assertThat(page.getTotalElements()).isEqualTo(1);
+            assertThat(page.getContent().get(0).id()).isEqualTo(88L);
+            assertThat(page.getContent().get(0).status()).isEqualTo(ReservationStatus.ACTIVE);
+        }
+    }
 }

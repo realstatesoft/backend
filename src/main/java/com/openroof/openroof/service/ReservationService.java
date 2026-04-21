@@ -195,6 +195,13 @@ public class ReservationService {
                 .map(this::toResponse);
     }
 
+    public Page<ReservationResponse> getReservationsAsOwner(String currentUserEmail, Pageable pageable) {
+        User owner = getUserByEmail(currentUserEmail);
+        return reservationRepository
+                .findByProperty_Owner_IdOrderByCreatedAtDesc(owner.getId(), pageable)
+                .map(this::toResponse);
+    }
+
     private Reservation getReservationOrThrow(Long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada: " + id));

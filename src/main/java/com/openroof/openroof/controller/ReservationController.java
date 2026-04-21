@@ -58,6 +58,16 @@ public class ReservationController {
                 reservationService.getMyReservations(principal.getName(), pageable)));
     }
 
+    @GetMapping("/owner")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Reservas sobre propiedades del dueño autenticado")
+    public ResponseEntity<ApiResponse<Page<ReservationResponse>>> ownerReservations(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Principal principal) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                reservationService.getReservationsAsOwner(principal.getName(), pageable)));
+    }
+
     @GetMapping("/my/property/{propertyId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Mi reserva activa para una propiedad (si existe)")
