@@ -4,6 +4,7 @@ import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
+import com.openroof.openroof.service.RentCalculationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,8 +30,9 @@ import org.springframework.web.bind.annotation.*;
 public class PropertyController {
 
     private final PropertyService propertyService;
+    private final RentCalculationService rentCalculationService;
 
-    // ─── CREATE ───────────────────────────────────────────────────
+    // --- CREATE ---------------------------------------------------
 
     @PostMapping
     @Operation(summary = "Crear una nueva propiedad")
@@ -45,7 +47,7 @@ public class PropertyController {
                 .body(ApiResponse.ok(response, "Propiedad creada exitosamente"));
     }
 
-    // ─── READ ─────────────────────────────────────────────────────
+    // --- READ -----------------------------------------------------
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una propiedad por ID")
@@ -146,7 +148,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────
+    // --- UPDATE ---------------------------------------------------
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
@@ -160,8 +162,8 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad actualizada exitosamente"));
     }
 
-    // ─── DELETE & TRASHCAN METHODS
-    // ────────────────────────────────────────────────
+    // --- DELETE & TRASHCAN METHODS
+    // ------------------------------------------------
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una propiedad (soft delete)")
@@ -227,7 +229,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    // ─── CHANGE STATUS ────────────────────────────────────────────
+    // --- CHANGE STATUS --------------------------------------------
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Cambiar el estado de una propiedad (solo ADMIN)")
@@ -241,7 +243,7 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
-    // ─── SIMILAR ────────────────────────────────────────────
+    // --- SIMILAR --------------------------------------------
     @GetMapping("/{id}/similar")
     @Operation(summary = "Obtener propiedades similares")
     public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> findSimilar(
@@ -249,5 +251,14 @@ public class PropertyController {
             @RequestParam int size) {
         List <PropertySummaryResponse> properties = propertyService.findSimilarProperties(id, size);
         return ResponseEntity.ok(ApiResponse.ok(properties));
+    }
+
+    // --- RENT COST --------------------------------------------
+    @GetMapping("/{id}/rent-cost")
+    @Operation(summary = "Calcular costo inicial de alquiler")
+    public ResponseEntity<ApiResponse<RentCostBreakdownResponse>> getRentCost(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        RentCostBreakdownResponse response = rentCalculationService.calculateInitialCost(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
