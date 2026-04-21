@@ -36,10 +36,10 @@ public class SupabaseStorageService implements StorageService {
     private final String maxFileSizeLabel;
 
     public SupabaseStorageService(
-            @Value("${supabase.url}") String supabaseUrl,
-            @Value("${supabase.service-role-key}") String serviceRoleKey,
-            @Value("${supabase.storage.bucket}") String bucket,
-            @Value("#{'${upload.allowed-types}'.split(',')}") List<String> allowedTypes,
+            @Value("${supabase.url:}") String supabaseUrl,
+            @Value("${supabase.service-role-key:}") String serviceRoleKey,
+            @Value("${supabase.storage.bucket:openroof-images}") String bucket,
+            @Value("#{'${upload.allowed-types:image/jpeg,image/png,image/webp}'.split(',')}") List<String> allowedTypes,
             @Value("${upload.max-file-size:10MB}") String maxFileSize
     ) {
         this.supabaseUrl = supabaseUrl;
