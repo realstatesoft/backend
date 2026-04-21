@@ -36,6 +36,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+        private static final int MAX_IP_ADDRESS_LENGTH = 45;
         private final AuthenticationManager authenticationManager;
         private final JwtService jwtService;
         private final PasswordEncoder passwordEncoder;
@@ -204,16 +206,19 @@ public class AuthService {
          * Implementa la lógica de "vincular" el token físico con el usuario en la DB.
          */
         private void saveUserSession(User user, String refreshToken, HttpServletRequest request) {
-                // Extraer IP
                 String ipAddress = request.getRemoteAddr();
-
-                // Proxy la IP
                 String xForwardedFor = request.getHeader("X-Forwarded-For");
-                if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                        ipAddress = xForwardedFor.split(",")[0];
+                if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+                        String forwardedIp = xForwardedFor.split(",")[0].trim();
+                        if (!forwardedIp.isEmpty() && forwardedIp.length() <= MAX_IP_ADDRESS_LENGTH) {
+                                ipAddress = forwardedIp;
+                        }
                 }
 
-                // Extraer User-Agent
+                if (ipAddress == null || ipAddress.isBlank() || ipAddress.length() > MAX_IP_ADDRESS_LENGTH) {
+                        ipAddress = request.getRemoteAddr();
+                }
+
                 String userAgent = request.getHeader("User-Agent");
 
                 RequestMetadata metadata = RequestMetadata.builder()

@@ -45,6 +45,8 @@ import java.util.Set;
 @Slf4j
 public class PropertyService {
 
+    private static final int MAX_IP_ADDRESS_LENGTH = 45;
+
     /**
      * Campos permitidos para ordenar. Cualquier otro valor se reemplaza por
      * 'createdAt'.
@@ -155,28 +157,27 @@ public class PropertyService {
     @Transactional
     public long registerView(Long propertyId, User user, HttpServletRequest request) {
         Property property = findPropertyOrThrow(propertyId);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
 
         PropertyView propertyView = PropertyView.builder()
                 .property(property)
                 .user(user)
                 .requestMetadata(buildRequestMetadata(request))
                 .referrer(request.getHeader("Referer"))
-                .sessionId(request.getSession(false) != null ? request.getSession(false).getId() : null)
+                .sessionId(session != null ? session.getId() : null)
                 .build();
 
         propertyViewRepository.save(propertyView);
-
-        long count = propertyViewRepository.countByProperty_Id(propertyId);
-        property.setViewCount(Math.toIntExact(count));
-        propertyRepository.save(property);
-
-        return count;
+        propertyRepository.incrementViewCount(propertyId);
+        return propertyRepository.findById(propertyId)
+                .map(Property::getViewCount)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
     }
 
     @Transactional(readOnly = true)
     public long getViewCount(Long propertyId) {
         findPropertyOrThrow(propertyId);
-        return propertyViewRepository.countByProperty_Id(propertyId);
+        return propertyViewRepository.countByPropertyId(propertyId);
     }
 
     @Transactional(readOnly = true)
@@ -666,8 +667,15 @@ public class PropertyService {
     private RequestMetadata buildRequestMetadata(HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
         String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            ipAddress = xForwardedFor.split(",")[0];
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            String forwardedIp = xForwardedFor.split(",")[0].trim();
+            if (!forwardedIp.isEmpty() && forwardedIp.length() <= MAX_IP_ADDRESS_LENGTH) {
+                ipAddress = forwardedIp;
+            }
+        }
+
+        if (ipAddress == null || ipAddress.isBlank() || ipAddress.length() > MAX_IP_ADDRESS_LENGTH) {
+            ipAddress = request.getRemoteAddr();
         }
 
         return RequestMetadata.builder()

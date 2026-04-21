@@ -29,9 +29,10 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +48,7 @@ class PropertyViewServiceTest {
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
+    @Mock private AuditService auditService;
     @Mock private UserPreferenceRepository userPreferenceRepository;
     @Mock private PropertyRelevanceService propertyRelevanceService;
     @Mock private jakarta.servlet.http.HttpServletRequest request;
@@ -66,6 +68,7 @@ class PropertyViewServiceTest {
                 interiorFeatureRepository,
                 propertyMapper,
                 notificationService,
+                auditService,
                 userPreferenceRepository,
                 propertyRelevanceService);
     }
@@ -75,9 +78,12 @@ class PropertyViewServiceTest {
         Property property = property();
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property));
         when(propertyViewRepository.save(any(PropertyView.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(propertyViewRepository.countByProperty_Id(10L)).thenReturn(7L);
+        when(propertyRepository.incrementViewCount(10L)).thenReturn(1);
+        Property updatedProperty = property();
+        updatedProperty.setViewCount(7);
+        when(propertyRepository.findById(10L)).thenReturn(Optional.of(property), Optional.of(updatedProperty));
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(request.getHeader("X-Forwarded-For")).thenReturn("10.0.0.1, 10.0.0.2");
+        when(request.getHeader("X-Forwarded-For")).thenReturn(" 10.0.0.1 , 10.0.0.2");
         when(request.getHeader("User-Agent")).thenReturn("JUnit");
         when(request.getHeader("Referer")).thenReturn("https://example.com");
         when(request.getSession(false)).thenReturn(session);
@@ -86,7 +92,6 @@ class PropertyViewServiceTest {
         long count = propertyService.registerView(10L, null, request);
 
         assertEquals(7L, count);
-        assertEquals(7, property.getViewCount());
 
         ArgumentCaptor<PropertyView> captor = ArgumentCaptor.forClass(PropertyView.class);
         verify(propertyViewRepository).save(captor.capture());
@@ -96,13 +101,14 @@ class PropertyViewServiceTest {
         assertEquals("JUnit", metadata.getUserAgent());
         assertEquals("https://example.com", saved.getReferrer());
         assertEquals("session-123", saved.getSessionId());
-        verify(propertyRepository).save(property);
+        verify(propertyRepository).incrementViewCount(10L);
+        verify(propertyViewRepository, never()).countByPropertyId(eq(10L));
     }
 
     @Test
     void getViewCount_returnsStoredCount() {
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property()));
-        when(propertyViewRepository.countByProperty_Id(10L)).thenReturn(4L);
+        when(propertyViewRepository.countByPropertyId(10L)).thenReturn(4L);
 
         long count = propertyService.getViewCount(10L);
 
