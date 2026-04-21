@@ -188,6 +188,25 @@ class ReservationServiceTest {
             assertThatThrownBy(() -> service.confirmReservation(1L, "evil@test.com"))
                     .isInstanceOf(ForbiddenException.class);
         }
+
+        @Test
+        @DisplayName("Al confirmar una reserva se genera notificación al buyer")
+        void confirm_firesBuyerNotification() {
+            Reservation r = baseReservation(ReservationStatus.PENDING);
+            r.setId(200L);
+            when(reservationRepository.findById(200L)).thenReturn(Optional.of(r));
+            when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+            when(propertySecurity.canModify(100L, owner)).thenReturn(true);
+            when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.confirmReservation(200L, "owner@test.com");
+
+            ArgumentCaptor<com.openroof.openroof.dto.notification.CreateNotificationRequest> captor =
+                    ArgumentCaptor.forClass(com.openroof.openroof.dto.notification.CreateNotificationRequest.class);
+            verify(notificationService).create(captor.capture(), eq(buyer.getEmail()));
+            assertThat(captor.getValue().userId()).isEqualTo(buyer.getId());
+            assertThat(captor.getValue().type()).isEqualTo(com.openroof.openroof.model.enums.NotificationType.RESERVATION);
+        }
     }
 
     @Nested
