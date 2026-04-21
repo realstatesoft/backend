@@ -77,7 +77,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("activeStatuses") Collection<ReservationStatus> activeStatuses,
             @Param("now") LocalDateTime now);
 
-    @EntityGraph(attributePaths = {"property", "buyer"})
     Optional<Reservation> findFirstByProperty_IdAndBuyer_IdAndStatusInOrderByCreatedAtDesc(
             Long propertyId,
             Long buyerId,
