@@ -45,8 +45,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -111,8 +111,8 @@ upload:
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
+  max-file-size: 20MB
+  max-request-size: 30MB
 
 # ==================== RESERVATION ====================
 openroof:
