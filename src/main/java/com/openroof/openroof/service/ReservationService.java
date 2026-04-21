@@ -42,6 +42,9 @@ public class ReservationService {
     private static final EnumSet<ReservationStatus> BLOCKING_STATUSES =
             EnumSet.of(ReservationStatus.PENDING, ReservationStatus.ACTIVE);
 
+    private static final EnumSet<ReservationStatus> NON_CANCELLABLE_STATUSES =
+            EnumSet.of(ReservationStatus.CANCELLED, ReservationStatus.EXPIRED, ReservationStatus.CONVERTED_TO_CONTRACT);
+
     private final ReservationRepository reservationRepository;
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
@@ -119,10 +122,9 @@ public class ReservationService {
         if (!isBuyer && !canManage) {
             throw new ForbiddenException("No tienes permiso para cancelar esta reserva");
         }
-        if (reservation.getStatus() == ReservationStatus.CANCELLED
-                || reservation.getStatus() == ReservationStatus.EXPIRED
-                || reservation.getStatus() == ReservationStatus.CONVERTED_TO_CONTRACT) {
-            throw new BadRequestException("La reserva ya no se puede cancelar en su estado actual");
+        if (NON_CANCELLABLE_STATUSES.contains(reservation.getStatus())) {
+            throw new BadRequestException(
+                    "La reserva no se puede cancelar en estado: " + reservation.getStatus().name());
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
