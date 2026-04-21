@@ -228,6 +228,21 @@ class ReservationServiceTest {
             assertThat(captor.getValue().userId()).isEqualTo(buyer.getId());
             assertThat(captor.getValue().type()).isEqualTo(NotificationType.RESERVATION);
         }
+
+        @Test
+        @DisplayName("Rechaza confirmar una reserva vencida (expiresAt en el pasado)")
+        void rejectsExpiredToConfirm() {
+            Reservation r = baseReservation(ReservationStatus.PENDING);
+            r.setExpiresAt(LocalDateTime.now().minusHours(1));
+            when(reservationRepository.findById(1L)).thenReturn(Optional.of(r));
+            when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+            when(propertySecurity.canModify(100L, owner)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.confirmReservation(1L, "owner@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("vencida");
+            verify(reservationRepository, never()).save(any());
+        }
     }
 
     @Nested

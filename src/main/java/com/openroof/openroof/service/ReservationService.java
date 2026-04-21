@@ -102,6 +102,9 @@ public class ReservationService {
         if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new BadRequestException("Solo se pueden confirmar reservas pendientes");
         }
+        if (reservation.getExpiresAt() != null && reservation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("No se pueden confirmar reservas vencidas");
+        }
 
         reservation.setStatus(ReservationStatus.ACTIVE);
         Reservation saved = reservationRepository.save(reservation);
