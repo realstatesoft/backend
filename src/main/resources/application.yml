@@ -41,6 +41,19 @@ spring:
     default-property-inclusion: non_null
     time-zone: UTC
 
+  # ==================== MAIL (Gmail SMTP) ====================
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # ==================== SERVER ====================
 server:
   port: ${SERVER_PORT:8080}
@@ -89,6 +102,12 @@ supabase:
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  models:
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:20MB}
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
