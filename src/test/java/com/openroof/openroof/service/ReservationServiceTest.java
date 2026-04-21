@@ -10,6 +10,8 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.ReservationStatus;
 import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.dto.notification.CreateNotificationRequest;
+import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.reservation.Reservation;
 import com.openroof.openroof.model.user.User;
@@ -106,7 +108,9 @@ class ReservationServiceTest {
             assertThat(res.status()).isEqualTo(ReservationStatus.PENDING);
             assertThat(res.buyerId()).isEqualTo(10L);
             assertThat(res.propertyId()).isEqualTo(100L);
-            assertThat(res.expiresAt()).isAfter(before.plusHours(71));
+            assertThat(res.expiresAt())
+                    .isAfter(before.plusHours(71))
+                    .isBefore(before.plusHours(73));
             verify(notificationService).create(any(), eq("owner@test.com"));
         }
 
@@ -218,11 +222,11 @@ class ReservationServiceTest {
 
             service.confirmReservation(200L, "owner@test.com");
 
-            ArgumentCaptor<com.openroof.openroof.dto.notification.CreateNotificationRequest> captor =
-                    ArgumentCaptor.forClass(com.openroof.openroof.dto.notification.CreateNotificationRequest.class);
+            ArgumentCaptor<CreateNotificationRequest> captor =
+                    ArgumentCaptor.forClass(CreateNotificationRequest.class);
             verify(notificationService).create(captor.capture(), eq(buyer.getEmail()));
             assertThat(captor.getValue().userId()).isEqualTo(buyer.getId());
-            assertThat(captor.getValue().type()).isEqualTo(com.openroof.openroof.model.enums.NotificationType.RESERVATION);
+            assertThat(captor.getValue().type()).isEqualTo(NotificationType.RESERVATION);
         }
     }
 
