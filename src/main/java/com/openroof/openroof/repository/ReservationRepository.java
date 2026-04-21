@@ -66,6 +66,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("propertyId") Long propertyId,
             @Param("blockingStatuses") Collection<ReservationStatus> blockingStatuses);
 
+    @EntityGraph(attributePaths = {"property", "buyer"})
     @Query("""
            SELECT r FROM Reservation r
            WHERE r.status IN :activeStatuses
