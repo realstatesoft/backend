@@ -67,15 +67,15 @@ public class PropertyController {
 
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
 
-            @Parameter(description = "Precio mÌnimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @Parameter(description = "Precio m√≠nimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
 
-            @Parameter(description = "Precio m·ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @Parameter(description = "Precio m√°ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
 
-            @Parameter(description = "ID de la ubicaciÛn/zona") @RequestParam(required = false) Long locationId,
+            @Parameter(description = "ID de la ubicaci√≥n/zona") @RequestParam(required = false) Long locationId,
 
-            @Parameter(description = "Cantidad mÌnima de baÒos") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+            @Parameter(description = "Cantidad m√≠nima de ba√±os") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
 
-            @Parameter(description = "Cantidad mÌnima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Cantidad m√≠nima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -123,17 +123,17 @@ public class PropertyController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Buscar propiedades por texto (tÌtulo o descripciÛn) y filtros adicionales opcionales")
+    @Operation(summary = "Buscar propiedades por texto (t√≠tulo o descripci√≥n) y filtros adicionales opcionales")
     public ResponseEntity<ApiResponse<Page<PropertySummaryResponse>>> search(
-            @Parameter(description = "Palabra clave de b˙squeda") @RequestParam(name = "q", required = false) String keyword,
+            @Parameter(description = "Palabra clave de b√∫squeda") @RequestParam(name = "q", required = false) String keyword,
             @Parameter(description = "Disponibilidad (IMMEDIATE, IN_30_DAYS, IN_60_DAYS, TO_NEGOTIATE)") @RequestParam(required = false) String availability,
             @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
-            @Parameter(description = "Precio mÌnimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
-            @Parameter(description = "Precio m·ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
-            @Parameter(description = "ID de la ubicaciÛn/zona") @RequestParam(required = false) Long locationId,
-            @Parameter(description = "Cantidad mÌnima de baÒos") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
-            @Parameter(description = "Cantidad mÌnima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Precio m√≠nimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @Parameter(description = "Precio m√°ximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @Parameter(description = "ID de la ubicaci√≥n/zona") @RequestParam(required = false) Long locationId,
+            @Parameter(description = "Cantidad m√≠nima de ba√±os") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
+            @Parameter(description = "Cantidad m√≠nima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -208,8 +208,8 @@ public class PropertyController {
         int deletedCount = propertyService.clearTrashcanForUser(user.getId(), user.getId(), user.getRole());
 
         String message = deletedCount > 0
-                ? "Se vaciÛ la papelera. Propiedades eliminadas: " + deletedCount
-                : "La papelera ya estaba vacÌa.";
+                ? "Se vaci√≥ la papelera. Propiedades eliminadas: " + deletedCount
+                : "La papelera ya estaba vac√≠a.";
 
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()

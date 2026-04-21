@@ -23,9 +23,18 @@ public class RentConfigService {
     private final SystemConfigRepository repo;
 
     public RentConfigResponse getRentConfig() {
-        int deposit = Integer.parseInt(require(KEY_DEPOSIT_MONTHS).getConfigValue());
-        BigDecimal commission = new BigDecimal(require(KEY_COMMISSION_PERCENT).getConfigValue());
-        return new RentConfigResponse(deposit, commission);
+        String depositRaw    = require(KEY_DEPOSIT_MONTHS).getConfigValue();
+        String commissionRaw = require(KEY_COMMISSION_PERCENT).getConfigValue();
+        try {
+            int deposit        = Integer.parseInt(depositRaw);
+            BigDecimal commission = new BigDecimal(commissionRaw);
+            return new RentConfigResponse(deposit, commission);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                    "Invalid config value in DB — key='" + KEY_DEPOSIT_MONTHS +
+                    "' value='" + depositRaw + "', key='" + KEY_COMMISSION_PERCENT +
+                    "' value='" + commissionRaw + "'", e);
+        }
     }
 
     @Transactional

@@ -15,24 +15,24 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/config/rent")
 @RequiredArgsConstructor
-@Tag(name = "Rent Configuration", description = "Configuraci髇 de costos de alquiler")
+@Tag(name = "Rent Configuration", description = "Configuraci贸n de costos de alquiler")
 public class RentConfigController {
 
     private final RentConfigService rentConfigService;
 
     @GetMapping
-    @Operation(summary = "Obtener configuraci髇 actual de alquiler")
+    @Operation(summary = "Obtener configuraci贸n actual de alquiler")
     public ResponseEntity<ApiResponse<RentConfigResponse>> getRentConfig() {
         RentConfigResponse config = rentConfigService.getRentConfig();
         return ResponseEntity.ok(ApiResponse.ok(config));
     }
 
     @PutMapping
-    @Operation(summary = "Actualizar configuraci髇 de alquiler")
+    @Operation(summary = "Actualizar configuraci贸n de alquiler")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<RentConfigResponse>> updateRentConfig(
             @Valid @RequestBody UpdateRentConfigRequest request) {
         RentConfigResponse config = rentConfigService.updateRentConfig(request);
-        return ResponseEntity.ok(ApiResponse.ok(config, "Configuraci髇 de alquiler actualizada"));
+        return ResponseEntity.ok(ApiResponse.ok(config, "Configuraci贸n de alquiler actualizada"));
     }
 }

@@ -44,12 +44,6 @@ databaseChangeLog:
                   name: version
                   type: BIGINT
                   defaultValueNumeric: 0
-        - createIndex:
-            indexName: idx_system_config_key
-            tableName: system_config
-            columns:
-              - column:
-                  name: config_key
         - insert:
             tableName: system_config
             columns:
@@ -64,3 +58,12 @@ databaseChangeLog:
               - column: { name: config_value, value: "5.00" }
               - column: { name: created_at, valueComputed: "CURRENT_TIMESTAMP" }
               - column: { name: version, valueNumeric: 0 }
+      rollback:
+        - delete:
+            tableName: system_config
+            where: config_key = 'RENT_DEPOSIT_MONTHS'
+        - delete:
+            tableName: system_config
+            where: config_key = 'RENT_COMMISSION_PERCENT'
+        - dropTable:
+            tableName: system_config
