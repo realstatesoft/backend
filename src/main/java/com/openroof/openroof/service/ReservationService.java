@@ -24,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -74,7 +75,12 @@ public class ReservationService {
                 .notes(req.notes())
                 .build();
 
-        Reservation saved = reservationRepository.save(reservation);
+        Reservation saved;
+        try {
+            saved = reservationRepository.save(reservation);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BadRequestException("Esta propiedad ya tiene una reserva activa");
+        }
 
         notifyOwner(saved, "Nueva reserva recibida",
                 String.format("%s reservó tu propiedad '%s'.", buyer.getName(), property.getTitle()));

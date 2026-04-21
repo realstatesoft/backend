@@ -154,6 +154,23 @@ class ReservationServiceTest {
                     .hasMessageContaining("reserva activa");
             verify(reservationRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Lanza BadRequestException si la BD rechaza por índice único parcial")
+        void rejectsDataIntegrityViolation() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
+                    .thenReturn(false);
+            when(reservationRepository.save(any(Reservation.class)))
+                    .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+            assertThatThrownBy(() -> service.createReservation(
+                    new CreateReservationRequest(100L, new BigDecimal("1000.00"), null),
+                    "buyer@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("reserva activa");
+        }
     }
 
     @Nested
