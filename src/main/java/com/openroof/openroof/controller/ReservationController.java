@@ -89,7 +89,7 @@ public class ReservationController {
             @PathVariable Long propertyId, Principal principal) {
         return reservationService.getMyReservationForProperty(propertyId, principal.getName())
                 .map(r -> ResponseEntity.ok(ApiResponse.ok(r)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+                .orElseGet(() -> ResponseEntity.ok(ApiResponse.ok(null, "Sin reserva activa")));
     }
 
     @GetMapping("/property/{propertyId}")
