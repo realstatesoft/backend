@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.config.RentConfigResponse;
 import com.openroof.openroof.dto.config.UpdateRentConfigRequest;
+import com.openroof.openroof.exception.InvalidConfigurationException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.config.SystemConfig;
 import com.openroof.openroof.repository.SystemConfigRepository;
@@ -62,6 +63,20 @@ class RentConfigServiceTest {
             assertThatThrownBy(() -> service.getRentConfig())
                     .isInstanceOf(ResourceNotFoundException.class);
         }
+
+        @Test
+        @DisplayName("Si el valor en BD no es parseable lanza InvalidConfigurationException sin filtrar el valor crudo")
+        void invalidDbValue_throwsInvalidConfiguration() {
+            when(repo.findByConfigKey("RENT_DEPOSIT_MONTHS"))
+                    .thenReturn(Optional.of(cfg("RENT_DEPOSIT_MONTHS", "abc")));
+            when(repo.findByConfigKey("RENT_COMMISSION_PERCENT"))
+                    .thenReturn(Optional.of(cfg("RENT_COMMISSION_PERCENT", "5.5")));
+
+            assertThatThrownBy(() -> service.getRentConfig())
+                    .isInstanceOf(InvalidConfigurationException.class)
+                    .hasMessage("Invalid rent configuration")
+                    .hasMessageNotContaining("abc");
+        }
     }
 
     @Nested
@@ -86,6 +101,27 @@ class RentConfigServiceTest {
             verify(repo).saveAll(captor.capture());
             assertThat(captor.getValue()).extracting(SystemConfig::getConfigValue)
                     .containsExactlyInAnyOrder("3", "7.25");
+        }
+
+        @Test
+        @DisplayName("Normaliza commissionPercent a escala 2 HALF_UP antes de persistir y retornar")
+        void normalizesCommissionScale() {
+            SystemConfig depositRow = cfg("RENT_DEPOSIT_MONTHS", "1");
+            SystemConfig commRow    = cfg("RENT_COMMISSION_PERCENT", "5.00");
+            when(repo.findByConfigKey("RENT_DEPOSIT_MONTHS")).thenReturn(Optional.of(depositRow));
+            when(repo.findByConfigKey("RENT_COMMISSION_PERCENT")).thenReturn(Optional.of(commRow));
+            when(repo.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            RentConfigResponse res = service.updateRentConfig(
+                    new UpdateRentConfigRequest(2, new BigDecimal("7.255")));
+
+            assertThat(res.commissionPercent()).isEqualByComparingTo("7.26");
+            assertThat(res.commissionPercent().scale()).isEqualTo(2);
+
+            ArgumentCaptor<List<SystemConfig>> captor = ArgumentCaptor.forClass(List.class);
+            verify(repo).saveAll(captor.capture());
+            assertThat(captor.getValue()).extracting(SystemConfig::getConfigValue)
+                    .containsExactlyInAnyOrder("2", "7.26");
         }
     }
 }
