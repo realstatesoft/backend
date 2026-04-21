@@ -1,18 +1,14 @@
 spring:
   application:
     name: OpenRoof
+
   config:
     import: optional:file:.env[.properties]
 
-  # ==================== DATASOURCE ====================
-  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
-  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
-
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
-
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}?prepareThreshold=0
+    username: ${DB_USERNAME:openroof}
+    password: ${DB_PASSWORD:openroof123}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -20,10 +16,9 @@ spring:
       idle-timeout: 300000
       connection-timeout: 20000
 
-  # ==================== JPA / HIBERNATE ====================
   jpa:
     hibernate:
-      ddl-auto: none  # Liquibase maneja el schema
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -31,23 +26,38 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
-  # ==================== LIQUIBASE ====================
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    default-schema: public
 
-  # ==================== JACKSON ====================
   jackson:
     default-property-inclusion: non_null
     time-zone: UTC
 
-# ==================== SERVER ====================
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
-# ==================== OPENAPI / SPRINGDOC ====================
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -59,15 +69,16 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== JWT ====================
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
+
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET}
-      expiration: 86400000       # 24 horas en ms
-      refresh-expiration: 604800000  # 7 dias en ms
+      secret-key: ${JWT_SECRET:U3VwZXJTZWNyZXRLZXlCYXNlNjRFeGFtcGxlRm9yRGV2}
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-# ==================== LOGGING ====================
 logging:
   level:
     root: INFO
@@ -76,21 +87,19 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# ==================== SUPABASE STORAGE ====================
-# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+  url: ${SUPABASE_URL:}
+  service-role-key: ${SUPABASE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
-# ==================== UPLOAD ====================
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
 
-# ==================== MULTIPART ====================
-spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
+trashcan:
+  retention-days: 10
+
+mail:
+  from-name: OpenRoof
+  base-url: ${FRONTEND_URL:http://localhost:5173}
