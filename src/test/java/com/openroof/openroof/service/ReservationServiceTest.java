@@ -91,7 +91,7 @@ class ReservationServiceTest {
             when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
             when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
                     .thenReturn(false);
-            when(reservationRepository.save(any(Reservation.class)))
+            when(reservationRepository.saveAndFlush(any(Reservation.class)))
                     .thenAnswer(inv -> {
                         Reservation r = inv.getArgument(0);
                         r.setId(1L);
@@ -151,12 +151,12 @@ class ReservationServiceTest {
             when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
                     .thenReturn(true);
 
-            assertThatThrownBy(() -> service.createReservation(
+assertThatThrownBy(() -> service.createReservation(
                     new CreateReservationRequest(100L, new BigDecimal("1000.00"), null),
                     "buyer@test.com"))
-                    .isInstanceOf(BadRequestException.class)
-                    .hasMessageContaining("reserva activa");
-            verify(reservationRepository, never()).save(any());
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("reserva activa");
+            verify(reservationRepository, never()).saveAndFlush(any());
         }
 
         @Test
@@ -166,7 +166,7 @@ class ReservationServiceTest {
             when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
             when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
                     .thenReturn(false);
-            when(reservationRepository.save(any(Reservation.class)))
+            when(reservationRepository.saveAndFlush(any(Reservation.class)))
                     .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
 
             assertThatThrownBy(() -> service.createReservation(
@@ -188,7 +188,7 @@ class ReservationServiceTest {
             when(reservationRepository.findById(1L)).thenReturn(Optional.of(r));
             when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
             when(propertySecurity.canModify(100L, owner)).thenReturn(true);
-            when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(reservationRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReservationResponse res = service.confirmReservation(1L, "owner@test.com");
 
@@ -218,7 +218,7 @@ class ReservationServiceTest {
             when(reservationRepository.findById(200L)).thenReturn(Optional.of(r));
             when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
             when(propertySecurity.canModify(100L, owner)).thenReturn(true);
-            when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(reservationRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.confirmReservation(200L, "owner@test.com");
 
@@ -255,7 +255,7 @@ class ReservationServiceTest {
             Reservation r = baseReservation(ReservationStatus.PENDING);
             when(reservationRepository.findById(1L)).thenReturn(Optional.of(r));
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(reservationRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReservationResponse res = service.cancelReservation(
                     1L, new CancelReservationRequest("Ya no me interesa"), "buyer@test.com");
@@ -313,7 +313,7 @@ class ReservationServiceTest {
             when(reservationRepository.findById(1L)).thenReturn(Optional.of(r));
             when(userRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
             when(propertySecurity.canModify(100L, owner)).thenReturn(true);
-            when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(reservationRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
             ReservationResponse res = service.convertToContract(1L, "owner@test.com");
 

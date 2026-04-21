@@ -80,7 +80,7 @@ public class ReservationService {
 
         Reservation saved;
         try {
-            saved = reservationRepository.save(reservation);
+saved = reservationRepository.saveAndFlush(reservation);
         } catch (DataIntegrityViolationException ex) {
             throw new BadRequestException("Esta propiedad ya tiene una reserva activa");
         }
@@ -107,7 +107,7 @@ public class ReservationService {
         }
 
         reservation.setStatus(ReservationStatus.ACTIVE);
-        Reservation saved = reservationRepository.save(reservation);
+        Reservation saved = reservationRepository.saveAndFlush(reservation);
 
         notifyBuyer(saved, "Reserva confirmada",
                 String.format("Tu reserva sobre '%s' fue confirmada.", reservation.getProperty().getTitle()));
@@ -132,7 +132,7 @@ public class ReservationService {
 
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setCancelledReason(req.reason());
-        Reservation saved = reservationRepository.save(reservation);
+        Reservation saved = reservationRepository.saveAndFlush(reservation);
 
         if (!isBuyer) {
             notifyBuyer(saved, "Reserva cancelada",
@@ -154,7 +154,7 @@ public class ReservationService {
         }
 
         reservation.setStatus(ReservationStatus.CONVERTED_TO_CONTRACT);
-        Reservation saved = reservationRepository.save(reservation);
+        Reservation saved = reservationRepository.saveAndFlush(reservation);
         return toResponse(saved);
     }
 
