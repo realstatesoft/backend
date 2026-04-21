@@ -119,3 +119,9 @@ openroof:
   reservation:
     ttl-hours: 72
     default-percent: 1.00
+
+# ==================== SHEDLOCK ====================
+shedlock:
+  defaults:
+    lock-at-most-for: 9m
+    lock-at-least-for: 1m

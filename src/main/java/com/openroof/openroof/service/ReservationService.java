@@ -20,12 +20,15 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.security.PropertySecurity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.EnumSet;
@@ -160,14 +163,34 @@ saved = reservationRepository.saveAndFlush(reservation);
 
     @Transactional
     @Scheduled(cron = "0 */10 * * * *")
+    @SchedulerLock(lockAtMostFor = "10m", lockAtLeastFor = "30s")
     public int expireStaleReservations() {
         List<Reservation> stale = reservationRepository.findExpired(BLOCKING_STATUSES, LocalDateTime.now());
         if (stale.isEmpty()) return 0;
         stale.forEach(r -> r.setStatus(ReservationStatus.EXPIRED));
         reservationRepository.saveAll(stale);
-        stale.forEach(r -> notifyBuyer(r, "Reserva expirada",
-                String.format("Tu reserva sobre '%s' expiró.", r.getProperty().getTitle())));
-        log.info("Expired {} stale reservations", stale.size());
+
+        List<Long> ids = stale.stream().map(Reservation::getId).toList();
+        List<String> titles = stale.stream().map(r -> r.getProperty().getTitle()).toList();
+        List<String> buyerEmails = stale.stream().map(r -> r.getBuyer().getEmail()).toList();
+        List<Long> buyerIds = stale.stream().map(r -> r.getBuyer().getId()).toList();
+
+        afterCommit(() -> {
+            for (int i = 0; i < ids.size(); i++) {
+                notificationService.create(
+                        new CreateNotificationRequest(
+                                buyerIds.get(i),
+                                NotificationType.RESERVATION,
+                                "Reserva expirada",
+                                String.format("Tu reserva sobre '%s' expiró.", titles.get(i)),
+                                Map.of("reservationId", ids.get(i)),
+                                "/reservations"
+                        ),
+                        buyerEmails.get(i)
+                );
+            }
+            log.info("Expired {} stale reservations", ids.size());
+        });
         return stale.size();
     }
 
@@ -268,5 +291,18 @@ saved = reservationRepository.saveAndFlush(reservation);
                 r.getCreatedAt(),
                 r.getUpdatedAt()
         );
+    }
+
+    private void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

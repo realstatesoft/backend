@@ -106,3 +106,6 @@ databaseChangeLog:
   - include:
       file: changelogs/030-unique-active-reservation-per-property.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/031-shedlock-table.yaml
+      relativeToChangelogFile: true
