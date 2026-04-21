@@ -31,7 +31,7 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(summary = "Reservar una propiedad")
     public ResponseEntity<ApiResponse<ReservationResponse>> create(
             @Valid @RequestBody CreateReservationRequest request,
