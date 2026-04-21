@@ -7,6 +7,7 @@ import com.openroof.openroof.security.PropertySecurity;
 import com.openroof.openroof.service.AuthService;
 import com.openroof.openroof.service.PropertyImageService;
 import com.openroof.openroof.service.PropertyService;
+import com.openroof.openroof.service.RentCalculationService;
 import com.openroof.openroof.service.StorageService;
 import com.openroof.openroof.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -55,6 +56,8 @@ class SecurityEndpointsTest {
     private UserService userService;
     @MockitoBean
     private PropertyService propertyService;
+    @MockitoBean
+    private RentCalculationService rentCalculationService;
     @MockitoBean
     private PropertyImageService propertyImageService;
     @MockitoBean
