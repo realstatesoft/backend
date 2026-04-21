@@ -101,5 +101,8 @@ databaseChangeLog:
       file: changelogs/028-add-storage-key-to-media.yaml
       relativeToChangelogFile: true
   - include:
-      file: changelogs/029-unique-active-reservation-per-property.yaml
+      file: changelogs/029-create-system-config-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/030-unique-active-reservation-per-property.yaml
       relativeToChangelogFile: true

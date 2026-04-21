@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 029-unique-active-reservation-per-property
+      id: 030-unique-active-reservation-per-property
       author: openroof
       changes:
         - sql:
