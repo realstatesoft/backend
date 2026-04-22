@@ -8,6 +8,7 @@ import com.openroof.openroof.service.RentCalculationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
@@ -56,6 +57,27 @@ public class PropertyController {
 
         PropertyResponse response = propertyService.getById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/{id}/views")
+    @Operation(summary = "Registrar una visualización de una propiedad")
+    public ResponseEntity<ApiResponse<Long>> registerView(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            Authentication auth,
+            HttpServletRequest request) {
+
+        User user = (auth != null && auth.getPrincipal() instanceof User principal) ? principal : null;
+        long count = propertyService.registerView(id, user, request);
+        return ResponseEntity.ok(ApiResponse.ok(count, "Visualización registrada"));
+    }
+
+    @GetMapping("/{id}/views/count")
+    @Operation(summary = "Obtener el conteo de visualizaciones de una propiedad")
+    public ResponseEntity<ApiResponse<Long>> getViewCount(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+
+        long count = propertyService.getViewCount(id);
+        return ResponseEntity.ok(ApiResponse.ok(count));
     }
 
     @GetMapping

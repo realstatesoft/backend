@@ -1,6 +1,7 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.common.embeddable.RequestMetadata;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -26,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +45,8 @@ import java.util.Set;
 @Slf4j
 public class PropertyService {
 
+    private static final int MAX_IP_ADDRESS_LENGTH = 45;
+
     /**
      * Campos permitidos para ordenar. Cualquier otro valor se reemplaza por
      * 'createdAt'.
@@ -51,6 +55,7 @@ public class PropertyService {
             "createdAt", "price", "bedrooms", "bathrooms", "surfaceArea", "title");
 
     private final PropertyRepository propertyRepository;
+    private final PropertyViewRepository propertyViewRepository;
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
     private final AgentProfileRepository agentProfileRepository;
@@ -147,6 +152,32 @@ public class PropertyService {
     public PropertyResponse getById(Long id) {
         Property property = findPropertyOrThrow(id);
         return propertyMapper.toResponse(property);
+    }
+
+    @Transactional
+    public long registerView(Long propertyId, User user, HttpServletRequest request) {
+        Property property = findPropertyOrThrow(propertyId);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+
+        PropertyView propertyView = PropertyView.builder()
+                .property(property)
+                .user(user)
+                .requestMetadata(buildRequestMetadata(request))
+                .referrer(request.getHeader("Referer"))
+                .sessionId(session != null ? session.getId() : null)
+                .build();
+
+        propertyViewRepository.save(propertyView);
+        propertyRepository.incrementViewCount(propertyId);
+        return propertyRepository.findById(propertyId)
+                .map(Property::getViewCount)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
+    }
+
+    @Transactional(readOnly = true)
+    public long getViewCount(Long propertyId) {
+        findPropertyOrThrow(propertyId);
+        return propertyViewRepository.countByPropertyId(propertyId);
     }
 
     @Transactional(readOnly = true)
@@ -628,6 +659,26 @@ public class PropertyService {
                         "Propiedad no encontrada con ID: " + id));
     }
 
+    private RequestMetadata buildRequestMetadata(HttpServletRequest request) {
+        String ipAddress = request.getRemoteAddr();
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            String forwardedIp = xForwardedFor.split(",")[0].trim();
+            if (!forwardedIp.isEmpty() && forwardedIp.length() <= MAX_IP_ADDRESS_LENGTH) {
+                ipAddress = forwardedIp;
+            }
+        }
+
+        if (ipAddress == null || ipAddress.isBlank() || ipAddress.length() > MAX_IP_ADDRESS_LENGTH) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        return RequestMetadata.builder()
+                .ipAddress(ipAddress)
+                .userAgent(request.getHeader("User-Agent"))
+                .build();
+    }
+
     /**
      * Verifica que el llamante tenga permiso para operar sobre la propiedad dada.
      * - ADMIN: acceso irrestricto.
@@ -714,4 +765,3 @@ public class PropertyService {
         public double getMaxLng() { return Math.min(180, maxLng); }
     }
 }
-
