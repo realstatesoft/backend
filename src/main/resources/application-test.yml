@@ -50,7 +50,7 @@ cors:
 logging:
   level:
     root: INFO
-    com.openroof: DEBUG
-    org.springframework.security: INFO
+    com.openroof: INFO
+    org.springframework.security: WARN
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
