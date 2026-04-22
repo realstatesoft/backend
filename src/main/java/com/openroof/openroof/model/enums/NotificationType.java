@@ -8,5 +8,6 @@ public enum NotificationType {
     VISIT,
     OFFER,
     REVIEW,
-    PROPERTY
+    PROPERTY,
+    RESERVATION
 }

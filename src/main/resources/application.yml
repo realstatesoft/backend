@@ -36,9 +36,10 @@ spring:
     default-property-inclusion: non_null
     time-zone: UTC
 
+  # ==================== MAIL (Gmail SMTP) ====================
   mail:
-    host: smtp.gmail.com
-    port: 587
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
@@ -49,10 +50,7 @@ spring:
             enable: true
             required: true
 
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 10MB
+# ==================== SERVER ====================
 
 server:
   port: ${SERVER_PORT:8080}
@@ -108,10 +106,10 @@ upload:
   documents:
     max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
-  # 3D Model upload settings
+  # 3D Model upload settings (octet-stream incluido para compatibilidad con exportadores)
   models:
     max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
-    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json}
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
   # Floor plan upload settings (PDF, JPG, PNG, WebP — max 5 per property)
   floor-plans:
     max-file-size: ${UPLOAD_FLOOR_PLANS_MAX_FILE_SIZE:10MB}
@@ -120,33 +118,25 @@ upload:
 
 trashcan:
   retention-days: 10
+
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
   max-file-size: 50MB
   max-request-size: 60MB
 
-# ==================== MAIL (Gmail SMTP) ====================
-# Pasos para obtener credenciales:
-# 1. Activar "Verificación en dos pasos" en tu cuenta de Google
-# 2. Ir a: Cuenta Google → Seguridad → Contraseñas de aplicaciones
-# 3. Crear una contraseña para "OpenRoof" (genera 16 caracteres)
-# 4. Pegar en .env:
-#      MAIL_USERNAME=tucorreo@gmail.com
-#      MAIL_PASSWORD=xxxxxxxxxxxxxxxx   (sin espacios)
-#      FRONTEND_URL=https://tu-frontend.vercel.app
-spring.mail:
-  host: smtp.gmail.com
-  port: 587
-  username: ${MAIL_USERNAME:}
-  password: ${MAIL_PASSWORD:}
-  properties:
-    mail:
-      smtp:
-        auth: true
-        starttls:
-          enable: true
-          required: true
+# ==================== RESERVATION ====================
+openroof:
+  reservation:
+    ttl-hours: 72
+    default-percent: 1.00
+
+# ==================== SHEDLOCK ====================
+shedlock:
+  defaults:
+    lock-at-most-for: 9m
+    lock-at-least-for: 1m
 
 mail:
   from-name: OpenRoof
   base-url: ${FRONTEND_URL:http://localhost:5173}
+
