@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -92,6 +93,26 @@ public class PropertyFlagService {
         return propertyFlagRepository
                 .findAllByResolvedAtIsNull()
                 .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /** Devuelve flags por estado del sistema para moderación admin. */
+    @Transactional(readOnly = true)
+    public List<FlagResponse> getFlagsByStatus(String status) {
+        String normalized = status == null ? "ACTIVE" : status.trim().toUpperCase();
+
+        List<PropertyFlag> flags = switch (normalized) {
+            case "RESOLVED" -> propertyFlagRepository.findAllByResolvedAtIsNotNull();
+            case "ALL" -> {
+                List<PropertyFlag> all = new ArrayList<>(propertyFlagRepository.findAllByResolvedAtIsNull());
+                all.addAll(propertyFlagRepository.findAllByResolvedAtIsNotNull());
+                yield all;
+            }
+            default -> propertyFlagRepository.findAllByResolvedAtIsNull();
+        };
+
+        return flags.stream()
                 .map(this::toResponse)
                 .toList();
     }
