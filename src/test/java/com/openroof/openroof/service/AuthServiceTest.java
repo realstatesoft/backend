@@ -4,6 +4,7 @@ import com.openroof.openroof.dto.register.RegisterRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.model.user.UserSession;
 import com.openroof.openroof.repository.Auth.UserSessionRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -117,5 +118,27 @@ class AuthServiceTest {
         ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
         verify(agentProfileRepository).save(profileCaptor.capture());
         assertEquals(captor.getValue(), profileCaptor.getValue().getUser());
+    }
+
+    @Test
+    void register_fallsBackToRemoteAddrWhenForwardedIpIsInvalid() {
+        RegisterRequest request = RegisterRequest.builder()
+                .name("User Two")
+                .email("user2@test.com")
+                .password("123456")
+                .phone("+595981000003")
+                .role("USER")
+                .build();
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(httpRequest.getHeader("X-Forwarded-For"))
+                .thenReturn("1234567890123456789012345678901234567890123456, 10.0.0.2");
+
+        authService.register(request, httpRequest);
+
+        ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        verify(userSessionRepository).save(sessionCaptor.capture());
+        assertEquals("127.0.0.1", sessionCaptor.getValue().getRequestMetadata().getIpAddress());
     }
 }

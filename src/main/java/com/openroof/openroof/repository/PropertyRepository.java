@@ -28,6 +28,14 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Query("SELECT p FROM Property p WHERE p.id = :id")
     Optional<Property> findByIdForUpdate(@Param("id") Long id);
 
+    @Modifying
+    @Query("""
+            UPDATE Property p
+            SET p.viewCount = COALESCE(p.viewCount, 0) + 1
+            WHERE p.id = :id
+            """)
+    int incrementViewCount(@Param("id") Long id);
+
     Page<Property> findByOwner_Id(Long ownerId, Pageable pageable);
 
     // filter properties in trashcan

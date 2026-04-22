@@ -83,6 +83,7 @@ class RentConfigServiceTest {
     @DisplayName("updateRentConfig()")
     class Update {
         @Test
+        @SuppressWarnings("unchecked")
         @DisplayName("Actualiza ambos valores y retorna el nuevo estado")
         void updatesBothValues() {
             SystemConfig depositRow = cfg("RENT_DEPOSIT_MONTHS", "1");
@@ -104,6 +105,7 @@ class RentConfigServiceTest {
         }
 
         @Test
+        @SuppressWarnings("unchecked")
         @DisplayName("Normaliza commissionPercent a escala 2 HALF_UP antes de persistir y retornar")
         void normalizesCommissionScale() {
             SystemConfig depositRow = cfg("RENT_DEPOSIT_MONTHS", "1");

@@ -12,7 +12,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -31,7 +30,6 @@ public class SupabaseStorageService implements StorageService {
     private final RestClient restClient;
     private final String supabaseUrl;
     private final String bucket;
-    private final List<String> allowedTypes;
     private final long maxFileSizeBytes;
     private final String maxFileSizeLabel;
 
@@ -39,12 +37,10 @@ public class SupabaseStorageService implements StorageService {
             @Value("${supabase.url:}") String supabaseUrl,
             @Value("${supabase.service-role-key:}") String serviceRoleKey,
             @Value("${supabase.storage.bucket:openroof-images}") String bucket,
-            @Value("#{'${upload.allowed-types:image/jpeg,image/png,image/webp}'.split(',')}") List<String> allowedTypes,
             @Value("${upload.max-file-size:10MB}") String maxFileSize
     ) {
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
-        this.allowedTypes = allowedTypes;
         this.maxFileSizeBytes = DataSize.parse(maxFileSize).toBytes();
         this.maxFileSizeLabel = maxFileSize;
 

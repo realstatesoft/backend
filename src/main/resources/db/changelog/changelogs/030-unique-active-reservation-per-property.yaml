@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-unique-active-reservation-per-property
+      author: openroof
+      changes:
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX IF NOT EXISTS uq_reservation_active_per_property
+              ON reservations (property_id)
+              WHERE status IN ('PENDING', 'ACTIVE');
+            dbms: postgresql
