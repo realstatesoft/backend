@@ -164,9 +164,9 @@ saved = reservationRepository.saveAndFlush(reservation);
     @Transactional
     @Scheduled(cron = "0 */10 * * * *")
     @SchedulerLock(lockAtMostFor = "10m", lockAtLeastFor = "30s")
-    public int expireStaleReservations() {
+    public void expireStaleReservations() {
         List<Reservation> stale = reservationRepository.findExpired(BLOCKING_STATUSES, LocalDateTime.now());
-        if (stale.isEmpty()) return 0;
+        if (stale.isEmpty()) return;
         stale.forEach(r -> r.setStatus(ReservationStatus.EXPIRED));
         reservationRepository.saveAll(stale);
 
@@ -191,7 +191,7 @@ saved = reservationRepository.saveAndFlush(reservation);
             }
             log.info("Expired {} stale reservations", ids.size());
         });
-        return stale.size();
+        log.info("Finished expiring stale reservations");
     }
 
     public ReservationResponse getById(Long id, String currentUserEmail) {
