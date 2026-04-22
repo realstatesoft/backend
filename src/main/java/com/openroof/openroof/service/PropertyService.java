@@ -177,7 +177,7 @@ public class PropertyService {
     @Transactional(readOnly = true)
     public long getViewCount(Long propertyId) {
         findPropertyOrThrow(propertyId);
-        return propertyViewRepository.countByPropertyId(propertyId);
+        return propertyViewRepository.countByProperty_Id(propertyId);
     }
 
     @Transactional(readOnly = true)

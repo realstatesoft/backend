@@ -7,6 +7,6 @@ databaseChangeLog:
             tableName: shedlock
             columns:
               - column: { name: name, type: varchar(255), constraints: { primaryKey: true, nullable: false } }
-              - column: { name: lock_until, type: timestamp(9) }
+              - column: { name: lock_until, type: timestamp(6) }
               - column: { name: locked_by, type: varchar(255) }
-              - column: { name: locked_at, type: timestamp(9) }
+              - column: { name: locked_at, type: timestamp(6) }

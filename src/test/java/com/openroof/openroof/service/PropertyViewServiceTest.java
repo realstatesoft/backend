@@ -15,9 +15,6 @@ import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
-import com.openroof.openroof.service.NotificationService;
-import com.openroof.openroof.service.PropertyRelevanceService;
-import com.openroof.openroof.service.PropertyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,7 +79,11 @@ class PropertyViewServiceTest {
         when(propertyRepository.incrementViewCount(10L)).thenReturn(1);
         Property updatedProperty = property();
         updatedProperty.setViewCount(7);
-        when(propertyRepository.findById(10L)).thenReturn(Optional.of(property), Optional.of(updatedProperty));
+        AtomicInteger findByIdCallCount = new AtomicInteger(0);
+        when(propertyRepository.findById(10L)).thenAnswer(inv -> {
+            int call = findByIdCallCount.getAndIncrement();
+            return call == 0 ? Optional.of(property) : Optional.of(updatedProperty);
+        });
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(request.getHeader("X-Forwarded-For")).thenReturn(" 10.0.0.1 , 10.0.0.2");
         when(request.getHeader("User-Agent")).thenReturn("JUnit");
@@ -102,13 +104,13 @@ class PropertyViewServiceTest {
         assertEquals("https://example.com", saved.getReferrer());
         assertEquals("session-123", saved.getSessionId());
         verify(propertyRepository).incrementViewCount(10L);
-        verify(propertyViewRepository, never()).countByPropertyId(eq(10L));
+        verify(propertyViewRepository, never()).countByProperty_Id(eq(10L));
     }
 
     @Test
     void getViewCount_returnsStoredCount() {
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property()));
-        when(propertyViewRepository.countByPropertyId(10L)).thenReturn(4L);
+        when(propertyViewRepository.countByProperty_Id(10L)).thenReturn(4L);
 
         long count = propertyService.getViewCount(10L);
 
