@@ -7,14 +7,14 @@ spring:
 
   datasource:
 
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}?prepareThreshold=0
-    username: ${DB_USERNAME:openroof}
-    password: ${DB_PASSWORD:openroof123}
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require
+    username: postgres.gnkzarhkjbuydrzybydm
+    password: OpenRoof$!*Supabase#Platform2026_TEST
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 300000
+      maximum-pool-size: 4
+      minimum-idle: 2
+      idle-timeout: 30000
       connection-timeout: 20000
 
   jpa:
@@ -74,7 +74,7 @@ cors:
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:U3VwZXJTZWNyZXRLZXlCYXNlNjRFeGFtcGxlRm9yRGV2}
+      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
@@ -100,7 +100,7 @@ supabase:
 
 # ==================== UPLOAD ====================
 upload:
-  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
   # KYC / personal document upload settings (used by UserDocumentService)
   documents:

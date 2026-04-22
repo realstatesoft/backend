@@ -62,9 +62,9 @@ logging:
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
 
-# ── Swagger deshabilitado en producción (opcional, comentar para dejarlo activo) ──
-# springdoc:
-#   swagger-ui:
-#     enabled: false
-#   api-docs:
-#     enabled: false
+# ── Swagger deshabilitado en producción para ahorrar memoria ──
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
