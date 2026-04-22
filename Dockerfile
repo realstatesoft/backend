@@ -36,8 +36,4 @@ USER openroof
 # Render inyecta la variable PORT; Spring la lee como SERVER_PORT en application-prod.yml
 EXPOSE 8080
 
-ENTRYPOINT ["java", \
-  "-XX:+UseContainerSupport", \
-  "-XX:MaxRAMPercentage=75.0", \
-  "-Djava.security.egd=file:/dev/./urandom", \
-  "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Xmx256m -Xms128m -Xss512k -XX:MaxMetaspaceSize=128m -XX:+UseContainerSupport -Djava.security.egd=file:/dev/./urandom -Dserver.port=${PORT:8080} -jar app.jar"]

@@ -6,6 +6,7 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
+
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}?prepareThreshold=0
     username: ${DB_USERNAME:openroof}
     password: ${DB_PASSWORD:openroof123}
@@ -85,26 +86,43 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: ${SUPABASE_URL:}
   service-role-key: ${SUPABASE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
+
+# ==================== UPLOAD ====================
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
-  models:
-    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:20MB}
-    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
+  # KYC / personal document upload settings (used by UserDocumentService)
   documents:
     max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+  # 3D Model upload settings (octet-stream incluido para compatibilidad con exportadores)
+  models:
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
+  # Floor plan upload settings (PDF, JPG, PNG, WebP — max 5 per property)
+  floor-plans:
+    max-file-size: ${UPLOAD_FLOOR_PLANS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_FLOOR_PLANS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+    max-per-property: ${UPLOAD_FLOOR_PLANS_MAX_PER_PROPERTY:5}
+
+trashcan:
+  retention-days: 10
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 20MB
-  max-request-size: 30MB
+  max-file-size: 50MB
+  max-request-size: 60MB
 
 # ==================== RESERVATION ====================
 openroof:
@@ -117,9 +135,6 @@ shedlock:
   defaults:
     lock-at-most-for: 9m
     lock-at-least-for: 1m
-
-trashcan:
-  retention-days: 10
 
 mail:
   from-name: OpenRoof
