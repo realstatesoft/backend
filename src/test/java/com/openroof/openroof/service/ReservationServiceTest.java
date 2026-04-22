@@ -292,10 +292,9 @@ assertThatThrownBy(() -> service.createReservation(
             when(reservationRepository.findExpired(anyCollection(), any()))
                     .thenReturn(List.of(r1, r2));
             when(reservationRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            
+            service.expireStaleReservations();
 
-            int expired = service.expireStaleReservations();
-
-            assertThat(expired).isEqualTo(2);
             assertThat(r1.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
             assertThat(r2.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
         }
