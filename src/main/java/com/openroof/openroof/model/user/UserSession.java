@@ -7,12 +7,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "user_sessions", indexes = {
         @Index(name = "idx_sessions_user", columnList = "user_id"),
         @Index(name = "idx_sessions_token", columnList = "token_hash"),
         @Index(name = "idx_sessions_expires", columnList = "expires_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

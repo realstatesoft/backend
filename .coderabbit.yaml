@@ -1,0 +1,13 @@
+# CodeRabbit Configuration
+# Docs: https://docs.coderabbit.ai/configuration
+
+language: es
+
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - main
+      - test
+      - dev
+  review_status: true

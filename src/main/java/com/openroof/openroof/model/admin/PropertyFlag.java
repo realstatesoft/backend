@@ -9,6 +9,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_flags", indexes = {
         @Index(name = "idx_property_flags_property", columnList = "property_id"),
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_property_flags_type", columnList = "flag_type"),
         @Index(name = "idx_property_flags_resolved", columnList = "resolved_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

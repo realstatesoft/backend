@@ -5,11 +5,14 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_price_history", indexes = {
         @Index(name = "idx_property_price_history_property", columnList = "property_id"),
         @Index(name = "idx_property_price_history_date", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

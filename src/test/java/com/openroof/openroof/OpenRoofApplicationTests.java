@@ -8,6 +8,6 @@ class OpenRoofApplicationTests {
 
     @Test
     void contextLoads() {
+        // Solo verifica que el contexto levanta correctamente
     }
-
 }

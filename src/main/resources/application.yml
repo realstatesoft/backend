@@ -1,12 +1,17 @@
 spring:
   application:
     name: OpenRoof
+  config:
+    import: optional:file:.env[.properties]
 
   # ==================== DATASOURCE ====================
+  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
+  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}
-    username: ${DB_USERNAME:openroof}
-    password: ${DB_PASSWORD:openroof123}
+    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
+    username: postgres.etpxedhtursffyoeapqr
+    password: OpenRoof$!*$up4Bas3#Pl4tf0rm2026*
+
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -29,6 +34,20 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+
+  # ==================== MAIL ====================
+  # Valores temporales para que el backend arranque sin depender de variables externas.
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: noreply@openroof.com
+    password: change-me
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   # ==================== JACKSON ====================
   jackson:
@@ -57,9 +76,13 @@ springdoc:
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
+      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
       expiration: 86400000       # 24 horas en ms
-      refresh-expiration: 604800000  # 7 días en ms
+      refresh-expiration: 604800000  # 7 dias en ms
+
+mail:
+  from-name: OpenRoof
+  base-url: http://localhost:5173
 
 # ==================== LOGGING ====================
 logging:
@@ -69,3 +92,25 @@ logging:
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
+supabase:
+  url: https://etpxedhtursffyoeapqr.supabase.co
+  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  storage:
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+
+# ==================== UPLOAD ====================
+upload:
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  models:
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:20MB}
+
+# ==================== MULTIPART ====================
+spring.servlet.multipart:
+  max-file-size: 5MB
+  max-request-size: 10MB

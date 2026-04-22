@@ -9,10 +9,13 @@ import org.hibernate.type.SqlTypes;
 
 import java.util.Map;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "search_preferences", indexes = {
         @Index(name = "idx_search_preferences_user", columnList = "user_id")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

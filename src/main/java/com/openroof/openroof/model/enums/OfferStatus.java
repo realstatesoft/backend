@@ -12,7 +12,7 @@ public enum OfferStatus {
     EXPIRED;
 
     private static final Map<OfferStatus, Set<OfferStatus>> TRANSITIONS = Map.of(
-            SENT, Set.of(VIEWED, REJECTED, EXPIRED),
+            SENT, Set.of(VIEWED, NEGOTIATING, ACCEPTED, REJECTED, EXPIRED),
             VIEWED, Set.of(NEGOTIATING, ACCEPTED, REJECTED, EXPIRED),
             NEGOTIATING, Set.of(ACCEPTED, REJECTED, EXPIRED),
             ACCEPTED, Set.of(),

@@ -1,0 +1,86 @@
+# ============================================================
+# render.yaml — Infrastructure as Code para Render
+# Docs: https://render.com/docs/infrastructure-as-code
+#
+# Servicios definidos:
+#   1. openroof-backend-prod   → rama main  → producción
+#   2. openroof-backend-test   → rama test  → staging/testing
+# ============================================================
+
+services:
+
+  # ─────────────────────────────────────────────────
+  # PRODUCCIÓN — rama: main
+  # ─────────────────────────────────────────────────
+  - type: web
+    name: openroof-backend-prod
+    env: docker
+    plan: starter          # Free tiene cold starts; starter recomendado para prod
+    region: oregon
+    branch: main           # Solo se despliega al hacer push/merge a main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v3/api-docs
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      # Base de datos PRODUCCIÓN — Supabase proyecto prod
+      - key: DB_URL
+        sync: false        # Configurar manualmente en Render Dashboard
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: openroof-images
+
+      # CORS — URL de tu frontend en producción
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false   # ej: https://openroof.vercel.app
+
+  # ─────────────────────────────────────────────────
+  # STAGING / TESTING — rama: test
+  # ─────────────────────────────────────────────────
+  - type: web
+    name: openroof-backend-test
+    env: docker
+    plan: free             # Free es suficiente para staging/QA
+    region: oregon
+    branch: test           # Solo se despliega al hacer push/merge a test
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v3/api-docs
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: test        # Usar perfil 'test' para que cargue application-test.yml
+
+      # Base de datos TESTING — Supabase proyecto separado (o schema separado)
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: openroof-images-test
+
+      # CORS — URL de tu frontend en test/staging
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false   # ej: https://openroof-test.vercel.app

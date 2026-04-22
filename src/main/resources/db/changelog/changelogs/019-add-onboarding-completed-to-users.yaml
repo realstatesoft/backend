@@ -1,0 +1,19 @@
+databaseChangeLog:
+  # ──────────────────────────────────────────────────────────────────
+  # 019 – Agrega columna onboarding_completed a la tabla users
+  #        Indica si el usuario completó el wizard de preferencias
+  # ──────────────────────────────────────────────────────────────────
+  - changeSet:
+      id: 019-add-onboarding-completed-to-users
+      author: openroof-team
+      comment: "Agrega columna onboarding_completed a users (default false)"
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: onboarding_completed
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

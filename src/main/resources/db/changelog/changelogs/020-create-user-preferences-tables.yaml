@@ -1,0 +1,184 @@
+databaseChangeLog:
+  # ──────────────────────────────────────────────────────────────────
+  # 020 – Crear tablas del módulo de preferencias de usuario
+  # ──────────────────────────────────────────────────────────────────
+  - changeSet:
+      id: 020-create-preference-categories
+      author: openroof-team
+      comment: "Crea tabla de categorías de preferencias (catálogo estático)"
+      changes:
+        - createTable:
+            tableName: preference_categories
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: preference_categories_pkey
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_preference_category_code
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 020-create-preference-options
+      author: openroof-team
+      comment: "Crea tabla de opciones de preferencias por categoría"
+      changes:
+        - createTable:
+            tableName: preference_options
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: preference_options_pkey
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_po_category
+                    references: preference_categories(id)
+              - column:
+                  name: label
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: value
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_order
+                  type: INTEGER
+                  defaultValueNumeric: 0
+        - createIndex:
+            indexName: idx_preference_options_category
+            tableName: preference_options
+            columns:
+              - column:
+                  name: category_id
+  - changeSet:
+      id: 020-create-user-preferences
+      author: openroof-team
+      comment: "Crea tabla de preferencias de usuario (una por usuario)"
+      changes:
+        - createTable:
+            tableName: user_preferences
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: user_preferences_pkey
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_user_preferences_user
+                    foreignKeyName: fk_up_user
+                    references: users(id)
+              - column:
+                  name: onboarding_completed
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_user_preferences_user_id
+            tableName: user_preferences
+            columns:
+              - column:
+                  name: user_id
+  - changeSet:
+      id: 020-create-user-preference-options
+      author: openroof-team
+      comment: "Crea tabla intermedia ManyToMany entre user_preferences y preference_options"
+      changes:
+        - createTable:
+            tableName: user_preference_options
+            columns:
+              - column:
+                  name: user_preference_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_upo_user_preference
+                    references: user_preferences(id)
+              - column:
+                  name: preference_option_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_upo_option
+                    references: preference_options(id)
+        - addPrimaryKey:
+            tableName: user_preference_options
+            columnNames: user_preference_id, preference_option_id
+            constraintName: pk_user_preference_options
+        - createIndex:
+            indexName: idx_upo_user_preference_id
+            tableName: user_preference_options
+            columns:
+              - column:
+                  name: user_preference_id
+  - changeSet:
+      id: 020-create-user-preference-ranges
+      author: openroof-team
+      comment: "Crea tabla de rangos numéricos de preferencias (precio, superficie, habitaciones)"
+      changes:
+        - createTable:
+            tableName: user_preference_ranges
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: user_preference_ranges_pkey
+              - column:
+                  name: user_preference_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_upr_user_preference
+                    references: user_preferences(id)
+              - column:
+                  name: field_name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_value
+                  type: DOUBLE PRECISION
+              - column:
+                  name: max_value
+                  type: DOUBLE PRECISION
+        - createIndex:
+            indexName: idx_upr_user_preference_id
+            tableName: user_preference_ranges
+            columns:
+              - column:
+                  name: user_preference_id

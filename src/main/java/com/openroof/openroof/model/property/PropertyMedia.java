@@ -5,12 +5,15 @@ import com.openroof.openroof.model.enums.MediaType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "property_media", indexes = {
         @Index(name = "idx_property_media_property", columnList = "property_id"),
         @Index(name = "idx_property_media_primary", columnList = "property_id, is_primary"),
         @Index(name = "idx_property_media_order", columnList = "property_id, order_index")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,4 +45,7 @@ public class PropertyMedia extends BaseEntity {
 
     @Column(length = 255)
     private String title;
+
+    @Column(name = "storage_key", length = 255)
+    private String storageKey;
 }

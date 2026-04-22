@@ -30,7 +30,14 @@ coverage/
 build/
 env/
 *.env
+.env
 HELP.md
+
+# ── Configuración con secretos reales (usar application.yml.example como plantilla) ──
+src/main/resources/application.yml
+
+# ── Seed de datos de prueba (solo para desarrollo local, no va a prod ni al repo) ──
+src/main/resources/db/changelog/changelogs/004-seed-test-data.yaml
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -63,3 +70,8 @@ build/
 
 ### VS Code ###
 .vscode/
+src/main/resources/application.yml
+*.yml
+
+
+credenciales.txt

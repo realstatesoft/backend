@@ -1,0 +1,297 @@
+databaseChangeLog:
+
+  # ──────────────────────────────────────────────────────────────────
+  # 004 – Agregar columna deleted_at (soft delete) a todas las tablas
+  #        que aún no la tienen. La tabla "properties" ya la posee.
+  # ──────────────────────────────────────────────────────────────────
+
+  - changeSet:
+      id: 004-add-deleted-at
+      author: openroof-team
+      comment: "Agrega deleted_at TIMESTAMP a todas las tablas para soft delete global"
+      changes:
+
+        # ── admin ──────────────────────────────────────────────────
+        - addColumn:
+            tableName: admin_reviews
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_flags
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── agent ──────────────────────────────────────────────────
+        - addColumn:
+            tableName: agent_clients
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: agent_profiles
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: agent_reviews
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: agent_social_media
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: agent_specialties
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: client_interactions
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: external_clients
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── contract ───────────────────────────────────────────────
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: contract_signatures
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: contract_templates
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── image ──────────────────────────────────────────────────
+        - addColumn:
+            tableName: images
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── interaction ────────────────────────────────────────────
+        - addColumn:
+            tableName: agent_agenda
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: favorites
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: offers
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: visits
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── lead ───────────────────────────────────────────────────
+        - addColumn:
+            tableName: leads
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: lead_interactions
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: lead_statuses
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── messaging ──────────────────────────────────────────────
+        - addColumn:
+            tableName: messages
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── notification ───────────────────────────────────────────
+        - addColumn:
+            tableName: notifications
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── property (excepto "properties" que ya la tiene) ────────
+        - addColumn:
+            tableName: exterior_features
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: interior_features
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: locations
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_media
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_price_history
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_reviews
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_rooms
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_similar
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_status_history
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: property_views
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── reservation ────────────────────────────────────────────
+        - addColumn:
+            tableName: documents_uploaded
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: reservations
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── search ─────────────────────────────────────────────────
+        - addColumn:
+            tableName: alerts
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: search_preferences
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        # ── user ───────────────────────────────────────────────────
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+        - addColumn:
+            tableName: user_sessions
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
