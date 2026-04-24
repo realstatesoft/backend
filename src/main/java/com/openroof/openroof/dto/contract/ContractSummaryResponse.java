@@ -32,6 +32,9 @@ public record ContractSummaryResponse(
         BigDecimal totalCommissionAmount,
 
         LocalDate startDate,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        /** Indica si el usuario que realiza la consulta ya firmó este contrato */
+        boolean currentUserHasSigned
 ) {
 }
