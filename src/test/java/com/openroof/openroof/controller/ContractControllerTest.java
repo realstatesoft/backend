@@ -23,6 +23,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -62,6 +65,9 @@ class ContractControllerTest {
 
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private com.openroof.openroof.security.PropertyViewRateLimiter propertyViewRateLimiter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
@@ -148,5 +154,30 @@ class ContractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /{id} - Accept-Language no altera el payload")
+    void getById_acceptLanguage_doesNotChangePayload() throws Exception {
+        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.PARTIALLY_SIGNED, new BigDecimal("150000"), null, null, "Terms", null, null, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
+
+        when(contractService.getById(eq(1L), eq("buyer"))).thenReturn(response);
+
+        MvcResult en = mockMvc.perform(get("/contracts/1")
+                        .with(user("buyer").roles("USER"))
+                        .header("Accept-Language", "en"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult pt = mockMvc.perform(get("/contracts/1")
+                        .with(user("buyer").roles("USER"))
+                        .header("Accept-Language", "pt"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode enBody = objectMapper.readTree(en.getResponse().getContentAsString()).get("data");
+        JsonNode ptBody = objectMapper.readTree(pt.getResponse().getContentAsString()).get("data");
+
+        assertThat(enBody).isEqualTo(ptBody);
     }
 }
