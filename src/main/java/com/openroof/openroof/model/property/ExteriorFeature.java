@@ -4,8 +4,11 @@ import com.openroof.openroof.model.enums.ExteriorFeatureCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "exterior_features")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

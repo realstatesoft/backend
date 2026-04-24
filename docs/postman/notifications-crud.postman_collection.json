@@ -1,0 +1,228 @@
+{
+  "info": {
+    "_postman_id": "9a739ea2-c4fb-4c44-b610-5ae4bca15f6c",
+    "name": "OpenRoof Notifications CRUD",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección para probar el CRUD de Notifications del backend OpenRoof."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create self notification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"SYSTEM\",\n  \"title\": \"Perfil actualizado\",\n  \"message\": \"Tus datos se actualizaron correctamente.\",\n  \"data\": {\n    \"section\": \"profile\"\n  },\n  \"actionUrl\": \"/profile\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/notifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications"
+          ]
+        },
+        "description": "Crea una notificación para el usuario autenticado."
+      }
+    },
+    {
+      "name": "Create notification for another user (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": {{targetUserId}},\n  \"type\": \"VISIT\",\n  \"title\": \"Nueva solicitud de visita\",\n  \"message\": \"Tenés una solicitud de visita pendiente de revisión.\",\n  \"data\": {\n    \"visitRequestId\": 44,\n    \"propertyId\": 12\n  },\n  \"actionUrl\": \"/visit-requests\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/notifications",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications"
+          ]
+        },
+        "description": "ADMIN puede crear una notificación para otro usuario."
+      }
+    },
+    {
+      "name": "List my notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "me"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get unread count",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/me/unread-count",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "me",
+            "unread-count"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get notification by id",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/{{notificationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "{{notificationId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mark notification as read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "{{notificationId}}",
+            "read"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mark all my notifications as read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/me/read-all",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "me",
+            "read-all"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete notification",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/notifications/{{notificationId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "notifications",
+            "{{notificationId}}"
+          ]
+        },
+        "description": "Elimina lógicamente una notificación propia. Respuesta esperada: 204 No Content."
+      }
+    }
+  ]
+}

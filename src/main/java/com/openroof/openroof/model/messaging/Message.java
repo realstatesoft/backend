@@ -8,6 +8,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "messages", indexes = {
         @Index(name = "idx_messages_sender", columnList = "sender_id"),
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_messages_parent", columnList = "parent_id"),
         @Index(name = "idx_messages_created", columnList = "created_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

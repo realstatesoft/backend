@@ -74,10 +74,15 @@ public class PropertyMapper {
                 // Audit
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
-                p.getPublishedAt());
+                p.getTrashedAt(),
+                p.getTrashedAt());
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p) {
+        return toSummaryResponse(p, 0);
+    }
+
+    public PropertySummaryResponse toSummaryResponse(Property p, Integer relevanceScore) {
         String primaryImage = Optional.ofNullable(p.getMedia())
                 .orElse(Collections.emptyList())
                 .stream()
@@ -98,7 +103,11 @@ public class PropertyMapper {
                 p.getBathrooms(),
                 p.getSurfaceArea(),
                 enumName(p.getStatus()),
-                p.getLocation() != null ? p.getLocation().getName() : null);
+                p.getLocation() != null ? p.getLocation().getName() : null,
+                p.getGeoLocation() != null ? p.getGeoLocation().getLat() : null,
+                p.getGeoLocation() != null ? p.getGeoLocation().getLng() : null,
+                p.getTrashedAt(),
+                relevanceScore);
     }
 
     // ─── Request → Entity ─────────────────────────────────────────
@@ -206,6 +215,8 @@ public class PropertyMapper {
                     .lat(req.lat())
                     .lng(req.lng())
                     .build());
+        } else if (req.lat() == null && req.lng() == null) {
+            property.setGeoLocation(null);
         }
 
         // ConstructionDetails: actualizar campos individualmente

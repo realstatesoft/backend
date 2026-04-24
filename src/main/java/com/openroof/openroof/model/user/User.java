@@ -1,6 +1,7 @@
 package com.openroof.openroof.model.user;
 
 import com.openroof.openroof.common.BaseEntity;
+import com.openroof.openroof.model.enums.ClientType;
 import com.openroof.openroof.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,12 +14,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "users", indexes = {
         @Index(name = "idx_users_email", columnList = "email"),
         @Index(name = "idx_users_role", columnList = "role"),
         @Index(name = "idx_users_suspended", columnList = "suspended_until")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -44,7 +48,11 @@ public class User extends BaseEntity implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private UserRole role = UserRole.BUYER;
+    private UserRole role = UserRole.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_type", length = 20)
+    private ClientType clientType;
 
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;
@@ -54,6 +62,10 @@ public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "suspension_reason", columnDefinition = "TEXT")
     private String suspensionReason;
+
+    @Column(name = "onboarding_completed", nullable = false)
+    @Builder.Default
+    private boolean onboardingCompleted = false;
 
     /*
      * Auth: Enrique Rios

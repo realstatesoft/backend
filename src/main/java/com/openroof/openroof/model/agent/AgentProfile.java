@@ -9,11 +9,15 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "agent_profiles", indexes = {
         @Index(name = "idx_agent_profiles_user", columnList = "user_id", unique = true),
         @Index(name = "idx_agent_profiles_rating", columnList = "avg_rating")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -51,6 +55,7 @@ public class AgentProfile extends BaseEntity {
             joinColumns = @JoinColumn(name = "agent_id"),
             inverseJoinColumns = @JoinColumn(name = "specialty_id")
     )
+    @BatchSize(size = 30)
     @Builder.Default
     private List<AgentSpecialty> specialties = new ArrayList<>();
 

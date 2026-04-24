@@ -1,0 +1,140 @@
+databaseChangeLog:
+
+  # ──────────────────────────────────────────────────────────────────
+  # 005 – Crear tabla visit_requests
+  #        Modela la solicitud de visita previa a la confirmación
+  #        de una Visit. Permite negociación de horario entre
+  #        buyer y agent.
+  # ──────────────────────────────────────────────────────────────────
+
+  - changeSet:
+      id: 005-create-visit-requests
+      author: openroof-team
+      comment: "Crea la tabla visit_requests para el flujo de solicitud de visita"
+      changes:
+        - createTable:
+            tableName: visit_requests
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    primaryKeyName: visit_requests_pkey
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+              - column:
+                  name: version
+                  type: BIGINT
+
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+              - column:
+                  name: property_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_vr_property
+                    references: properties(id)
+
+              - column:
+                  name: buyer_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_vr_buyer
+                    references: users(id)
+
+              - column:
+                  name: agent_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_vr_agent
+                    references: agent_profiles(id)
+
+              - column:
+                  name: proposed_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: counter_proposed_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+
+              - column:
+                  name: counter_propose_message
+                  type: TEXT
+
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: PENDING
+
+              - column:
+                  name: buyer_name
+                  type: VARCHAR(100)
+
+              - column:
+                  name: buyer_email
+                  type: VARCHAR(255)
+
+              - column:
+                  name: buyer_phone
+                  type: VARCHAR(20)
+
+              - column:
+                  name: message
+                  type: TEXT
+
+              - column:
+                  name: visit_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_vr_visit
+                    references: visits(id)
+
+        - createIndex:
+            indexName: idx_vr_property
+            tableName: visit_requests
+            columns:
+              - column:
+                  name: property_id
+
+        - createIndex:
+            indexName: idx_vr_buyer
+            tableName: visit_requests
+            columns:
+              - column:
+                  name: buyer_id
+
+        - createIndex:
+            indexName: idx_vr_agent
+            tableName: visit_requests
+            columns:
+              - column:
+                  name: agent_id
+
+        - createIndex:
+            indexName: idx_vr_status
+            tableName: visit_requests
+            columns:
+              - column:
+                  name: status

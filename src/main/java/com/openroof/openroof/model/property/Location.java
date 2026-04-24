@@ -5,11 +5,14 @@ import com.openroof.openroof.common.embeddable.GeoLocation;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "locations", indexes = {
         @Index(name = "idx_locations_name", columnList = "name"),
         @Index(name = "idx_locations_city_dept", columnList = "city, department")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,4 +39,20 @@ public class Location extends BaseEntity {
             @AttributeOverride(name = "lng", column = @Column(name = "lng", precision = 11, scale = 8))
     })
     private GeoLocation geoLocation;
+
+    // === Métodos de conveniencia para acceso a coordenadas ===
+
+    public Double getLat() {
+        return geoLocation != null ? geoLocation.getLatAsDouble() : null;
+    }
+
+    public Double getLng() {
+        return geoLocation != null ? geoLocation.getLngAsDouble() : null;
+    }
+
+    public boolean hasCoordinates() {
+        return geoLocation != null
+                && geoLocation.getLat() != null
+                && geoLocation.getLng() != null;
+    }
 }

@@ -2,22 +2,24 @@ spring:
   application:
     name: OpenRoof
 
-  # ==================== DATASOURCE ====================
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openroof_db}
-    username: ${DB_USERNAME:openroof}
-    password: ${DB_PASSWORD:openroof123}
+
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require
+    username: postgres.gnkzarhkjbuydrzybydm
+    password: OpenRoof$!*Supabase#Platform2026_TEST
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 300000
+      maximum-pool-size: 4
+      minimum-idle: 2
+      idle-timeout: 30000
       connection-timeout: 20000
 
-  # ==================== JPA / HIBERNATE ====================
   jpa:
     hibernate:
-      ddl-auto: none  # Liquibase maneja el schema
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -25,23 +27,36 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
-  # ==================== LIQUIBASE ====================
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    default-schema: public
 
-  # ==================== JACKSON ====================
   jackson:
     default-property-inclusion: non_null
     time-zone: UTC
 
+  # ==================== MAIL (Gmail SMTP) ====================
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 # ==================== SERVER ====================
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
-# ==================== OPENAPI / SPRINGDOC ====================
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -53,15 +68,16 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== JWT ====================
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
+
 application:
   security:
     jwt:
       secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
-      expiration: 86400000       # 24 horas en ms
-      refresh-expiration: 604800000  # 7 días en ms
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-# ==================== LOGGING ====================
 logging:
   level:
     root: INFO
@@ -69,3 +85,58 @@ logging:
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
+supabase:
+  url: ${SUPABASE_URL:}
+  service-role-key: ${SUPABASE_KEY:}
+  storage:
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+
+
+# ==================== UPLOAD ====================
+upload:
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
+  allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  # KYC / personal document upload settings (used by UserDocumentService)
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+  # 3D Model upload settings (octet-stream incluido para compatibilidad con exportadores)
+  models:
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
+    allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
+  # Floor plan upload settings (PDF, JPG, PNG, WebP — max 5 per property)
+  floor-plans:
+    max-file-size: ${UPLOAD_FLOOR_PLANS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_FLOOR_PLANS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+    max-per-property: ${UPLOAD_FLOOR_PLANS_MAX_PER_PROPERTY:5}
+
+trashcan:
+  retention-days: 10
+
+# ==================== MULTIPART ====================
+spring.servlet.multipart:
+  max-file-size: 50MB
+  max-request-size: 60MB
+
+# ==================== RESERVATION ====================
+openroof:
+  reservation:
+    ttl-hours: 72
+    default-percent: 1.00
+
+# ==================== SHEDLOCK ====================
+shedlock:
+  defaults:
+    lock-at-most-for: 9m
+    lock-at-least-for: 1m
+
+mail:
+  from-name: OpenRoof
+  base-url: ${FRONTEND_URL:http://localhost:5173}
+

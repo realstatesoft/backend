@@ -5,8 +5,11 @@ import com.openroof.openroof.model.enums.SocialMediaPlatform;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "agent_social_media")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor

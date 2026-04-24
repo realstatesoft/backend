@@ -5,11 +5,14 @@ import com.openroof.openroof.model.enums.ContractType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "contract_templates", indexes = {
         @Index(name = "idx_contract_templates_type", columnList = "contract_type"),
         @Index(name = "idx_contract_templates_active", columnList = "active")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
