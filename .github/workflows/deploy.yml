@@ -1,7 +1,9 @@
 name: Deploy to VPS
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - test
 
 jobs:
   deploy:
