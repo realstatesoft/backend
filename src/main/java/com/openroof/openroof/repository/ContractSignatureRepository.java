@@ -16,6 +16,8 @@ public interface ContractSignatureRepository extends JpaRepository<ContractSigna
     boolean existsByContractIdAndRoleAndDeletedAtIsNull(Long contractId, SignatureRole role);
 
     Optional<ContractSignature> findByContractIdAndSignerIdAndDeletedAtIsNull(Long contractId, Long signerId);
+    
+    boolean existsByContractIdAndSignerIdAndDeletedAtIsNull(Long contractId, Long signerId);
 
     long countByContractIdAndSignedAtIsNotNullAndDeletedAtIsNull(Long contractId);
 }

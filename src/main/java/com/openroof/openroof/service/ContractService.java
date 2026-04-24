@@ -393,17 +393,25 @@ public class ContractService {
 
     /** Contratos donde el agente autenticado actúa como agente listador. */
     public List<ContractSummaryResponse> getAsListingAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
         return contractRepository.findByListingAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
+                .map(c -> contractMapper.toSummaryResponse(c, 
+                    contractSignatureRepository.existsByContractIdAndSignerIdAndDeletedAtIsNull(c.getId(), user.getId())))
                 .toList();
     }
 
     /** Contratos donde el agente autenticado actúa como agente del comprador. */
     public List<ContractSummaryResponse> getAsBuyerAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
         return contractRepository.findByBuyerAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
+                .map(c -> contractMapper.toSummaryResponse(c, 
+                    contractSignatureRepository.existsByContractIdAndSignerIdAndDeletedAtIsNull(c.getId(), user.getId())))
                 .toList();
     }
 
@@ -411,7 +419,8 @@ public class ContractService {
     public List<ContractSummaryResponse> getAsSeller(String sellerEmail) {
         User user = findUserByEmail(sellerEmail);
         return contractRepository.findBySeller_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
+                .map(c -> contractMapper.toSummaryResponse(c, 
+                    contractSignatureRepository.existsByContractIdAndSignerIdAndDeletedAtIsNull(c.getId(), user.getId())))
                 .toList();
     }
 
@@ -419,7 +428,8 @@ public class ContractService {
     public List<ContractSummaryResponse> getAsBuyer(String buyerEmail) {
         User user = findUserByEmail(buyerEmail);
         return contractRepository.findByBuyer_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
+                .map(c -> contractMapper.toSummaryResponse(c, 
+                    contractSignatureRepository.existsByContractIdAndSignerIdAndDeletedAtIsNull(c.getId(), user.getId())))
                 .toList();
     }
 
@@ -434,7 +444,8 @@ public class ContractService {
 
         List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
         return contracts.stream()
-                .map(contractMapper::toSummaryResponse)
+                .map(c -> contractMapper.toSummaryResponse(c, 
+                    contractSignatureRepository.existsByContractIdAndSignerIdAndDeletedAtIsNull(c.getId(), requester.getId())))
                 .toList();
     }
 
