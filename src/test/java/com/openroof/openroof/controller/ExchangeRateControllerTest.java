@@ -92,7 +92,7 @@ class ExchangeRateControllerTest {
         mockMvc.perform(get("/api/exchange-rates/usd"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.currencyCode").value("USD"))
-                .andExpect(jsonPath("$.data.sellRate").value(6360));
+                .andExpect(jsonPath("$.data.sellRate").value(new BigDecimal("6360")));
     }
 
     @Test
@@ -102,7 +102,7 @@ class ExchangeRateControllerTest {
         mockMvc.perform(get("/api/exchange-rates/brl"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.currencyCode").value("BRL"))
-                .andExpect(jsonPath("$.data.sellRate").value(1260));
+                .andExpect(jsonPath("$.data.sellRate").value(new BigDecimal("1260")));
     }
 
     private ExchangeRatesResponse sampleAggregateResponse() {
