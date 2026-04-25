@@ -4,5 +4,6 @@ public enum PaymentType {
     RESERVATION,
     CONTRACT,
     PROPERTY_HIGHLIGHT,
-    SUBSCRIPTION
+    SUBSCRIPTION,
+    OTHER
 }
