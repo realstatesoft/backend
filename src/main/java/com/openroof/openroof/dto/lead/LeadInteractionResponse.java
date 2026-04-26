@@ -1,6 +1,5 @@
 package com.openroof.openroof.dto.lead;
 
-import com.openroof.openroof.model.enums.InteractionType;
 import java.time.LocalDateTime;
 
 /**

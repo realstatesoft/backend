@@ -29,7 +29,6 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final LeadStatusRepository leadStatusRepository;
     private final AgentProfileRepository agentProfileRepository;
-    private final com.openroof.openroof.repository.LeadInteractionRepository leadInteractionRepository;
 
     private static final String DEFAULT_STATUS = "Nuevo";
     private static final String WIZARD_SOURCE = "sell_wizard";

@@ -11,6 +11,7 @@ import com.openroof.openroof.model.lead.Lead;
 import com.openroof.openroof.model.lead.LeadStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.LeadInteractionRepository;
 import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,8 @@ class LeadServiceTest {
 
     @Mock
     private LeadStatusRepository leadStatusRepository;
+    @Mock
+    private LeadInteractionRepository leadInteractionRepository;
 
     @Mock
     private AgentProfileRepository agentProfileRepository;
@@ -112,6 +115,7 @@ class LeadServiceTest {
                 .source("sell_wizard")
                 .notes("test notes")
                 .metadata(null)
+                .interactions(new ArrayList<>())
                 .build();
         lead.setId(1L);
         lead.setCreatedAt(LocalDateTime.now());
@@ -347,15 +351,22 @@ class LeadServiceTest {
     class GetByIdTests {
 
         @Test
-        @DisplayName("Retorna lead por ID")
-        void getById_existingLead_returnsResponse() {
+        @DisplayName("Retorna lead por ID con sus interacciones mapeadas")
+        void getById_withInteractions_returnsMappedInteractions() {
             Lead lead = buildSavedLead(sampleRequest());
+            lead.getInteractions().add(com.openroof.openroof.model.lead.LeadInteraction.builder()
+                    .type(com.openroof.openroof.model.enums.InteractionType.CALL)
+                    .subject("Llamada inicial")
+                    .note("El cliente no atendió")
+                    .build());
+
             when(leadRepository.findById(1L)).thenReturn(Optional.of(lead));
 
             LeadResponse response = leadService.getById(1L);
 
             assertThat(response).isNotNull();
-            assertThat(response.name()).isEqualTo("John Doe");
+            assertThat(response.interactions()).hasSize(1);
+            assertThat(response.interactions().get(0).subject()).isEqualTo("Llamada inicial");
         }
 
         @Test
