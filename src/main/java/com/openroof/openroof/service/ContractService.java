@@ -750,11 +750,6 @@ public class ContractService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
-    private AgentProfile findAgentByEmail(String email) {
-        User user = findUserByEmail(email);
-        return agentProfileRepository.findByUser_Id(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
-    }
 
     private AgentProfile resolveAgent(Long agentId, String errorMessage) {
         if (agentId == null) return null;

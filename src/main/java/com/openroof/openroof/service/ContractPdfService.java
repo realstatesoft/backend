@@ -13,7 +13,6 @@ import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.*;
 import com.itextpdf.layout.properties.AreaBreakType;
-import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.openroof.openroof.exception.BadRequestException;
@@ -50,16 +49,14 @@ public class ContractPdfService {
 
     private static final DeviceRgb PRIMARY_COLOR = new DeviceRgb(26, 60, 94); // #1a3c5e
     private static final DeviceRgb ACCENT_COLOR = new DeviceRgb(20, 120, 180); // #1478b4
-    private static final DeviceRgb LIGHT_BG = new DeviceRgb(240, 249, 255);// #f0f9ff
     private static final DeviceRgb BORDER_COLOR = new DeviceRgb(186, 230, 253);// #bae6fd
     private static final DeviceRgb MUTED_TEXT = new DeviceRgb(100, 116, 139);// #64748b
     private static final DeviceRgb SUCCESS_COLOR = new DeviceRgb(22, 163, 74); // #16a34a
-    private static final DeviceRgb WARNING_COLOR = new DeviceRgb(217, 119, 6); // #d97706
     private static final DeviceRgb ROW_ALT = new DeviceRgb(248, 250, 252);// #f8fafc
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
+    private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(Locale.of("es", "AR"));
 
     private final ContractRepository contractRepository;
     private final ContractSignatureRepository signatureRepository;

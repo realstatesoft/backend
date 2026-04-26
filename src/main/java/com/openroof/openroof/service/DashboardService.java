@@ -110,7 +110,7 @@ public class DashboardService {
                 // 3. Contratos urgentes (pendientes de firma por el usuario)
                 List<com.openroof.openroof.dto.contract.ContractSummaryResponse> urgentContracts = contractRepository
                                 .findPendingSignaturesForUser(userId).stream()
-                                .map(contractMapper::toSummaryResponse)
+                                .map(c -> contractMapper.toSummaryResponse(c, false))
                                 .collect(Collectors.toList());
                 
                 // 4. Solicitudes de visita nuevas/pendientes
