@@ -29,6 +29,7 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final LeadStatusRepository leadStatusRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final com.openroof.openroof.repository.LeadInteractionRepository leadInteractionRepository;
 
     private static final String DEFAULT_STATUS = "Nuevo";
     private static final String WIZARD_SOURCE = "sell_wizard";
@@ -213,6 +214,20 @@ public class LeadService {
     }
 
     private LeadResponse toResponse(Lead lead) {
+        java.util.List<com.openroof.openroof.dto.lead.LeadInteractionResponse> interactionDtos = lead.getInteractions().stream()
+                .map(i -> new com.openroof.openroof.dto.lead.LeadInteractionResponse(
+                        i.getId(),
+                        i.getType().name(),
+                        i.getSubject(),
+                        i.getNote(),
+                        i.getPerformedBy() != null ? i.getPerformedBy().getName() : null,
+                        i.getOldStatus() != null ? i.getOldStatus().getName() : null,
+                        i.getNewStatus() != null ? i.getNewStatus().getName() : null,
+                        i.getCreatedAt()
+                ))
+                .sorted((a, b) -> b.createdAt().compareTo(a.createdAt()))
+                .toList();
+
         return new LeadResponse(
                 lead.getId(),
                 lead.getAgent() != null ? lead.getAgent().getId() : null,
@@ -226,6 +241,7 @@ public class LeadService {
                 lead.getStatus() != null ? lead.getStatus().getColor() : null,
                 lead.getNotes(),
                 lead.getMetadata(),
+                interactionDtos,
                 lead.getCreatedAt()
         );
     }

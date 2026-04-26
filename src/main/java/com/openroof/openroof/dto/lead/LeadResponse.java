@@ -18,6 +18,7 @@ public record LeadResponse(
         String statusColor,
         String notes,
         Map<String, Object> metadata,
+        java.util.List<LeadInteractionResponse> interactions,
         LocalDateTime createdAt
 ) {
 }
