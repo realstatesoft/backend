@@ -35,6 +35,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -165,7 +166,7 @@ class PaymentControllerTest {
         @Test
         @DisplayName("Usuario autenticado recibe su lista de pagos paginada")
         void authenticatedUser_returns200() throws Exception {
-            when(paymentService.getMyPayments(eq("user@test.com"), eq(null), any(Pageable.class)))
+            when(paymentService.getMyPayments(eq("user@test.com"), isNull(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(sampleResponse(1L, PaymentStatus.PENDING))));
 
             mockMvc.perform(get("/payments/my")
@@ -235,7 +236,9 @@ class PaymentControllerTest {
 
             mockMvc.perform(get("/payments/99")
                             .with(user("user@test.com").roles("USER")))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.message").value(containsString("Pago no encontrado")));
         }
 
         @Test
@@ -253,7 +256,7 @@ class PaymentControllerTest {
         @Test
         @DisplayName("ADMIN puede listar todos los pagos")
         void admin_returns200() throws Exception {
-            when(paymentService.getAll(eq(null), eq(null), any(Pageable.class)))
+            when(paymentService.getAll(isNull(), isNull(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(
                             sampleResponse(1L, PaymentStatus.PENDING),
                             sampleResponse(2L, PaymentStatus.APPROVED))));

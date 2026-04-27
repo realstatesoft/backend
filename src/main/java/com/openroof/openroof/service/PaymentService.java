@@ -52,8 +52,8 @@ public class PaymentService {
 
     // Ver un pago por ID (el usuario solo puede ver los suyos; ADMIN ve cualquiera)
     public PaymentResponse getById(Long id, String currentUserEmail) {
-        User user = getUserByEmail(currentUserEmail);
         Payment payment = getPaymentOrThrow(id);
+        User user = getUserByEmail(currentUserEmail);
         if (user.getRole() != UserRole.ADMIN && !payment.getUser().getId().equals(user.getId())) {
             throw new ForbiddenException("No tienes permiso para ver este pago");
         }

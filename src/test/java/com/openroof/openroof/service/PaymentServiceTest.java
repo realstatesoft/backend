@@ -189,7 +189,6 @@ class PaymentServiceTest {
         @Test
         @DisplayName("Lanza ResourceNotFoundException si el pago no existe")
         void throwsWhenNotFound() {
-            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
             when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.getById(99L, "user@test.com"))

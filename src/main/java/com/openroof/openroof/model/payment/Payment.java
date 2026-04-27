@@ -15,7 +15,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -26,12 +25,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "payments", indexes = {
-        @Index(name = "idx_payments_user", columnList = "user_id"),
-        @Index(name = "idx_payments_type", columnList = "type"),
-        @Index(name = "idx_payments_status", columnList = "status"),
-        @Index(name = "idx_payments_created", columnList = "created_at")
-})
+@Table(name = "payments")
 @SQLRestriction("deleted_at IS NULL")
 @SQLDelete(sql = "UPDATE payments SET deleted_at = CURRENT_TIMESTAMP, version = version + 1 WHERE id = ? AND version = ?")
 @Getter
@@ -52,7 +46,7 @@ public class Payment extends BaseEntity{
     @Column(nullable = false, length = 50)
     private PaymentStatus status;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "transaction_code", unique = true, nullable = false, length = 255)
     private String transactionCode;
 
     @Column(nullable = false, precision = 12, scale = 2)
