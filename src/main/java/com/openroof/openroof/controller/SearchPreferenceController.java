@@ -8,6 +8,8 @@ import com.openroof.openroof.service.SearchPreferenceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,7 +56,7 @@ public class SearchPreferenceController {
     @Operation(summary = "Actualizar nombre de búsqueda guardada")
     public ResponseEntity<ApiResponse<SearchPreferenceResponse>> updateSearchPreference(
             @PathVariable Long id,
-            @RequestBody UpdateSearchPreferenceRequest request,
+            @Valid @RequestBody UpdateSearchPreferenceRequest request,
             @AuthenticationPrincipal User user) {
 
         SearchPreferenceResponse response = service.updateName(id, request.name(), user);
@@ -72,5 +74,9 @@ public class SearchPreferenceController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Búsqueda guardada eliminada"));
     }
 
-    public record UpdateSearchPreferenceRequest(String name) {}
+    public record UpdateSearchPreferenceRequest(
+        @NotBlank(message = "Name is required")
+        @Size(max = 100, message = "Name must be at most 100 characters")
+        String name
+    ) {}
 }
