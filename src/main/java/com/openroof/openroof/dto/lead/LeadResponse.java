@@ -10,6 +10,7 @@ public record LeadResponse(
         Long id,
         Long agentId,
         String agentName,
+        Long userId,
         String name,
         String email,
         String phone,

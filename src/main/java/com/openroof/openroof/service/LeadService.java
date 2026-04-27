@@ -10,6 +10,7 @@ import com.openroof.openroof.model.lead.LeadStatus;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
+import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +30,7 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final LeadStatusRepository leadStatusRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final UserRepository userRepository;
     private final com.openroof.openroof.repository.LeadInteractionRepository leadInteractionRepository;
 
     private static final String DEFAULT_STATUS = "Nuevo";
@@ -56,6 +58,7 @@ public class LeadService {
         Lead lead = Lead.builder()
                 .agent(agent)
                 .status(status)
+                .user(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElse(null))
                 .name(request.getFullName())
                 .email(request.email())
                 .phone(request.phone())
@@ -231,11 +234,19 @@ public class LeadService {
                     .toList();
         }
 
+        Long userId = lead.getUser() != null ? lead.getUser().getId() : null;
+        if (userId == null && lead.getEmail() != null) {
+            userId = userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(lead.getEmail())
+                    .map(com.openroof.openroof.model.user.User::getId)
+                    .orElse(null);
+        }
+
         return new LeadResponse(
                 lead.getId(),
                 lead.getAgent() != null ? lead.getAgent().getId() : null,
                 lead.getAgent() != null && lead.getAgent().getUser() != null 
                         ? lead.getAgent().getUser().getName() : null,
+                userId,
                 lead.getName(),
                 lead.getEmail(),
                 lead.getPhone(),
