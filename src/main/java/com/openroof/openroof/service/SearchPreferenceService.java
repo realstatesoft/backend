@@ -41,24 +41,16 @@ public class SearchPreferenceService {
     }
 
     public SearchPreferenceResponse updateName(Long id, String name, User user) {
-        SearchPreference existing = repository.findById(id)
+        SearchPreference existing = repository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Search preference not found"));
-
-        if (!existing.getUser().getId().equals(user.getId())) {
-            throw new ForbiddenException("You do not own this search preference");
-        }
 
         existing.setName(name);
         return toResponse(repository.save(existing));
     }
 
     public void deleteSearchPreference(Long id, User user) {
-        SearchPreference existing = repository.findById(id)
+        SearchPreference existing = repository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Search preference not found"));
-
-        if (!existing.getUser().getId().equals(user.getId())) {
-            throw new ForbiddenException("You do not own this search preference");
-        }
 
         repository.delete(existing);
     }
