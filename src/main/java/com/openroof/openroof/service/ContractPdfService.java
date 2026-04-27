@@ -82,8 +82,14 @@ public class ContractPdfService {
         if (!contractService.canAccess(contract, requester)) {
             throw new BadRequestException("No tiene permiso para descargar este contrato");
         }
-        if (contract.getSeller() == null || contract.getBuyer() == null || contract.getProperty() == null) {
-            throw new BadRequestException("El contrato está incompleto (faltan partes o propiedad) y no puede ser generado.");
+        if (contract.getSeller() == null) {
+            throw new BadRequestException("El contrato está incompleto: falta el vendedor.");
+        }
+        if (contract.getBuyer() == null) {
+            throw new BadRequestException("El contrato está incompleto: falta el comprador.");
+        }
+        if (contract.getProperty() == null) {
+            throw new BadRequestException("El contrato está incompleto: falta la propiedad.");
         }
     }
 
@@ -330,7 +336,8 @@ public class ContractPdfService {
 
             table.addCell(makeCell(resolveRoleLabel(sig.getRole()), bold, 9, PRIMARY_COLOR, bg));
             table.addCell(makeCell(sig.getSigner().getName(), regular, 9, Color.BLACK, bg));
-            table.addCell(makeCell(resolveSignatureTypeLabel(sig.getSignatureType().name()), regular, 9,
+            String sigType = sig.getSignatureType() != null ? sig.getSignatureType().name() : "UNKNOWN";
+            table.addCell(makeCell(resolveSignatureTypeLabel(sigType), regular, 9,
                     Color.BLACK, bg));
             table.addCell(makeCell(
                     sig.getSignedAt() != null ? sig.getSignedAt().format(DATETIME_FMT) : "—",
@@ -509,6 +516,7 @@ public class ContractPdfService {
             case "ELECTRONIC" -> "Electrónica";
             case "DIGITAL" -> "Digital";
             case "HANDWRITTEN_SCAN" -> "Manuscrita";
+            case "UNKNOWN" -> "No especificada";
             default -> type;
         };
     }

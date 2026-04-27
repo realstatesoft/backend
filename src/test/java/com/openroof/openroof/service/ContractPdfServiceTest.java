@@ -114,7 +114,8 @@ class ContractPdfServiceTest {
         BadRequestException ex = assertThrows(BadRequestException.class, () -> 
             contractPdfService.generatePdf(1L, "admin@test.com")
         );
-        assertTrue(ex.getMessage().contains("incompleto"));
+        assertTrue(ex.getMessage().contains("falta el comprador"), 
+            "Debe indicar específicamente que falta el comprador");
     }
 
     @Test
@@ -130,7 +131,8 @@ class ContractPdfServiceTest {
         BadRequestException ex = assertThrows(BadRequestException.class, () -> 
             contractPdfService.generatePdf(1L, "admin@test.com")
         );
-        assertTrue(ex.getMessage().contains("propiedad"));
+        assertTrue(ex.getMessage().contains("falta la propiedad"),
+            "Debe indicar específicamente que falta la propiedad");
     }
 
     @Test
