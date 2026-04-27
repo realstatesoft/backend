@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface LeadInteractionRepository extends JpaRepository<LeadInteraction, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"performedBy", "oldStatus", "newStatus"})
     List<LeadInteraction> findByLeadIdOrderByCreatedAtDesc(Long leadId);
 }

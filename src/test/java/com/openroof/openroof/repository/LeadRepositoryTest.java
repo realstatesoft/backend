@@ -38,6 +38,7 @@ class LeadRepositoryTest {
 
     private AgentProfile testAgent;
     private LeadStatus testStatus;
+    private Lead lead1;
 
     @BeforeEach
     void setUp() {
@@ -65,14 +66,14 @@ class LeadRepositoryTest {
                 .build();
         testStatus = leadStatusRepository.save(testStatus);
 
-        Lead lead1 = Lead.builder()
+        lead1 = Lead.builder()
                 .agent(testAgent)
                 .status(testStatus)
                 .name("Lead 1")
                 .email("lead1@test.com")
                 .source("wizard")
                 .build();
-        leadRepository.save(lead1);
+        lead1 = leadRepository.save(lead1);
 
         Lead lead2 = Lead.builder()
                 .agent(testAgent)
@@ -87,10 +88,13 @@ class LeadRepositoryTest {
     @Test
     @DisplayName("Debe encontrar leads por Agent ID con paginación")
     void findByAgentId_returnsPage() {
-        Page<Lead> result = leadRepository.findByAgentId(testAgent.getId(), PageRequest.of(0, 10));
+        Page<Lead> result = leadRepository.findByAgentId(testAgent.getId(), 
+            PageRequest.of(0, 10, org.springframework.data.domain.Sort.by("name")));
 
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getContent().get(0).getName()).isEqualTo("Lead 1");
+        assertThat(result.getContent())
+                .extracting(Lead::getName)
+                .containsExactlyInAnyOrder("Lead 1", "Lead 2");
     }
 
     @Test
@@ -103,14 +107,13 @@ class LeadRepositoryTest {
     @Test
     @DisplayName("Debe verificar si un lead pertenece a un usuario (agente)")
     void existsByIdAndAgent_User_Id_works() {
-        List<Lead> leads = leadRepository.findAll();
-        Long leadId = leads.get(0).getId();
+        Long leadId = lead1.getId();
         Long userId = testAgent.getUser().getId();
-
+ 
         boolean exists = leadRepository.existsByIdAndAgent_User_Id(leadId, userId);
         assertThat(exists).isTrue();
-
-        boolean notExists = leadRepository.existsByIdAndAgent_User_Id(leadId, 999L);
+ 
+        boolean notExists = leadRepository.existsByIdAndAgent_User_Id(leadId, Long.MAX_VALUE);
         assertThat(notExists).isFalse();
     }
 }
