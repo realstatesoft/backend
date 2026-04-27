@@ -3,13 +3,13 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.search.SearchPreferenceRequest;
 import com.openroof.openroof.dto.search.SearchPreferenceResponse;
 import com.openroof.openroof.exception.BadRequestException;
-import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.search.SearchPreference;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.SearchPreferenceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,13 +31,17 @@ public class SearchPreferenceService {
             throw new BadRequestException("Maximum " + MAX_PREFERENCES + " saved searches allowed");
         }
 
-        SearchPreference saved = repository.save(SearchPreference.builder()
-                .user(user)
-                .name(request.name())
-                .filters(request.filters())
-                .build());
+        try {
+            SearchPreference saved = repository.save(SearchPreference.builder()
+                    .user(user)
+                    .name(request.name())
+                    .filters(request.filters())
+                    .build());
 
-        return toResponse(saved);
+            return toResponse(saved);
+        } catch (DataIntegrityViolationException e) {
+            throw new BadRequestException("Maximum " + MAX_PREFERENCES + " saved searches allowed");
+        }
     }
 
     public SearchPreferenceResponse updateName(Long id, String name, User user) {
