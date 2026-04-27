@@ -3,7 +3,6 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.search.SearchPreferenceRequest;
 import com.openroof.openroof.dto.search.SearchPreferenceResponse;
 import com.openroof.openroof.exception.BadRequestException;
-import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.search.SearchPreference;
 import com.openroof.openroof.model.user.User;
@@ -36,15 +35,12 @@ class SearchPreferenceServiceTest {
     private SearchPreferenceService service;
 
     private User testUser;
-    private User otherUser;
 
     @BeforeEach
     void setUp() {
         service = new SearchPreferenceService(repository);
         testUser = User.builder().email("test@test.com").build();
         testUser.setId(1L);
-        otherUser = User.builder().email("other@test.com").build();
-        otherUser.setId(2L);
     }
 
     @Test
@@ -84,7 +80,7 @@ class SearchPreferenceServiceTest {
                 .filters(Map.of())
                 .build();
         existingPref.setId(1L);
-        when(repository.findById(1L)).thenReturn(Optional.of(existingPref));
+        when(repository.findByIdAndUserId(1L, testUser.getId())).thenReturn(Optional.of(existingPref));
         when(repository.save(any(SearchPreference.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SearchPreferenceResponse result = service.updateName(1L, "New Name", testUser);
@@ -93,17 +89,17 @@ class SearchPreferenceServiceTest {
     }
 
     @Test
-    void updateName_notOwner_throwsForbidden() {
+    void updateName_notFound_throwsResourceNotFound() {
         SearchPreference existingPref = SearchPreference.builder()
                 .user(testUser)
                 .name("Old Name")
                 .filters(Map.of())
                 .build();
         existingPref.setId(1L);
-        when(repository.findById(1L)).thenReturn(Optional.of(existingPref));
+        when(repository.findByIdAndUserId(1L, testUser.getId())).thenReturn(Optional.empty());
 
-        assertThrows(ForbiddenException.class, () ->
-                service.updateName(1L, "New Name", otherUser));
+        assertThrows(ResourceNotFoundException.class, () ->
+                service.updateName(1L, "New Name", testUser));
     }
 
     @Test
@@ -114,7 +110,7 @@ class SearchPreferenceServiceTest {
                 .filters(Map.of())
                 .build();
         existingPref.setId(1L);
-        when(repository.findById(1L)).thenReturn(Optional.of(existingPref));
+        when(repository.findByIdAndUserId(1L, testUser.getId())).thenReturn(Optional.of(existingPref));
 
         service.deleteSearchPreference(1L, testUser);
 
@@ -122,17 +118,17 @@ class SearchPreferenceServiceTest {
     }
 
     @Test
-    void deleteSearchPreference_notOwner_throwsForbidden() {
+    void deleteSearchPreference_notFound_throwsResourceNotFound() {
         SearchPreference existingPref = SearchPreference.builder()
                 .user(testUser)
                 .name("Test")
                 .filters(Map.of())
                 .build();
         existingPref.setId(1L);
-        when(repository.findById(1L)).thenReturn(Optional.of(existingPref));
+        when(repository.findByIdAndUserId(1L, testUser.getId())).thenReturn(Optional.empty());
 
-        assertThrows(ForbiddenException.class, () ->
-                service.deleteSearchPreference(1L, otherUser));
+        assertThrows(ResourceNotFoundException.class, () ->
+                service.deleteSearchPreference(1L, testUser));
     }
 
     @Test
