@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -152,6 +153,42 @@ public class PropertyService {
     public PropertyResponse getById(Long id) {
         Property property = findPropertyOrThrow(id);
         return propertyMapper.toResponse(property);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PropertySummaryResponse> getForComparison(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new BadRequestException("Debes indicar al menos una propiedad para comparar");
+        }
+
+        LinkedHashSet<Long> uniqueIds = ids.stream()
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+        if (uniqueIds.isEmpty()) {
+            throw new BadRequestException("Debes indicar IDs de propiedades válidos");
+        }
+
+        if (uniqueIds.size() > 3) {
+            throw new BadRequestException("Solo puedes comparar hasta 3 propiedades");
+        }
+
+        List<Property> properties = propertyRepository.findAllById(uniqueIds);
+        Map<Long, Property> propertyById = properties.stream()
+                .collect(java.util.stream.Collectors.toMap(Property::getId, property -> property));
+
+        List<Long> missingIds = uniqueIds.stream()
+                .filter(id -> !propertyById.containsKey(id))
+                .toList();
+
+        if (!missingIds.isEmpty()) {
+            throw new ResourceNotFoundException("Propiedades no encontradas: " + missingIds);
+        }
+
+        return uniqueIds.stream()
+                .map(propertyById::get)
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
     }
 
     @Transactional

@@ -59,6 +59,16 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/compare")
+    @Operation(summary = "Obtener hasta 3 propiedades para comparar")
+    public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> compare(
+            @Parameter(description = "IDs de propiedades a comparar (máximo 3)")
+            @RequestParam List<Long> ids) {
+
+        List<PropertySummaryResponse> properties = propertyService.getForComparison(ids);
+        return ResponseEntity.ok(ApiResponse.ok(properties));
+    }
+
     @PostMapping("/{id}/views")
     @Operation(summary = "Registrar una visualización de una propiedad")
     public ResponseEntity<ApiResponse<Long>> registerView(
