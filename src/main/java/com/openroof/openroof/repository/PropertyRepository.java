@@ -65,6 +65,9 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     List<Property> findByDeletedAtIsNullAndTrashedAtIsNullAndStatusIn(List<PropertyStatus> statuses);
 
+    @Query("SELECT p FROM Property p WHERE p.status = :status AND p.visibility = :visibility AND p.trashedAt IS NULL AND p.deletedAt IS NULL ORDER BY p.highlighted DESC NULLS LAST, p.createdAt DESC")
+    Page<Property> findFeaturedOrRecentProperties(@Param("status") PropertyStatus status, @Param("visibility") Visibility visibility, Pageable pageable);
+
     @Query("SELECT COUNT(p) FROM Property p WHERE p.deletedAt IS NULL AND p.trashedAt IS NULL AND p.status IN :statuses")
     long countByStatusIn(@Param("statuses") List<PropertyStatus> statuses);
 

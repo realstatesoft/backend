@@ -222,6 +222,16 @@ public class PropertyService {
         return getPageWithRelevance(spec, pageable, userId);
     }
 
+    @Transactional(readOnly = true)
+    public List<PropertySummaryResponse> getFeaturedProperties(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return propertyRepository.findFeaturedOrRecentProperties(PropertyStatus.PUBLISHED, com.openroof.openroof.model.enums.Visibility.PUBLIC, pageable)
+                .getContent()
+                .stream()
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
+    }
+
     // ─── UPDATE ───────────────────────────────────────────────────
 
        public PropertyResponse update(Long id, UpdatePropertyRequest request, Long callerId, UserRole callerRole) {
@@ -375,6 +385,26 @@ public class PropertyService {
         auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.STATUS_CHANGE,
                 Map.of("status", currentStatus.name()),
                 Map.of("status", validated.name()));
+        return propertyMapper.toResponse(property);
+    }
+
+    public PropertyResponse toggleHighlight(Long id, boolean highlighted, User caller) {
+        if (caller.getRole() != UserRole.ADMIN) {
+            throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
+        }
+        Property property = findPropertyOrThrow(id);
+        property.setHighlighted(highlighted);
+        if (highlighted) {
+            property.setHighlightedUntil(LocalDateTime.now().plusDays(30));
+        } else {
+            property.setHighlightedUntil(null);
+        }
+        property = propertyRepository.save(property);
+        
+        auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.UPDATE,
+                Map.of("highlighted", !highlighted),
+                Map.of("highlighted", highlighted));
+                
         return propertyMapper.toResponse(property);
     }
 
