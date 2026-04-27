@@ -70,7 +70,10 @@ cors:
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
+      # Inject JWT_SECRET from environment variables or vault. 
+      # Fast fail if missing: use explicit reference without default.
+      # To rotate: update environment variable and restart application. Do NOT commit secrets.
+      secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 

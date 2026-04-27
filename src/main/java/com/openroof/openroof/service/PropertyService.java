@@ -224,7 +224,8 @@ public class PropertyService {
 
     @Transactional(readOnly = true)
     public List<PropertySummaryResponse> getFeaturedProperties(int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
+        int safeLimit = limit <= 0 ? 1 : Math.min(limit, 100);
+        Pageable pageable = PageRequest.of(0, safeLimit);
         return propertyRepository.findFeaturedOrRecentProperties(PropertyStatus.PUBLISHED, com.openroof.openroof.model.enums.Visibility.PUBLIC, pageable)
                 .getContent()
                 .stream()
@@ -393,6 +394,8 @@ public class PropertyService {
             throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
         }
         Property property = findPropertyOrThrow(id);
+        boolean previousHighlighted = property.getHighlighted() != null && property.getHighlighted();
+        
         property.setHighlighted(highlighted);
         if (highlighted) {
             property.setHighlightedUntil(LocalDateTime.now().plusDays(30));
@@ -402,7 +405,7 @@ public class PropertyService {
         property = propertyRepository.save(property);
         
         auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.UPDATE,
-                Map.of("highlighted", !highlighted),
+                Map.of("highlighted", previousHighlighted),
                 Map.of("highlighted", highlighted));
                 
         return propertyMapper.toResponse(property);

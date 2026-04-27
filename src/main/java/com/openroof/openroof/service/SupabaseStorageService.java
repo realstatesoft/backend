@@ -61,15 +61,14 @@ public class SupabaseStorageService implements StorageService {
 
         // Permitimos sobrepasar el límite global para documentos KYC, PDFs, Modelos 3D y Planos,
         // ya que sus servicios específicos aplican sus propias reglas de tamaño.
-        boolean isLargeFileAllowed = (folder != null && (
-                folder.startsWith("documents/") || 
-                folder.contains("models") || 
-                folder.contains("floor-plans")
-        ))
-                || ".pdf".equalsIgnoreCase(extension)
-                || ".glb".equalsIgnoreCase(extension)
-                || ".gltf".equalsIgnoreCase(extension)
-                || ".bin".equalsIgnoreCase(extension);
+        boolean isLargeFileAllowed = folder != null && 
+                (folder.startsWith("documents/") || 
+                 folder.startsWith("models/") || 
+                 folder.startsWith("floor-plans/")) &&
+                (".pdf".equalsIgnoreCase(extension) ||
+                 ".glb".equalsIgnoreCase(extension) ||
+                 ".gltf".equalsIgnoreCase(extension) ||
+                 ".bin".equalsIgnoreCase(extension));
 
         if (!isLargeFileAllowed && file.getSize() > maxFileSizeBytes) {
             throw new IllegalArgumentException("El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
