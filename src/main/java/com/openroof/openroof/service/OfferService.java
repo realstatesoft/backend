@@ -35,6 +35,7 @@ public class OfferService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final EmailService emailService;
 
     public OfferResponseDTO createOffer(OfferRequestDTO request, String currentUserEmail) {
         User buyer = getUserByEmail(currentUserEmail);
@@ -119,7 +120,20 @@ public class OfferService {
             offer.setCounterOfferAmount(null);
         }
 
-        return toResponseDTO(offerRepository.save(offer));
+        Offer savedOffer = offerRepository.save(offer);
+
+        if (request.getStatus() == OfferStatus.ACCEPTED) {
+            emailService.sendOfferAcceptedEmail(
+                    savedOffer.getBuyer().getEmail(),
+                    savedOffer.getBuyer().getName(),
+                    savedOffer.getProperty().getTitle(),
+                    savedOffer.getAmount(),
+                    java.time.LocalDateTime.now(),
+                    request.getAgentMessage()
+            );
+        }
+
+        return toResponseDTO(savedOffer);
     }
 
     @Transactional(readOnly = true)
