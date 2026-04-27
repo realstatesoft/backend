@@ -1,20 +1,8 @@
 package com.openroof.openroof.service;
 
-import com.itextpdf.io.font.constants.StandardFonts;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.font.PdfFont;
-import com.itextpdf.kernel.font.PdfFontFactory;
-import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.borders.Border;
-import com.itextpdf.layout.borders.SolidBorder;
-import com.itextpdf.layout.element.*;
-import com.itextpdf.layout.properties.AreaBreakType;
-import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.layout.properties.UnitValue;
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import java.awt.Color;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.contract.Contract;
@@ -47,20 +35,20 @@ import java.util.Locale;
 @Transactional(readOnly = true)
 public class ContractPdfService {
 
-    private static final DeviceRgb PRIMARY_COLOR = new DeviceRgb(26, 60, 94); // #1a3c5e
-    private static final DeviceRgb ACCENT_COLOR = new DeviceRgb(20, 120, 180); // #1478b4
-    private static final DeviceRgb BORDER_COLOR = new DeviceRgb(186, 230, 253);// #bae6fd
-    private static final DeviceRgb MUTED_TEXT = new DeviceRgb(100, 116, 139);// #64748b
-    private static final DeviceRgb SUCCESS_COLOR = new DeviceRgb(22, 163, 74); // #16a34a
-    private static final DeviceRgb ROW_ALT = new DeviceRgb(248, 250, 252);// #f8fafc
+    private static final Color PRIMARY_COLOR = new Color(26, 60, 94); // #1a3c5e
+    private static final Color ACCENT_COLOR = new Color(20, 120, 180); // #1478b4
+    private static final Color BORDER_COLOR = new Color(186, 230, 253);// #bae6fd
+    private static final Color MUTED_TEXT = new Color(100, 116, 139);// #64748b
+    private static final Color SUCCESS_COLOR = new Color(22, 163, 74); // #16a34a
+    private static final Color ROW_ALT = new Color(248, 250, 252);// #f8fafc
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    private static final NumberFormat CURRENCY_FMT = NumberFormat.getCurrencyInstance(Locale.of("es", "AR"));
 
     private final ContractRepository contractRepository;
     private final ContractSignatureRepository signatureRepository;
     private final UserRepository userRepository;
+    private final ContractService contractService;
 
     /**
      * Genera el PDF del contrato como array de bytes.
@@ -82,76 +70,72 @@ public class ContractPdfService {
 
         try {
             return buildPdf(contract, signatures);
-        } catch (IOException e) {
-            log.error("Error generando PDF para contrato {}: {}", contractId, e.getMessage(), e);
-            throw new BadRequestException("No se pudo generar el PDF del contrato");
+        } catch (Exception e) {
+            log.error("Error inesperado generando PDF para contrato {}: {}", contractId, e.getMessage(), e);
+            throw new BadRequestException("No se pudo generar el PDF del contrato: " + e.getMessage());
         }
     }
 
     // ─── Validación de acceso ─────────────────────────────────────────────────
 
     private void validateAccess(Contract contract, User requester) {
-        Long uid = requester.getId();
-        boolean isAdmin = requester.getRole().name().equals("ADMIN");
-        boolean isBuyer = contract.getBuyer() != null && uid.equals(contract.getBuyer().getId());
-        boolean isSeller = contract.getSeller() != null && uid.equals(contract.getSeller().getId());
-        boolean isListing = contract.getListingAgent() != null &&
-                uid.equals(contract.getListingAgent().getUser().getId());
-        boolean isBuyerAg = contract.getBuyerAgent() != null &&
-                uid.equals(contract.getBuyerAgent().getUser().getId());
-
-        if (!isAdmin && !isBuyer && !isSeller && !isListing && !isBuyerAg) {
+        if (!contractService.canAccess(contract, requester)) {
             throw new BadRequestException("No tiene permiso para descargar este contrato");
+        }
+        if (contract.getSeller() == null || contract.getBuyer() == null || contract.getProperty() == null) {
+            throw new BadRequestException("El contrato está incompleto (faltan partes o propiedad) y no puede ser generado.");
         }
     }
 
     // ─── Construcción del PDF ─────────────────────────────────────────────────
 
-    private byte[] buildPdf(Contract contract, List<ContractSignature> signatures) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private byte[] buildPdf(Contract contract, List<ContractSignature> signatures) throws Exception {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            Document doc = new Document(PageSize.A4, 50, 50, 60, 50);
+            try {
+                PdfWriter.getInstance(doc, baos);
+                doc.open();
 
-        PdfWriter writer = new PdfWriter(baos);
-        PdfDocument pdf = new PdfDocument(writer);
-        Document doc = new Document(pdf, PageSize.A4);
-        doc.setMargins(50, 50, 60, 50);
+                Font bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
+                Font regular = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
+                Font italic = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10, Color.BLACK);
 
-        PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-        PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-        PdfFont italic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
+                LocalDateTime now = LocalDateTime.now();
+                String generatedAt = now.format(DATETIME_FMT);
 
-        addHeader(doc, contract, bold, regular);
-        addDivider(doc);
-        addInfoSection(doc, contract, bold, regular);
-        addPartiesSection(doc, contract, bold, regular, italic);
-        
-        doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
-        addTermsSection(doc, contract, bold, regular);
-        
-        doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
-        addSignaturesSection(doc, signatures, bold, regular, italic);
-        
-        addFooter(doc, contract, regular, italic);
-
-        doc.close();
-        return baos.toByteArray();
+                addHeader(doc, contract, bold, regular);
+                addDivider(doc);
+                addInfoSection(doc, contract, generatedAt, bold, regular);
+                addPartiesSection(doc, contract, bold, regular, italic);
+                
+                doc.newPage();
+                addTermsSection(doc, contract, bold, regular);
+                
+                doc.newPage();
+                addSignaturesSection(doc, signatures, bold, regular, italic);
+                
+                addFooter(doc, contract, generatedAt, regular, italic);
+            } finally {
+                if (doc.isOpen()) {
+                    doc.close();
+                }
+            }
+            return baos.toByteArray();
+        }
     }
 
     // ─── Secciones del documento ──────────────────────────────────────────────
 
-    private void addHeader(Document doc, Contract contract, PdfFont bold, PdfFont regular) {
+    private void addHeader(Document doc, Contract contract, Font bold, Font regular) {
         // Logo / marca
-        Paragraph brand = new Paragraph("OpenRoof")
-                .setFont(bold)
-                .setFontSize(22)
-                .setFontColor(PRIMARY_COLOR)
-                .setMarginBottom(2);
+        Font brandFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, PRIMARY_COLOR);
+        Paragraph brand = new Paragraph("OpenRoof", brandFont);
+        brand.setSpacingAfter(2);
         doc.add(brand);
 
-        Paragraph tagline = new Paragraph("Plataforma Inmobiliaria · Contrato Legal")
-                .setFont(regular)
-                .setFontSize(9)
-                .setFontColor(MUTED_TEXT)
-                .setMarginBottom(16);
+        Font taglineFont = FontFactory.getFont(FontFactory.HELVETICA, 9, MUTED_TEXT);
+        Paragraph tagline = new Paragraph("Plataforma Inmobiliaria · Contrato Legal", taglineFont);
+        tagline.setSpacingAfter(16);
         doc.add(tagline);
 
         // Título del contrato
@@ -159,93 +143,100 @@ public class ContractPdfService {
                 ? "COMPRAVENTA"
                 : "ARRENDAMIENTO";
 
-        Paragraph title = new Paragraph("CONTRATO DE " + typeLabel)
-                .setFont(bold)
-                .setFontSize(18)
-                .setFontColor(PRIMARY_COLOR)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(4);
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, PRIMARY_COLOR);
+        Paragraph title = new Paragraph("CONTRATO DE " + typeLabel, titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(4);
         doc.add(title);
 
+        Font subtitleFont = FontFactory.getFont(FontFactory.HELVETICA, 10, MUTED_TEXT);
         Paragraph subtitle = new Paragraph("Contrato N° " + contract.getId() +
-                " · " + resolveStatusLabel(contract.getStatus()))
-                .setFont(regular)
-                .setFontSize(10)
-                .setFontColor(MUTED_TEXT)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(8);
+                " · " + resolveStatusLabel(contract.getStatus()), subtitleFont);
+        subtitle.setAlignment(Element.ALIGN_CENTER);
+        subtitle.setSpacingAfter(8);
         doc.add(subtitle);
 
         // Preámbulo Formal
-        Paragraph preamble = new Paragraph()
-                .setFont(regular)
-                .setFontSize(10)
-                .setMarginTop(12)
-                .setMarginBottom(12)
-                .setTextAlignment(TextAlignment.JUSTIFIED);
+        Paragraph preamble = new Paragraph();
+        preamble.setFont(regular);
+        preamble.setAlignment(Element.ALIGN_JUSTIFIED);
+        preamble.setSpacingBefore(12);
+        preamble.setSpacingAfter(12);
 
         preamble.add("En la ciudad de Asunción, República del Paraguay, comparecen por una parte ");
-        preamble.add(new Text(contract.getSeller().getName()).setFont(bold));
+        preamble.add(new Chunk(safeName(contract.getSeller()), bold));
         preamble.add(" en adelante denominado el ");
-        preamble.add(new Text(contract.getContractType() == ContractType.SALE ? "VENDEDOR" : "LOCADOR").setFont(bold));
+        preamble.add(new Chunk(contract.getContractType() == ContractType.SALE ? "VENDEDOR" : "LOCADOR", bold));
         preamble.add(", y por la otra parte ");
-        preamble.add(new Text(contract.getBuyer().getName()).setFont(bold));
+        preamble.add(new Chunk(safeName(contract.getBuyer()), bold));
         preamble.add(" en adelante denominado el ");
-        preamble.add(new Text(contract.getContractType() == ContractType.SALE ? "COMPRADOR" : "LOCATARIO").setFont(bold));
+        preamble.add(new Chunk(contract.getContractType() == ContractType.SALE ? "COMPRADOR" : "LOCATARIO", bold));
         preamble.add(", quienes convienen en celebrar el presente instrumento legal sujeto a las cláusulas descritas a continuación.");
 
         doc.add(preamble);
     }
 
     private void addDivider(Document doc) {
-        Table divider = new Table(UnitValue.createPercentArray(1)).useAllAvailableWidth();
-        Cell cell = new Cell()
-                .setHeight(2)
-                .setBackgroundColor(PRIMARY_COLOR)
-                .setBorder(Border.NO_BORDER)
-                .setMarginBottom(16);
+        PdfPTable divider = new PdfPTable(1);
+        divider.setWidthPercentage(100);
+        PdfPCell cell = new PdfPCell();
+        cell.setFixedHeight(2);
+        cell.setBackgroundColor(PRIMARY_COLOR);
+        cell.setBorder(PdfPCell.NO_BORDER);
         divider.addCell(cell);
+        divider.setSpacingAfter(16);
         doc.add(divider);
     }
 
-    private void addInfoSection(Document doc, Contract contract, PdfFont bold, PdfFont regular) {
+    private void addInfoSection(Document doc, Contract contract, String generatedAt, Font bold, Font regular) {
         addSectionTitle(doc, "1. Información General", bold);
 
-        Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 70 }))
-                .useAllAvailableWidth()
-                .setMarginBottom(20);
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(100);
+        try {
+            table.setWidths(new float[] { 30, 70 });
+        } catch (DocumentException e) {
+            log.error("Error setting table widths: {}", e.getMessage());
+        }
+        table.setSpacingAfter(20);
 
-        addInfoRow(table, "Propiedad", contract.getProperty().getTitle(), bold, regular, false);
+        String propertyTitle = contract.getProperty() != null ? contract.getProperty().getTitle() : "[PROPIEDAD NO DISPONIBLE]";
+        addInfoRow(table, "Propiedad", propertyTitle, bold, regular, false);
         addInfoRow(table, "Tipo", resolveTypeLabel(contract.getContractType()), bold, regular, true);
-        addInfoRow(table, "Monto", formatCurrency(contract.getAmount()), bold, regular, false);
+        addInfoRow(table, "Monto", formatCurrency(contract.getAmount(), contract.getCurrencyCode()), bold, regular, false);
         addInfoRow(table, "Fecha de inicio", formatDate(contract.getStartDate()), bold, regular, true);
         addInfoRow(table, "Fecha de fin", formatDate(contract.getEndDate()), bold, regular, false);
         addInfoRow(table, "Comisión total", formatPct(contract.getCommissionPct()), bold, regular, true);
-        addInfoRow(table, "Generado el", LocalDateTime.now().format(DATETIME_FMT), bold, regular, false);
+        addInfoRow(table, "Generado el", generatedAt, bold, regular, false);
 
         doc.add(table);
     }
 
     private void addPartiesSection(Document doc, Contract contract,
-            PdfFont bold, PdfFont regular, PdfFont italic) {
+            Font bold, Font regular, Font italic) {
         addSectionTitle(doc, "2. Partes del Contrato", bold);
 
-        Table table = new Table(UnitValue.createPercentArray(new float[] { 25, 37.5f, 37.5f }))
-                .useAllAvailableWidth()
-                .setMarginBottom(20);
+        PdfPTable table = new PdfPTable(3);
+        table.setWidthPercentage(100);
+        try {
+            table.setWidths(new float[] { 25, 37.5f, 37.5f });
+        } catch (DocumentException e) {
+            log.error("Error setting table widths: {}", e.getMessage());
+        }
+        table.setSpacingAfter(20);
 
         // Cabecera
         addPartiesHeader(table, bold);
 
         // Vendedor
         addPartyRow(table, "Vendedor / Propietario",
-                contract.getSeller().getName(),
-                contract.getSeller().getEmail(), regular, false);
+                safeName(contract.getSeller()),
+                safeEmail(contract.getSeller()), regular, false);
 
         // Comprador
         addPartyRow(table, "Comprador / Inquilino",
-                contract.getBuyer().getName(),
-                contract.getBuyer().getEmail(), regular, true);
+                safeName(contract.getBuyer()),
+                safeEmail(contract.getBuyer()), regular, true);
 
         // Agente listador (opcional)
         if (contract.getListingAgent() != null) {
@@ -265,80 +256,82 @@ public class ContractPdfService {
         doc.add(table);
     }
 
-    private void addTermsSection(Document doc, Contract contract, PdfFont bold, PdfFont regular) {
-        Paragraph title = new Paragraph("CLÁUSULAS DEL CONTRATO")
-                .setFont(bold)
-                .setFontSize(14)
-                .setFontColor(PRIMARY_COLOR)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(15);
-        doc.add(title);
+    private void addTermsSection(Document doc, Contract contract, Font bold, Font regular) {
+        addSectionTitle(doc, "3. Cláusulas del Contrato", bold);
 
         if (contract.getTerms() == null || contract.getTerms().isBlank()) {
-            doc.add(new Paragraph("No se han definido términos adicionales para este instrumento.")
-                    .setFont(regular).setFontSize(10).setItalic());
+            Font italicFont = new Font(regular);
+            italicFont.setStyle(Font.ITALIC);
+            doc.add(new Paragraph("No se han definido términos adicionales para este instrumento.", italicFont));
             return;
         }
 
         String[] lines = contract.getTerms().split("\n");
         for (String line : lines) {
             if (line.isBlank()) {
-                doc.add(new Paragraph("\u00a0").setFontSize(6));
+                doc.add(new Paragraph(" "));
                 continue;
             }
 
-            boolean isClauseHeader = line.matches("(?i)^(CLÁUSULA|DÉCIMA|PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA|SEXTA|SÉPTIMA|OCTAVA|NOVENA|\\d+\\.).*");
+            boolean isClauseHeader = line.matches("(?i)^(CLÁUSULA\\s|DÉCIM[OA](\\s+PRIMER[OA])?|PRIMER[OA]|SEGUND[OA]|TERCER[OA]|CUART[OA]|QUINT[OA]|SEXT[OA]|SÉPTIM[OA]|OCTAV[OA]|NOVEN[OA]|UNDÉCIM[OA]|DUODÉCIM[OA]|\\d+[\\.\\)]).*");
             
-            Paragraph p = new Paragraph(line)
-                    .setFont(isClauseHeader ? bold : regular)
-                    .setFontSize(isClauseHeader ? 10 : 10)
-                    .setTextAlignment(TextAlignment.JUSTIFIED)
-                    .setMarginBottom(isClauseHeader ? 6 : 4)
-                    .setFirstLineIndent(isClauseHeader ? 0 : 20);
+            Paragraph p = new Paragraph(line, isClauseHeader ? bold : regular);
+            p.setAlignment(Element.ALIGN_JUSTIFIED);
+            p.setSpacingAfter(isClauseHeader ? 6 : 4);
+            if (!isClauseHeader) {
+                p.setIndentationLeft(20);
+            }
             
             doc.add(p);
         }
     }
 
     private void addSignaturesSection(Document doc, List<ContractSignature> signatures,
-            PdfFont bold, PdfFont regular, PdfFont italic) {
+            Font bold, Font regular, Font italic) {
         addSectionTitle(doc, "4. Estado de Firmas", bold);
 
         if (signatures.isEmpty()) {
-            doc.add(new Paragraph("No se han registrado firmas aún.")
-                    .setFont(italic)
-                    .setFontSize(10)
-                    .setFontColor(MUTED_TEXT)
-                    .setMarginBottom(20));
+            Font mutedItalic = new Font(italic);
+            mutedItalic.setSize(10);
+            mutedItalic.setColor(MUTED_TEXT);
+            Paragraph p = new Paragraph("No se han registrado firmas aún.", mutedItalic);
+            p.setSpacingAfter(20);
+            doc.add(p);
             return;
         }
 
-        Table table = new Table(UnitValue.createPercentArray(new float[] { 25, 25, 20, 30 }))
-                .useAllAvailableWidth()
-                .setMarginBottom(20);
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        try {
+            table.setWidths(new float[] { 25, 25, 20, 30 });
+        } catch (DocumentException e) {
+            log.error("Error setting signature table widths: {}", e.getMessage());
+        }
+        table.setSpacingAfter(20);
 
         // Encabezado de tabla
         String[] headers = { "Parte", "Nombre", "Tipo de Firma", "Fecha y Hora" };
+        Font headerFont = new Font(bold);
+        headerFont.setSize(9);
+        headerFont.setColor(Color.WHITE);
+
         for (String h : headers) {
-            table.addHeaderCell(new Cell()
-                    .setBackgroundColor(PRIMARY_COLOR)
-                    .setBorder(Border.NO_BORDER)
-                    .setPadding(6)
-                    .add(new Paragraph(h)
-                            .setFont(bold)
-                            .setFontSize(9)
-                            .setFontColor(ColorConstants.WHITE)));
+            PdfPCell cell = new PdfPCell(new Paragraph(h, headerFont));
+            cell.setBackgroundColor(PRIMARY_COLOR);
+            cell.setBorder(PdfPCell.NO_BORDER);
+            cell.setPadding(6);
+            table.addCell(cell);
         }
 
         boolean alt = false;
         for (ContractSignature sig : signatures) {
-            com.itextpdf.kernel.colors.Color bg = alt ? ROW_ALT : ColorConstants.WHITE;
+            Color bg = alt ? ROW_ALT : Color.WHITE;
             alt = !alt;
 
             table.addCell(makeCell(resolveRoleLabel(sig.getRole()), bold, 9, PRIMARY_COLOR, bg));
-            table.addCell(makeCell(sig.getSigner().getName(), regular, 9, ColorConstants.BLACK, bg));
+            table.addCell(makeCell(sig.getSigner().getName(), regular, 9, Color.BLACK, bg));
             table.addCell(makeCell(resolveSignatureTypeLabel(sig.getSignatureType().name()), regular, 9,
-                    ColorConstants.BLACK, bg));
+                    Color.BLACK, bg));
             table.addCell(makeCell(
                     sig.getSignedAt() != null ? sig.getSignedAt().format(DATETIME_FMT) : "—",
                     regular, 9, SUCCESS_COLOR, bg));
@@ -347,101 +340,113 @@ public class ContractPdfService {
         doc.add(table);
 
         // Nota legal
-        doc.add(new Paragraph("Las firmas electrónicas registradas tienen validez legal conforme a la " +
-                "legislación paraguaya sobre documentos electrónicos y firma digital (Ley 4017/10).")
-                .setFont(italic)
-                .setFontSize(8)
-                .setFontColor(MUTED_TEXT)
-                .setMarginBottom(20));
+        Font noteFont = new Font(italic);
+        noteFont.setSize(8);
+        noteFont.setColor(MUTED_TEXT);
+        Paragraph note = new Paragraph("Las firmas electrónicas registradas tienen validez legal conforme a la " +
+                "legislación paraguaya sobre documentos electrónicos y firma digital (Ley 4017/10).", noteFont);
+        note.setSpacingAfter(20);
+        doc.add(note);
     }
 
-    private void addFooter(Document doc, Contract contract, PdfFont regular, PdfFont italic) {
+    private void addFooter(Document doc, Contract contract, String generatedAt, Font regular, Font italic) {
         addDivider(doc);
 
-        Table footer = new Table(UnitValue.createPercentArray(new float[] { 50, 50 }))
-                .useAllAvailableWidth();
+        PdfPTable footer = new PdfPTable(2);
+        footer.setWidthPercentage(100);
 
-        footer.addCell(new Cell()
-                .setBorder(Border.NO_BORDER)
-                .add(new Paragraph("OpenRoof · Plataforma Inmobiliaria")
-                        .setFont(regular).setFontSize(8).setFontColor(MUTED_TEXT)));
+        Font footerFont = new Font(regular);
+        footerFont.setSize(8);
+        footerFont.setColor(MUTED_TEXT);
 
-        footer.addCell(new Cell()
-                .setBorder(Border.NO_BORDER)
-                .add(new Paragraph("Contrato N° " + contract.getId() + " · " +
-                        "Generado: " + LocalDateTime.now().format(DATETIME_FMT))
-                        .setFont(regular).setFontSize(8).setFontColor(MUTED_TEXT)
-                        .setTextAlignment(TextAlignment.RIGHT)));
+        PdfPCell leftCell = new PdfPCell(new Paragraph("OpenRoof · Plataforma Inmobiliaria", footerFont));
+        leftCell.setBorder(PdfPCell.NO_BORDER);
+        footer.addCell(leftCell);
+
+        Paragraph rightP = new Paragraph("Contrato N° " + contract.getId() + " · " +
+                "Generado: " + generatedAt, footerFont);
+        PdfPCell rightCell = new PdfPCell(rightP);
+        rightCell.setBorder(PdfPCell.NO_BORDER);
+        rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        footer.addCell(rightCell);
 
         doc.add(footer);
     }
 
     // ─── Helpers de tabla ─────────────────────────────────────────────────────
 
-    private void addSectionTitle(Document doc, String text, PdfFont bold) {
-        doc.add(new Paragraph(text)
-                .setFont(bold)
-                .setFontSize(12)
-                .setFontColor(PRIMARY_COLOR)
-                .setMarginTop(12)
-                .setMarginBottom(8));
+    private void addSectionTitle(Document doc, String text, Font bold) {
+        Font sectionFont = new Font(bold);
+        sectionFont.setSize(12);
+        sectionFont.setColor(PRIMARY_COLOR);
+        Paragraph p = new Paragraph(text, sectionFont);
+        p.setSpacingBefore(12);
+        p.setSpacingAfter(8);
+        doc.add(p);
     }
 
-    private void addInfoRow(Table table, String label, String value,
-            PdfFont bold, PdfFont regular, boolean alt) {
-        com.itextpdf.kernel.colors.Color bg = alt ? ROW_ALT : ColorConstants.WHITE;
+    private void addInfoRow(PdfPTable table, String label, String value,
+            Font bold, Font regular, boolean alt) {
+        Color bg = alt ? ROW_ALT : Color.WHITE;
 
-        table.addCell(new Cell()
-                .setBackgroundColor(bg)
-                .setBorder(new SolidBorder(BORDER_COLOR, 0.5f))
-                .setPadding(6)
-                .add(new Paragraph(label)
-                        .setFont(bold)
-                        .setFontSize(9)
-                        .setFontColor(MUTED_TEXT)));
+        Font labelFont = new Font(bold);
+        labelFont.setSize(9);
+        labelFont.setColor(MUTED_TEXT);
 
-        table.addCell(new Cell()
-                .setBackgroundColor(bg)
-                .setBorder(new SolidBorder(BORDER_COLOR, 0.5f))
-                .setPadding(6)
-                .add(new Paragraph(value != null ? value : "—")
-                        .setFont(regular)
-                        .setFontSize(9)
-                        .setFontColor(ColorConstants.BLACK)));
+        PdfPCell labelCell = new PdfPCell(new Paragraph(label, labelFont));
+        labelCell.setBackgroundColor(bg);
+        labelCell.setBorderColor(BORDER_COLOR);
+        labelCell.setBorderWidth(0.5f);
+        labelCell.setPadding(6);
+        table.addCell(labelCell);
+
+        Font valueFont = new Font(regular);
+        valueFont.setSize(9);
+        valueFont.setColor(Color.BLACK);
+
+        PdfPCell valueCell = new PdfPCell(new Paragraph(value != null ? value : "—", valueFont));
+        valueCell.setBackgroundColor(bg);
+        valueCell.setBorderColor(BORDER_COLOR);
+        valueCell.setBorderWidth(0.5f);
+        valueCell.setPadding(6);
+        table.addCell(valueCell);
     }
 
-    private void addPartiesHeader(Table table, PdfFont bold) {
+    private void addPartiesHeader(PdfPTable table, Font bold) {
         String[] labels = { "Rol", "Nombre", "Contacto" };
+        Font headerFont = new Font(bold);
+        headerFont.setSize(9);
+        headerFont.setColor(Color.WHITE);
+
         for (String l : labels) {
-            table.addHeaderCell(new Cell()
-                    .setBackgroundColor(ACCENT_COLOR)
-                    .setBorder(Border.NO_BORDER)
-                    .setPadding(7)
-                    .add(new Paragraph(l)
-                            .setFont(bold)
-                            .setFontSize(9)
-                            .setFontColor(ColorConstants.WHITE)));
+            PdfPCell cell = new PdfPCell(new Paragraph(l, headerFont));
+            cell.setBackgroundColor(ACCENT_COLOR);
+            cell.setBorder(PdfPCell.NO_BORDER);
+            cell.setPadding(7);
+            table.addCell(cell);
         }
     }
 
-    private void addPartyRow(Table table, String role, String name, String email,
-            PdfFont regular, boolean alt) {
-        com.itextpdf.kernel.colors.Color bg = alt ? ROW_ALT : ColorConstants.WHITE;
+    private void addPartyRow(PdfPTable table, String role, String name, String email,
+            Font regular, boolean alt) {
+        Color bg = alt ? ROW_ALT : Color.WHITE;
         table.addCell(makeCell(role, regular, 9, PRIMARY_COLOR, bg));
-        table.addCell(makeCell(name, regular, 9, ColorConstants.BLACK, bg));
+        table.addCell(makeCell(name, regular, 9, Color.BLACK, bg));
         table.addCell(makeCell(email, regular, 8, MUTED_TEXT, bg));
     }
 
-    private Cell makeCell(String text, PdfFont font, float size, com.itextpdf.kernel.colors.Color color,
-            com.itextpdf.kernel.colors.Color bg) {
-        return new Cell()
-                .setBackgroundColor(bg)
-                .setBorder(new SolidBorder(BORDER_COLOR, 0.5f))
-                .setPadding(6)
-                .add(new Paragraph(text != null ? text : "—")
-                        .setFont(font)
-                        .setFontSize(size)
-                        .setFontColor(color));
+    private PdfPCell makeCell(String text, Font font, float size, Color color,
+            Color bg) {
+        Font cellFont = new Font(font);
+        cellFont.setSize(size);
+        cellFont.setColor(color);
+
+        PdfPCell cell = new PdfPCell(new Paragraph(text != null ? text : "—", cellFont));
+        cell.setBackgroundColor(bg);
+        cell.setBorderColor(BORDER_COLOR);
+        cell.setBorderWidth(0.5f);
+        cell.setPadding(6);
+        return cell;
     }
 
     // ─── Helpers de formato ───────────────────────────────────────────────────
@@ -450,10 +455,16 @@ public class ContractPdfService {
         return date != null ? date.format(DATE_FMT) : "—";
     }
 
-    private String formatCurrency(BigDecimal amount) {
+    private String formatCurrency(BigDecimal amount, String currencyCode) {
         if (amount == null)
             return "—";
-        return CURRENCY_FMT.format(amount);
+        NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.of("es", "PY"));
+        try {
+            fmt.setCurrency(java.util.Currency.getInstance(currencyCode));
+        } catch (Exception e) {
+            log.warn("Código de moneda inválido: {}. Usando default.", currencyCode);
+        }
+        return fmt.format(amount);
     }
 
     private String formatPct(BigDecimal pct) {
@@ -500,5 +511,13 @@ public class ContractPdfService {
             case "HANDWRITTEN_SCAN" -> "Manuscrita";
             default -> type;
         };
+    }
+ 
+    private String safeName(User user) {
+        return (user != null && user.getName() != null) ? user.getName() : "[NOMBRE NO DISPONIBLE]";
+    }
+ 
+    private String safeEmail(User user) {
+        return (user != null && user.getEmail() != null) ? user.getEmail() : "[CORREO NO DISPONIBLE]";
     }
 }

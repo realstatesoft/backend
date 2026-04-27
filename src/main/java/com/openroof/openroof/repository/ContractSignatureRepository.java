@@ -19,5 +19,8 @@ public interface ContractSignatureRepository extends JpaRepository<ContractSigna
     
     boolean existsByContractIdAndSignerIdAndDeletedAtIsNull(Long contractId, Long signerId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT s.contract.id FROM ContractSignature s WHERE s.contract.id IN :contractIds AND s.signer.id = :signerId AND s.deletedAt IS NULL")
+    java.util.Set<Long> findSignedContractIds(@org.springframework.data.repository.query.Param("contractIds") java.util.Collection<Long> contractIds, @org.springframework.data.repository.query.Param("signerId") Long signerId);
+
     long countByContractIdAndSignedAtIsNotNullAndDeletedAtIsNull(Long contractId);
 }
