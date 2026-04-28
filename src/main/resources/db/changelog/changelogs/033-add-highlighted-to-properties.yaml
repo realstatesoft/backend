@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240428-add-highlighted-to-properties
+      author: antigravity
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: properties
+              columnName: highlighted
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: highlighted_until
+                  type: TIMESTAMP WITHOUT TIME ZONE
