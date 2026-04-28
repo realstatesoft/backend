@@ -154,7 +154,7 @@ class DashboardServiceTest {
             when(propertyRepository.findByOwner_IdAndTrashedAtIsNull(any(), any())).thenReturn(page);
             when(propertyMapper.toSummaryResponse(p1)).thenReturn(
                 new com.openroof.openroof.dto.property.PropertySummaryResponse(
-                    100L, "Prop 1", null, null, null, null, null, null, null, null, null, null, null, null, null, null));
+                    100L, "Prop 1", null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null));
 
             // Mock contracts
             Contract c1 = Contract.builder().build();

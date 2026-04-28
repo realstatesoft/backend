@@ -74,7 +74,9 @@ class PropertySimilarTest {
                 new BigDecimal("-25.2637"), // lat
                 new BigDecimal("-57.5759"), // lng
                 null,               // trashedAt
-                0                   // relevanceScore
+                0,                   // relevanceScore
+                false,              // hihghlight
+                null                // highlighted until
         );
     }
 

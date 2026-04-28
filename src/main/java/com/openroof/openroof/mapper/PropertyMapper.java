@@ -86,6 +86,8 @@ public class PropertyMapper {
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p, Integer relevanceScore) {
+        Highlight active = activeHighlight(p);
+
         String primaryImage = Optional.ofNullable(p.getMedia())
                 .orElse(Collections.emptyList())
                 .stream()
@@ -110,7 +112,10 @@ public class PropertyMapper {
                 p.getGeoLocation() != null ? p.getGeoLocation().getLat() : null,
                 p.getGeoLocation() != null ? p.getGeoLocation().getLng() : null,
                 p.getTrashedAt(),
-                relevanceScore);
+                relevanceScore,
+                active != null,
+                active != null ? active.getHighlightedUntil() : null
+                );
     }
 
     // ─── Request → Entity ─────────────────────────────────────────
