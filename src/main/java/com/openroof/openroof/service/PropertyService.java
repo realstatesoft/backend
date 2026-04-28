@@ -27,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
@@ -222,6 +223,17 @@ public class PropertyService {
         return getPageWithRelevance(spec, pageable, userId);
     }
 
+    @Transactional(readOnly = true)
+    public List<PropertySummaryResponse> getFeaturedProperties(int limit) {
+        int safeLimit = limit <= 0 ? 1 : Math.min(limit, 100);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+        return propertyRepository.findFeaturedOrRecentProperties(PropertyStatus.PUBLISHED, com.openroof.openroof.model.enums.Visibility.PUBLIC, pageable)
+                .getContent()
+                .stream()
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
+    }
+
     // ─── UPDATE ───────────────────────────────────────────────────
 
        public PropertyResponse update(Long id, UpdatePropertyRequest request, Long callerId, UserRole callerRole) {
@@ -333,6 +345,7 @@ public class PropertyService {
     }
 
     @Scheduled(cron = "0 0 3 * * *") // every day at 3 am
+    @SchedulerLock(name = "cleanExpiredTrash", lockAtMostFor = "15m")
     public void cleanExpiredTrash() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(10);
         propertyRepository.deleteExpiredTrash(threshold, LocalDateTime.now());
@@ -375,6 +388,28 @@ public class PropertyService {
         auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.STATUS_CHANGE,
                 Map.of("status", currentStatus.name()),
                 Map.of("status", validated.name()));
+        return propertyMapper.toResponse(property);
+    }
+
+    public PropertyResponse toggleHighlight(Long id, boolean highlighted, User caller) {
+        if (caller.getRole() != UserRole.ADMIN) {
+            throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
+        }
+        Property property = findPropertyOrThrow(id);
+        boolean previousHighlighted = property.getHighlighted() != null && property.getHighlighted();
+        
+        property.setHighlighted(highlighted);
+        if (highlighted) {
+            property.setHighlightedUntil(LocalDateTime.now().plusDays(30));
+        } else {
+            property.setHighlightedUntil(null);
+        }
+        property = propertyRepository.save(property);
+        
+        auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.UPDATE,
+                Map.of("highlighted", previousHighlighted),
+                Map.of("highlighted", highlighted));
+                
         return propertyMapper.toResponse(property);
     }
 
