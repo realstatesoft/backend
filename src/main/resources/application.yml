@@ -6,10 +6,9 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-
-    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require
-    username: postgres.gnkzarhkjbuydrzybydm
-    password: OpenRoof$!*Supabase#Platform2026_TEST
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 4
@@ -36,7 +35,6 @@ spring:
     default-property-inclusion: non_null
     time-zone: UTC
 
-  # ==================== MAIL (Gmail SMTP) ====================
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -49,8 +47,6 @@ spring:
           starttls:
             enable: true
             required: true
-
-# ==================== SERVER ====================
 
 server:
   port: ${SERVER_PORT:8080}
@@ -74,26 +70,24 @@ cors:
 application:
   security:
     jwt:
-      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
+      # Inject JWT_SECRET from environment variables or vault. 
+      # Fast fail if missing: use explicit reference without default.
+      # To rotate: update environment variable and restart application. Do NOT commit secrets.
+      secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
-  level:cd
+  level:
     root: INFO
     com.openroof: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-# ==================== SUPABASE STORAGE ====================
-# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-# Obtener de: Supabase Dashboard → Project Settings → API
-# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: ${SUPABASE_URL:}
-  service-role-key: ${SUPABASE_KEY:}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
@@ -101,15 +95,12 @@ supabase:
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
-  # KYC / personal document upload settings (used by UserDocumentService)
   documents:
     max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
-  # 3D Model upload settings (octet-stream incluido para compatibilidad con exportadores)
   models:
     max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
     allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
-  # Floor plan upload settings (PDF, JPG, PNG, WebP — max 5 per property)
   floor-plans:
     max-file-size: ${UPLOAD_FLOOR_PLANS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_FLOOR_PLANS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
@@ -118,18 +109,15 @@ upload:
 trashcan:
   retention-days: 10
 
-# ==================== MULTIPART ====================
 spring.servlet.multipart:
   max-file-size: 50MB
   max-request-size: 60MB
 
-# ==================== RESERVATION ====================
 openroof:
   reservation:
-    ttl-hours: 72
-    default-percent: 1.00
+    ttl-hours: ${RESERVATION_TTL_HOURS:72}
+    default-percent: ${RESERVATION_DEFAULT_PERCENT:1.00}
 
-# ==================== SHEDLOCK ====================
 shedlock:
   defaults:
     lock-at-most-for: 9m
@@ -138,4 +126,3 @@ shedlock:
 mail:
   from-name: OpenRoof
   base-url: ${FRONTEND_URL:http://localhost:5173}
-
