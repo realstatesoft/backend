@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.openroof.openroof.dto.offer.OfferRequestDTO;
 import com.openroof.openroof.dto.offer.OfferResponseDTO;
@@ -123,14 +125,19 @@ public class OfferService {
         Offer savedOffer = offerRepository.save(offer);
 
         if (request.getStatus() == OfferStatus.ACCEPTED) {
-            emailService.sendOfferAcceptedEmail(
-                    savedOffer.getBuyer().getEmail(),
-                    savedOffer.getBuyer().getName(),
-                    savedOffer.getProperty().getTitle(),
-                    savedOffer.getAmount(),
-                    java.time.LocalDateTime.now(),
-                    request.getAgentMessage()
-            );
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.sendOfferAcceptedEmail(
+                            savedOffer.getBuyer().getEmail(),
+                            savedOffer.getBuyer().getName(),
+                            savedOffer.getProperty().getTitle(),
+                            savedOffer.getAmount(),
+                            java.time.LocalDateTime.now(),
+                            request.getAgentMessage()
+                    );
+                }
+            });
         }
 
         return toResponseDTO(savedOffer);
