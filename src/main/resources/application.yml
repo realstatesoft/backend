@@ -79,7 +79,7 @@ application:
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
-  level:
+  level:cd
     root: INFO
     com.openroof: DEBUG
     org.springframework.security: INFO

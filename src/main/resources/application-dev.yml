@@ -6,4 +6,4 @@
 application:
   security:
     jwt:
-      secret-key: dev-only-jwt-secret-key-change-me-in-production-min-32-chars
+      secret-key: ZGV2LW9ubHktand0LXNlY3JldC1rZXktY2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tbWluLTMyLWNoYXJz
