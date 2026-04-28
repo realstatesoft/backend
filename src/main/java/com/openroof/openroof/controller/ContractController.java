@@ -3,12 +3,16 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.contract.*;
 import com.openroof.openroof.service.ContractService;
+import com.openroof.openroof.service.ContractPdfService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -22,7 +26,9 @@ import java.util.List;
 @Tag(name = "Contracts", description = "Gestión de contratos de compraventa y alquiler con modelo de comisiones")
 public class ContractController {
 
-    private final ContractService contractService;
+    private final ContractService    contractService;
+    private final ContractPdfService contractPdfService;
+
 
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
@@ -188,5 +194,26 @@ public class ContractController {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body(ApiResponse.ok(null, "Contrato eliminado"));
+    }
+
+    // ─── PDF ──────────────────────────────────────────────────────────────────
+
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Descargar el contrato en formato PDF",
+               description = "Genera y devuelve el contrato como archivo PDF. Solo accesible para las partes involucradas o ADMIN.")
+    public ResponseEntity<byte[]> downloadPdf(
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            Authentication auth) {
+
+        byte[] pdfBytes = contractPdfService.generatePdf(id, auth.getName());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename("contrato-" + id + ".pdf")
+                .build());
+        headers.setContentLength(pdfBytes.length);
+
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }

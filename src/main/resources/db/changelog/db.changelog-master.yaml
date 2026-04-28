@@ -109,3 +109,9 @@ databaseChangeLog:
   - include:
       file: changelogs/031-shedlock-table.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/032-add-currency-code-to-contracts.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/033-add-highlighted-to-properties.yaml
+      relativeToChangelogFile: true

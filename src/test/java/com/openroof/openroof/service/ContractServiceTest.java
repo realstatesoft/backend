@@ -72,13 +72,13 @@ class ContractServiceTest {
 
             ContractSummaryResponse summary = new ContractSummaryResponse(
                     10L, null, null, null, null, null, null,
-                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null
+                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null, false
             );
 
             when(propertyRepository.existsById(100L)).thenReturn(true);
             when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
             when(contractRepository.findByProperty_Id(100L)).thenReturn(List.of(contract));
-            when(contractMapper.toSummaryResponse(contract)).thenReturn(summary);
+            when(contractMapper.toSummaryResponse(contract, false)).thenReturn(summary);
 
             List<ContractSummaryResponse> result = contractService.getByProperty(100L, "admin@test.com");
 
@@ -99,14 +99,14 @@ class ContractServiceTest {
 
             ContractSummaryResponse summary = new ContractSummaryResponse(
                     10L, null, null, null, null, null, null,
-                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null
+                    ContractType.SALE, ContractStatus.DRAFT, null, null, null, null, false
             );
 
             when(propertyRepository.existsById(100L)).thenReturn(true);
             when(userRepository.findByEmail("agent@test.com")).thenReturn(Optional.of(agentUser));
             when(contractRepository.findByProperty_Id(100L)).thenReturn(List.of(contract));
             when(agentProfileRepository.findByUser_Id(2L)).thenReturn(Optional.of(agentProfile));
-            when(contractMapper.toSummaryResponse(contract)).thenReturn(summary);
+            when(contractMapper.toSummaryResponse(contract, false)).thenReturn(summary);
 
             List<ContractSummaryResponse> result = contractService.getByProperty(100L, "agent@test.com");
 
