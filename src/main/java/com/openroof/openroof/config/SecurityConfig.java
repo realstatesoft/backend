@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,6 +27,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,6 +44,7 @@ public class SecurityConfig {
         private String allowedOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
+        private final PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
         private final UserDetailsService userDetailsService;
         private final com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
@@ -72,6 +75,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/agents/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leads/wizard").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/properties/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/properties/*/views")
+                                                .access((authentication, context) -> new AuthorizationDecision(true))
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
                                                 .anyRequest().authenticated())
@@ -80,6 +85,7 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
+                                .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
                                 
 

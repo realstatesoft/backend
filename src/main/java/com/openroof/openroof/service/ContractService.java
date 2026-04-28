@@ -650,24 +650,43 @@ public class ContractService {
     private boolean canCreateContractForProperty(Property property, ContractRequest request, User requester) {
         if (requester.getRole() == UserRole.ADMIN) return true;
 
-        // Validar que el vendedor en el DTO sea el dueño real de la propiedad
+        // 1. Validar que el vendedor en el DTO sea el dueño real de la propiedad
         if (property.getOwner() == null || !property.getOwner().getId().equals(request.sellerId())) {
+            log.warn("Validación fallida: El vendedor {} no coincide con el dueño real {}", request.sellerId(), 
+                property.getOwner() != null ? property.getOwner().getId() : "null");
+            return false;
+        }
+
+        // 2. Si la propiedad tiene un agente asignado, el contrato DEBE incluirlo como listingAgent
+        Long propertyAgentId = property.getAgent() != null ? property.getAgent().getId() : null;
+        if (propertyAgentId != null && !propertyAgentId.equals(request.listingAgentId())) {
+            log.warn("Validación fallida: El agente listador en el contrato {} no coincide con el de la propiedad {}", 
+                request.listingAgentId(), propertyAgentId);
+            return false;
+        }
+
+        // 3. Si la propiedad es "Directo de dueño" (sin agente), el listingAgentId debe ser null
+        if (propertyAgentId == null && request.listingAgentId() != null) {
+            log.warn("Validación fallida: Se envió listingAgentId {} pero la propiedad es de trato directo", request.listingAgentId());
             return false;
         }
 
         Long uid = requester.getId();
         
-        // El dueño puede crear contratos directos
+        // 4. El dueño puede crear contratos directos o con agentes
         if (uid.equals(property.getOwner().getId())) {
             return true;
         }
 
-        // Si es agente, solo el agente asignado a la propiedad puede crear el contrato
+        // 5. Los agentes pueden crear el contrato si son el agente listador O el agente del comprador
         if (requester.getRole() == UserRole.AGENT) {
             AgentProfile requesterProfile = agentProfileRepository.findByUser_Id(uid).orElse(null);
-            if (requesterProfile != null && property.getAgent() != null && 
-                property.getAgent().getId().equals(requesterProfile.getId())) {
-                return true;
+            if (requesterProfile != null) {
+                Long aid = requesterProfile.getId();
+                // Es el agente listador (y ya validamos arriba que coincida con la propiedad)
+                if (aid.equals(request.listingAgentId())) return true;
+                // O es el agente del comprador
+                if (aid.equals(request.buyerAgentId())) return true;
             }
         }
 

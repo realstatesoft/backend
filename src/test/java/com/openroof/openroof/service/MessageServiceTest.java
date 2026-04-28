@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 
-import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.model.enums.NotificationType;
 
 @ExtendWith(MockitoExtension.class)

@@ -1,28 +1,25 @@
 spring:
   application:
     name: OpenRoof
+
   config:
     import: optional:file:.env[.properties]
 
-  # ==================== DATASOURCE ====================
-  # Requeridas: DB_URL, DB_USER, DB_PASSWORD
-  # Ejemplo local (docker-compose): jdbc:postgresql://localhost:5432/openroof_db
   datasource:
-    url: jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.etpxedhtursffyoeapqr
-    password: OpenRoof$!*$up4Bas3#Pl4tf0rm2026*
 
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require
+    username: postgres.gnkzarhkjbuydrzybydm
+    password: OpenRoof$!*Supabase#Platform2026_TEST
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 300000
+      maximum-pool-size: 4
+      minimum-idle: 2
+      idle-timeout: 30000
       connection-timeout: 20000
 
-  # ==================== JPA / HIBERNATE ====================
   jpa:
     hibernate:
-      ddl-auto: none  # Liquibase maneja el schema
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -30,37 +27,36 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
-  # ==================== LIQUIBASE ====================
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+    default-schema: public
 
-  # ==================== MAIL ====================
-  # Valores temporales para que el backend arranque sin depender de variables externas.
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+  # ==================== MAIL (Gmail SMTP) ====================
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: noreply@openroof.com
-    password: change-me
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-
-  # ==================== JACKSON ====================
-  jackson:
-    default-property-inclusion: non_null
-    time-zone: UTC
+            required: true
 
 # ==================== SERVER ====================
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
-# ==================== OPENAPI / SPRINGDOC ====================
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -72,19 +68,16 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ==================== JWT ====================
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
+
 application:
   security:
     jwt:
-      secret-key: c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==
-      expiration: 86400000       # 24 horas en ms
-      refresh-expiration: 604800000  # 7 dias en ms
+      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-mail:
-  from-name: OpenRoof
-  base-url: http://localhost:5173
-
-# ==================== LOGGING ====================
 logging:
   level:
     root: INFO
@@ -96,21 +89,53 @@ logging:
 # ==================== SUPABASE STORAGE ====================
 # Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 # Obtener de: Supabase Dashboard → Project Settings → API
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: https://etpxedhtursffyoeapqr.supabase.co
-  service-role-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cHhlZGh0dXJzZmZ5b2VhcHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MDQ3OSwiZXhwIjoyMDg3NjI2NDc5fQ.X_TSRUP77BhIRw3ElSjO8xgI-ToUPZ1TEj-Tvx2mgFQ
+  url: ${SUPABASE_URL:}
+  service-role-key: ${SUPABASE_KEY:}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
 # ==================== UPLOAD ====================
 upload:
-  max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+  max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  # KYC / personal document upload settings (used by UserDocumentService)
+  documents:
+    max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+  # 3D Model upload settings (octet-stream incluido para compatibilidad con exportadores)
   models:
+    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:50MB}
     allowed-types: ${UPLOAD_MODELS_ALLOWED_TYPES:model/gltf-binary,model/gltf+json,application/octet-stream}
-    max-file-size: ${UPLOAD_MODELS_MAX_FILE_SIZE:20MB}
+  # Floor plan upload settings (PDF, JPG, PNG, WebP — max 5 per property)
+  floor-plans:
+    max-file-size: ${UPLOAD_FLOOR_PLANS_MAX_FILE_SIZE:10MB}
+    allowed-types: ${UPLOAD_FLOOR_PLANS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
+    max-per-property: ${UPLOAD_FLOOR_PLANS_MAX_PER_PROPERTY:5}
+
+trashcan:
+  retention-days: 10
 
 # ==================== MULTIPART ====================
 spring.servlet.multipart:
-  max-file-size: 5MB
-  max-request-size: 10MB
+  max-file-size: 50MB
+  max-request-size: 60MB
+
+# ==================== RESERVATION ====================
+openroof:
+  reservation:
+    ttl-hours: 72
+    default-percent: 1.00
+
+# ==================== SHEDLOCK ====================
+shedlock:
+  defaults:
+    lock-at-most-for: 9m
+    lock-at-least-for: 1m
+
+mail:
+  from-name: OpenRoof
+  base-url: ${FRONTEND_URL:http://localhost:5173}
+

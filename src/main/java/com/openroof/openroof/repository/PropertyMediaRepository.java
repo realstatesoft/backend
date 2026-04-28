@@ -18,4 +18,6 @@ public interface PropertyMediaRepository extends JpaRepository<PropertyMedia, Lo
     Optional<PropertyMedia> findByPropertyIdAndIsPrimaryTrue(Long propertyId);
 
     long countByPropertyId(Long propertyId);
+
+    long countByPropertyIdAndType(Long propertyId, com.openroof.openroof.model.enums.MediaType type);
 }

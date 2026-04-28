@@ -3,10 +3,12 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.repository.ImageRepository;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.PropertySecurity;
 import com.openroof.openroof.service.AuthService;
 import com.openroof.openroof.service.PropertyImageService;
 import com.openroof.openroof.service.PropertyService;
+import com.openroof.openroof.service.RentCalculationService;
 import com.openroof.openroof.service.StorageService;
 import com.openroof.openroof.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -56,6 +58,8 @@ class SecurityEndpointsTest {
     @MockitoBean
     private PropertyService propertyService;
     @MockitoBean
+    private RentCalculationService rentCalculationService;
+    @MockitoBean
     private PropertyImageService propertyImageService;
     @MockitoBean
     private StorageService storageService;
@@ -66,6 +70,8 @@ class SecurityEndpointsTest {
     private PropertySecurity propertySecurity;
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
     @MockitoBean
     private UserDetailsService userDetailsService;
     @MockitoBean
@@ -81,6 +87,14 @@ class SecurityEndpointsTest {
             chain.doFilter(request, response);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
 
         doAnswer(invocation -> {
             jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
@@ -140,6 +154,24 @@ class SecurityEndpointsTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"newStatus\":\"PUBLISHED\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void propertyViewEndpoint_isPublic() throws Exception {
+        org.mockito.Mockito.when(propertyService.registerView(org.mockito.ArgumentMatchers.eq(1L), any(), any()))
+                .thenReturn(3L);
+        org.mockito.Mockito.when(propertyService.getViewCount(org.mockito.ArgumentMatchers.eq(1L)))
+                .thenReturn(5L);
+
+        mockMvc.perform(post("/properties/1/views"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(true))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data").value(3));
+
+        mockMvc.perform(get("/properties/1/views/count"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.success").value(true))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data").value(5));
     }
 
     @Test
