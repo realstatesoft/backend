@@ -393,34 +393,32 @@ public class ContractService {
 
     /** Contratos donde el agente autenticado actúa como agente listador. */
     public List<ContractSummaryResponse> getAsListingAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
-        return contractRepository.findByListingAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
+        return mapWithSigned(contractRepository.findByListingAgent_Id(agent.getId()), user.getId());
     }
 
     /** Contratos donde el agente autenticado actúa como agente del comprador. */
     public List<ContractSummaryResponse> getAsBuyerAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
-        return contractRepository.findByBuyerAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
+        return mapWithSigned(contractRepository.findByBuyerAgent_Id(agent.getId()), user.getId());
     }
 
     /** Contratos donde el usuario autenticado es vendedor/propietario. */
     public List<ContractSummaryResponse> getAsSeller(String sellerEmail) {
         User user = findUserByEmail(sellerEmail);
-        return contractRepository.findBySeller_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contractRepository.findBySeller_Id(user.getId()), user.getId());
     }
 
     /** Contratos donde el usuario autenticado es comprador/inquilino. */
     public List<ContractSummaryResponse> getAsBuyer(String buyerEmail) {
         User user = findUserByEmail(buyerEmail);
-        return contractRepository.findByBuyer_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contractRepository.findByBuyer_Id(user.getId()), user.getId());
     }
 
     /** Todos los contratos de una propiedad si el usuario participa en alguno de ellos o es ADMIN. */
@@ -433,9 +431,7 @@ public class ContractService {
         }
 
         List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
-        return contracts.stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contracts, requester.getId());
     }
 
     // ─── UPDATE STATUS ────────────────────────────────────────────────────────
@@ -611,7 +607,7 @@ public class ContractService {
 
     // ─── Control de acceso ────────────────────────────────────────────────────
 
-    private boolean canAccess(Contract contract, User requester) {
+    public boolean canAccess(Contract contract, User requester) {
         if (requester.getRole() == UserRole.ADMIN) return true;
 
         Long uid = requester.getId();
@@ -739,11 +735,6 @@ public class ContractService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
-    private AgentProfile findAgentByEmail(String email) {
-        User user = findUserByEmail(email);
-        return agentProfileRepository.findByUser_Id(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
-    }
 
     private AgentProfile resolveAgent(Long agentId, String errorMessage) {
         if (agentId == null) return null;
@@ -772,5 +763,15 @@ public class ContractService {
         } else {
             action.run();
         }
+    }
+    private java.util.List<com.openroof.openroof.dto.contract.ContractSummaryResponse> mapWithSigned(java.util.List<Contract> contracts, Long userId) {
+        if (contracts.isEmpty()) return java.util.List.of();
+        
+        java.util.List<Long> contractIds = contracts.stream().map(Contract::getId).toList();
+        java.util.Set<Long> signedIds = contractSignatureRepository.findSignedContractIds(contractIds, userId);
+        
+        return contracts.stream()
+                .map(c -> contractMapper.toSummaryResponse(c, signedIds.contains(c.getId())))
+                .toList();
     }
 }
