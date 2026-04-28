@@ -110,6 +110,10 @@ databaseChangeLog:
       file: changelogs/031-shedlock-table.yaml
       relativeToChangelogFile: true
   - include:
+      file: changelogs/032-create-payments-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/033-add-unique-transaction-code.yaml
       file: changelogs/032-add-currency-code-to-contracts.yaml
       relativeToChangelogFile: true
   - include:
