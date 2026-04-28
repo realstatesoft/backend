@@ -13,6 +13,9 @@ import java.util.List;
 @Repository
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"agent", "agent.user", "status", "interactions", "interactions.performedBy", "interactions.oldStatus", "interactions.newStatus"})
+    java.util.Optional<Lead> findWithDetailsById(Long id);
+
     Page<Lead> findByAgentId(Long agentId, Pageable pageable);
 
     List<Lead> findByAgentIdAndStatusName(Long agentId, String statusName);

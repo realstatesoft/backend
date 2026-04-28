@@ -10,6 +10,7 @@ public record LeadResponse(
         Long id,
         Long agentId,
         String agentName,
+        Long userId,
         String name,
         String email,
         String phone,
@@ -18,6 +19,7 @@ public record LeadResponse(
         String statusColor,
         String notes,
         Map<String, Object> metadata,
+        java.util.List<LeadInteractionResponse> interactions,
         LocalDateTime createdAt
 ) {
 }
