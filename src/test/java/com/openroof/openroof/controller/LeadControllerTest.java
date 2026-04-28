@@ -69,7 +69,7 @@ class LeadControllerTest {
     private LeadResponse sampleLeadResponse() {
         return new LeadResponse(
                 1L, 10L, "Agent Test",
-                "John Doe", "john@example.com", "+595981234567",
+                null, "John Doe", "john@example.com", "+595981234567",
                 "sell_wizard", "Nuevo", "#3b82f6",
                 "Solicitud desde Sell Wizard",
                 Map.of("address", "Calle Test 123"),
