@@ -1,0 +1,9 @@
+# ==================== DEV PROFILE ====================
+# This file is active only when spring.profiles.active=dev (or -Dspring.profiles.active=dev).
+# It provides a fallback JWT secret for local development ONLY.
+# Never commit real secrets here; this value is intentionally non-production.
+
+application:
+  security:
+    jwt:
+      secret-key: dev-only-jwt-secret-key-change-me-in-production-min-32-chars
