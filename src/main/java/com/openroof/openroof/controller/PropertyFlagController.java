@@ -88,7 +88,10 @@ public class PropertyFlagController {
      */
     @GetMapping("/flags")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Listar todos los reportes activos del sistema (solo ADMIN)")
+    @Operation(
+            summary = "Listar flags por estado (solo ADMIN)",
+            description = "Lista flags según el query param status. Valores soportados: ACTIVE, RESOLVED o ALL."
+    )
     public ResponseEntity<ApiResponse<List<FlagResponse>>> getAllFlags(
             @RequestParam(name = "status", required = false, defaultValue = "ACTIVE") String status) {
 

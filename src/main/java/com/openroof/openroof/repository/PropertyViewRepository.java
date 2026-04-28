@@ -1,6 +1,7 @@
 package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.property.PropertyView;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,7 +25,7 @@ public interface PropertyViewRepository extends JpaRepository<PropertyView, Long
             WHERE pv.user.id = :userId
             ORDER BY pv.createdAt DESC
             """)
-    List<PropertyView> findRecentByUserId(@Param("userId") Long userId);
+    List<PropertyView> findRecentByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @Query("SELECT COUNT(pv) FROM PropertyView pv WHERE pv.property.owner.id = :ownerId")
     long countByPropertyOwnerId(@Param("ownerId") Long ownerId);

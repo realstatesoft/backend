@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -87,13 +89,14 @@ class PropertyViewServiceTest {
         Property p1 = property(10L, "Casa 1");
         Property p2 = property(20L, "Casa 2");
         Property p3 = property(30L, "Casa 3");
+        PageRequest recentPage = PageRequest.of(0, 10, Sort.by("createdAt").descending());
 
         PropertyView v1 = view(p1, user, LocalDateTime.of(2026, 4, 21, 12, 0));
         PropertyView v2 = view(p2, user, LocalDateTime.of(2026, 4, 21, 11, 0));
         PropertyView v3 = view(p1, user, LocalDateTime.of(2026, 4, 21, 10, 0));
         PropertyView v4 = view(p3, user, LocalDateTime.of(2026, 4, 21, 9, 0));
 
-        when(propertyViewRepository.findRecentByUserId(1L)).thenReturn(List.of(v1, v2, v3, v4));
+        when(propertyViewRepository.findRecentByUserId(1L, recentPage)).thenReturn(List.of(v1, v2, v3, v4));
         when(propertyMapper.toSummaryResponse(p1)).thenReturn(summary(10L, "Casa 1"));
         when(propertyMapper.toSummaryResponse(p2)).thenReturn(summary(20L, "Casa 2"));
         when(propertyMapper.toSummaryResponse(p3)).thenReturn(summary(30L, "Casa 3"));

@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +68,14 @@ class PropertyFlagServiceTest {
         var result = propertyFlagService.getFlagsByStatus("ALL");
 
         assertThat(result).extracting("id").containsExactly(1L, 2L);
+    }
+
+    @Test
+    @DisplayName("getFlagsByStatus() lanza error cuando status no es soportado")
+    void getFlagsByStatus_invalidStatusThrows() {
+        assertThatThrownBy(() -> propertyFlagService.getFlagsByStatus("UNKNOWN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Estado de flag no soportado");
     }
 
     private PropertyFlag buildFlag(Long id, java.time.LocalDateTime resolvedAt) {

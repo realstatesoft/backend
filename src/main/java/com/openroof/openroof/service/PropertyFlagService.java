@@ -102,6 +102,10 @@ public class PropertyFlagService {
     public List<FlagResponse> getFlagsByStatus(String status) {
         String normalized = status == null ? "ACTIVE" : status.trim().toUpperCase();
 
+        if (!List.of("ACTIVE", "RESOLVED", "ALL").contains(normalized)) {
+            throw new IllegalArgumentException("Estado de flag no soportado: " + status);
+        }
+
         List<PropertyFlag> flags = switch (normalized) {
             case "RESOLVED" -> propertyFlagRepository.findAllByResolvedAtIsNotNull();
             case "ALL" -> {

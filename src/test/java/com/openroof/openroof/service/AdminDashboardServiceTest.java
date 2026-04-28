@@ -30,7 +30,7 @@ class AdminDashboardServiceTest {
     private AdminDashboardService adminDashboardService;
 
     @Test
-    @DisplayName("getOverview() expone la acción rápida de reportes hacia /admin/flags")
+    @DisplayName("getOverview() expone la acción rápida de reportes hacia /properties")
     void getOverview_reportsQuickActionPointsToFlags() {
         when(userRepository.count()).thenReturn(0L);
         when(userRepository.countActiveUsers(org.mockito.ArgumentMatchers.any())).thenReturn(0L);
@@ -47,7 +47,7 @@ class AdminDashboardServiceTest {
         assertThat(overview.quickActions())
                 .anySatisfy(action -> {
                     assertThat(action.title()).isEqualTo("Ver reportes");
-                    assertThat(action.path()).isEqualTo("/admin/flags");
+                    assertThat(action.path()).isEqualTo("/properties");
                 });
     }
 }

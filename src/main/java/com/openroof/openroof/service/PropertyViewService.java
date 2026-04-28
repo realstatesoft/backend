@@ -9,6 +9,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +47,9 @@ public class PropertyViewService {
     @Transactional(readOnly = true)
     public List<PropertySummaryResponse> getRecentProperties(Long userId) {
         Map<Long, Property> orderedUnique = new LinkedHashMap<>();
+        PageRequest recentPage = PageRequest.of(0, RECENT_LIMIT, Sort.by("createdAt").descending());
 
-        for (PropertyView view : propertyViewRepository.findRecentByUserId(userId)) {
+        for (PropertyView view : propertyViewRepository.findRecentByUserId(userId, recentPage)) {
             Property property = view.getProperty();
             if (property == null || property.getId() == null) {
                 continue;
