@@ -1,8 +1,6 @@
 package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.lead.CreateLeadFromWizardRequest;
 import com.openroof.openroof.dto.lead.LeadResponse;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -10,27 +8,24 @@ import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.security.JwtAuthenticationFilter;
-import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.security.LeadSecurity;
 import com.openroof.openroof.service.LeadService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -45,18 +40,18 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import org.junit.jupiter.api.Disabled;
-
-@WebMvcTest(LeadController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
-@Disabled("Failing due to unrelated security config issues")
+@SpringBootTest
+@Transactional
+@ActiveProfiles("test")
 class LeadControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
+    @Autowired
+    private WebApplicationContext context;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private LeadService leadService;
@@ -64,27 +59,11 @@ class LeadControllerTest {
     @MockitoBean
     private LeadSecurity leadSecurity;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockitoBean
-    private JwtService jwtService;
-
-    @MockitoBean
-    private UserDetailsService userDetailsService;
-
     private static final String API_BASE = "/api/leads";
 
     @BeforeEach
-    void setupJwtFilterPassThrough() throws Exception {
-        doAnswer(invocation -> {
-            ServletRequest req = invocation.getArgument(0);
-            ServletResponse res = invocation.getArgument(1);
-            FilterChain chain = invocation.getArgument(2);
-            chain.doFilter(req, res);
-            return null;
-        }).when(jwtAuthenticationFilter).doFilter(
-                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+    void setup() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
     }
 
     private LeadResponse sampleLeadResponse() {
@@ -94,6 +73,7 @@ class LeadControllerTest {
                 "sell_wizard", "Nuevo", "#3b82f6",
                 "Solicitud desde Sell Wizard",
                 Map.of("address", "Calle Test 123"),
+                Collections.emptyList(),
                 LocalDateTime.now()
         );
     }

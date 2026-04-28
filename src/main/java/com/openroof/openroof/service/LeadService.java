@@ -10,6 +10,7 @@ import com.openroof.openroof.model.lead.LeadStatus;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
+import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +30,8 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final LeadStatusRepository leadStatusRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final UserRepository userRepository;
+    private final com.openroof.openroof.repository.LeadInteractionRepository leadInteractionRepository;
 
     private static final String DEFAULT_STATUS = "Nuevo";
     private static final String WIZARD_SOURCE = "sell_wizard";
@@ -55,6 +58,7 @@ public class LeadService {
         Lead lead = Lead.builder()
                 .agent(agent)
                 .status(status)
+                .user(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElse(null))
                 .name(request.getFullName())
                 .email(request.email())
                 .phone(request.phone())
@@ -66,7 +70,7 @@ public class LeadService {
         Lead saved = leadRepository.save(lead);
         log.info("Lead creado desde wizard: id={}, agentId={}, name={}", saved.getId(), agent.getId(), saved.getName());
 
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
     /**
@@ -75,7 +79,7 @@ public class LeadService {
     @Transactional(readOnly = true)
     public Page<LeadResponse> getLeadsByAgent(Long agentId, Pageable pageable) {
         return leadRepository.findByAgentId(agentId, pageable)
-                .map(this::toResponse);
+                .map(l -> toResponse(l, false));
     }
 
     /**
@@ -83,9 +87,9 @@ public class LeadService {
      */
     @Transactional(readOnly = true)
     public LeadResponse getById(Long id) {
-        Lead lead = leadRepository.findById(id)
+        Lead lead = leadRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead no encontrado con ID: " + id));
-        return toResponse(lead);
+        return toResponse(lead, true);
     }
 
     /**
@@ -212,12 +216,37 @@ public class LeadService {
         };
     }
 
-    private LeadResponse toResponse(Lead lead) {
+    private LeadResponse toResponse(Lead lead, boolean includeInteractions) {
+        java.util.List<com.openroof.openroof.dto.lead.LeadInteractionResponse> interactionDtos = java.util.List.of();
+        
+        if (includeInteractions) {
+            interactionDtos = leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(lead.getId()).stream()
+                    .map(i -> new com.openroof.openroof.dto.lead.LeadInteractionResponse(
+                            i.getId(),
+                            i.getType().name(),
+                            i.getSubject(),
+                            i.getNote(),
+                            i.getPerformedBy() != null ? i.getPerformedBy().getName() : null,
+                            i.getOldStatus() != null ? i.getOldStatus().getName() : null,
+                            i.getNewStatus() != null ? i.getNewStatus().getName() : null,
+                            i.getCreatedAt()
+                    ))
+                    .toList();
+        }
+
+        Long userId = lead.getUser() != null ? lead.getUser().getId() : null;
+        if (userId == null && lead.getEmail() != null) {
+            userId = userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(lead.getEmail())
+                    .map(com.openroof.openroof.model.user.User::getId)
+                    .orElse(null);
+        }
+
         return new LeadResponse(
                 lead.getId(),
                 lead.getAgent() != null ? lead.getAgent().getId() : null,
                 lead.getAgent() != null && lead.getAgent().getUser() != null 
                         ? lead.getAgent().getUser().getName() : null,
+                userId,
                 lead.getName(),
                 lead.getEmail(),
                 lead.getPhone(),
@@ -226,6 +255,7 @@ public class LeadService {
                 lead.getStatus() != null ? lead.getStatus().getColor() : null,
                 lead.getNotes(),
                 lead.getMetadata(),
+                interactionDtos,
                 lead.getCreatedAt()
         );
     }

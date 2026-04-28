@@ -163,7 +163,7 @@ saved = reservationRepository.saveAndFlush(reservation);
 
     @Transactional
     @Scheduled(cron = "0 */10 * * * *")
-    @SchedulerLock(lockAtMostFor = "10m", lockAtLeastFor = "30s")
+    @SchedulerLock(name = "expireStaleReservations", lockAtMostFor = "10m", lockAtLeastFor = "30s")
     public void expireStaleReservations() {
         List<Reservation> stale = reservationRepository.findExpired(BLOCKING_STATUSES, LocalDateTime.now());
         if (stale.isEmpty()) return;

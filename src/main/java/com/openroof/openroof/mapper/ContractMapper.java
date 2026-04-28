@@ -72,7 +72,7 @@ public class ContractMapper {
 
     // ─── Entity → ContractSummaryResponse ────────────────────────────────────
 
-    public ContractSummaryResponse toSummaryResponse(Contract c) {
+    public ContractSummaryResponse toSummaryResponse(Contract c, boolean hasSigned) {
         BigDecimal amount  = c.getAmount() != null ? c.getAmount() : BigDecimal.ZERO;
         BigDecimal totalPct = pctOrZero(c.getCommissionPct());
         BigDecimal totalAmt = calcAmount(amount, totalPct);
@@ -94,7 +94,8 @@ public class ContractMapper {
                 amount,
                 totalAmt,
                 c.getStartDate(),
-                c.getCreatedAt()
+                c.getCreatedAt(),
+                hasSigned
         );
     }
 

@@ -91,6 +91,7 @@ supabase:
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
 
+# ==================== UPLOAD ====================
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}

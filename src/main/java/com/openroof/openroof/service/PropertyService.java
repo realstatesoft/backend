@@ -27,6 +27,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
@@ -344,6 +345,7 @@ public class PropertyService {
     }
 
     @Scheduled(cron = "0 0 3 * * *") // every day at 3 am
+    @SchedulerLock(name = "cleanExpiredTrash", lockAtMostFor = "15m")
     public void cleanExpiredTrash() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(10);
         propertyRepository.deleteExpiredTrash(threshold, LocalDateTime.now());
