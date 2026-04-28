@@ -2,7 +2,6 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.model.contract.Contract;
-import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.model.property.Property;
