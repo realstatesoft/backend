@@ -95,7 +95,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @Query("SELECT COALESCE(AVG(p.price), 0) FROM Property p WHERE p.status IN :statuses AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     Double findAvgPriceByStatuses(@Param("statuses") List<PropertyStatus> statuses);
 
-
     // TRASHCAN ─────────────────────────────────────────
 
     // get properties in trashcan of a given user

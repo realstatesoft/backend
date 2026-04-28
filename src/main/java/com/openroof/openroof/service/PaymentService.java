@@ -6,8 +6,10 @@ import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.PaymentStatus;
+import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.payment.Payment;
+import com.openroof.openroof.model.payment.PaymentMetadata;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.UserRepository;
@@ -26,6 +28,8 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+
+    private final PropertyService propertyService;
 
     // ADMIN: listar todos los pagos con filtros opcionales
     public Page<PaymentResponse> getAll(Long userId, PaymentStatus status, Pageable pageable) {
@@ -64,6 +68,7 @@ public class PaymentService {
     @Transactional
     public PaymentResponse create(PaymentRequest request, String currentUserEmail) {
         User user = getUserByEmail(currentUserEmail);
+        validateMetadata(request.type(), request.metadata());
 
         Payment payment = Payment.builder()
                 .user(user)
@@ -72,6 +77,7 @@ public class PaymentService {
                 .concept(request.concept().trim())
                 .amount(request.amount())
                 .transactionCode(UUID.randomUUID().toString())
+                .metadata(request.metadata())
                 .build();
 
         return toResponse(paymentRepository.save(payment));
@@ -83,6 +89,13 @@ public class PaymentService {
         Payment payment = getPaymentOrThrow(id);
         validateTransition(payment.getStatus(), PaymentStatus.APPROVED);
         payment.setStatus(PaymentStatus.APPROVED);
+
+        if (payment.getType() == PaymentType.PROPERTY_HIGHLIGHT) {
+            PaymentMetadata meta = payment.getMetadata();
+            propertyService.highlightPropertyWithPayment(meta.getPropertyId(), payment.getId(), meta.getHighlightDays());
+        }
+        // TO-DO: activación de suscripción cuando se implemente
+
         return toResponse(paymentRepository.save(payment));
     }
 
@@ -93,6 +106,17 @@ public class PaymentService {
         validateTransition(payment.getStatus(), PaymentStatus.REJECTED);
         payment.setStatus(PaymentStatus.REJECTED);
         return toResponse(paymentRepository.save(payment));
+    }
+
+    private void validateMetadata(PaymentType type, PaymentMetadata metadata) {
+        if (type == PaymentType.PROPERTY_HIGHLIGHT) {
+            if (metadata == null || metadata.getPropertyId() == null || metadata.getHighlightDays() == null) {
+                throw new BadRequestException("Para pagos de tipo PROPERTY_HIGHLIGHT se requiere propertyId y highlightDays en metadata");
+            }
+            if (metadata.getHighlightDays() < 1 || metadata.getHighlightDays() > 365) {
+                throw new BadRequestException("highlightDays debe estar entre 1 y 365");
+            }
+        }
     }
 
     private void validateTransition(PaymentStatus current, PaymentStatus next) {
@@ -125,6 +149,7 @@ public class PaymentService {
                 payment.getConcept(),
                 payment.getTransactionCode(),
                 payment.getAmount(),
+                payment.getMetadata(),
                 payment.getCreatedAt(),
                 payment.getUpdatedAt()
         );

@@ -5,6 +5,8 @@ import com.openroof.openroof.common.embeddable.GeoLocation;
 import com.openroof.openroof.common.embeddable.UtilityInfo;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
+
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -23,6 +25,7 @@ public class PropertyMapper {
         ConstructionDetails c = p.getConstruction();
         UtilityInfo u = p.getUtilities();
         GeoLocation g = p.getGeoLocation();
+        Highlight active = activeHighlight(p);
 
         return new PropertyResponse(
                 p.getId(),
@@ -57,8 +60,8 @@ public class PropertyMapper {
                 enumName(p.getStatus()),
                 enumName(p.getVisibility()),
                 enumName(p.getAvailability()),
-                p.getHighlighted(),
-                p.getHighlightedUntil(),
+                active != null,
+                active != null ? active.getHighlightedUntil() : null,
                 p.getViewCount(),
                 p.getFavoriteCount(),
                 // Relaciones
@@ -257,6 +260,15 @@ public class PropertyMapper {
     }
 
     // ─── Helpers privados ─────────────────────────────────────────
+
+    private Highlight activeHighlight(Property p) {
+        if (p.getHighlights() == null) return null;
+        LocalDateTime now = LocalDateTime.now();
+        return p.getHighlights().stream()
+                .filter(h -> h.getHighlightedUntil().isAfter(now))
+                .findFirst()
+                .orElse(null);
+    }
 
     private List<PropertyRoomDto> mapRooms(List<PropertyRoom> rooms) {
         if (rooms == null)

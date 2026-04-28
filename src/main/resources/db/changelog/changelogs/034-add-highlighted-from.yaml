@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-add-highlighted-from
+      author: tania
+      preConditions:
+        - onFail: MARK_RAN
+
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted_from
+                  type: TIMESTAMP WITHOUT TIME ZONE

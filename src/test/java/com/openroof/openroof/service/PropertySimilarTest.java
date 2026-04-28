@@ -37,6 +37,8 @@ class PropertySimilarTest {
     @Mock private AgentProfileRepository agentProfileRepository;
     @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
+    @Mock private HighlightRepository highlightRepository;
+    @Mock private PaymentRepository paymentRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
     @Mock private AuditService auditService;
@@ -86,6 +88,8 @@ class PropertySimilarTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
+                highlightRepository,
+                paymentRepository,
                 propertyMapper,
                 notificationService,
                 auditService,

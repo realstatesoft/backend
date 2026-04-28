@@ -24,12 +24,10 @@ import java.util.List;
         @Index(name = "idx_properties_type", columnList = "property_type"),
         @Index(name = "idx_properties_listing", columnList = "status, visibility, deleted_at"),
         @Index(name = "idx_properties_price", columnList = "price"),
-        @Index(name = "idx_properties_highlighted", columnList = "highlighted"),
         @Index(name = "idx_properties_created", columnList = "created_at"),
         @Index(name = "idx_properties_coords_filters", columnList = "lat, lng, status, visibility, property_type"),
         @Index(name = "idx_properties_coords_price", columnList = "lat, lng, price"),
-        @Index(name = "idx_properties_city_search", columnList = "property_type, price, status, visibility"),
-        @Index(name = "idx_properties_highlighted_active", columnList = "highlighted, highlighted_until, status")
+        @Index(name = "idx_properties_city_search", columnList = "property_type, price, status, visibility")
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -155,12 +153,6 @@ public class Property extends BaseEntity {
 
         // ─── Destacados y métricas ────────────────────────────────────
 
-        @Builder.Default
-        private Boolean highlighted = false;
-
-        @Column(name = "highlighted_until")
-        private LocalDateTime highlightedUntil;
-
         @Column(name = "view_count")
         @Builder.Default
         private Integer viewCount = 0;
@@ -178,6 +170,10 @@ public class Property extends BaseEntity {
     // ─── Colecciones ──────────────────────────────────────────────
 
         // ─── Colecciones ──────────────────────────────────────────────
+
+        @OneToMany(mappedBy = "property", fetch = FetchType.LAZY)
+        @Builder.Default
+        private List<Highlight> highlights = new ArrayList<>();
 
         @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
         @Builder.Default

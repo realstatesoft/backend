@@ -11,6 +11,7 @@ import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.user.User;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -54,4 +55,7 @@ public class Payment extends BaseEntity{
 
     @Column(nullable = false, length = 255)
     private String concept;
+
+    @Embedded
+    private PaymentMetadata metadata;
 }
