@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-add-unique-transaction-code
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - uniqueConstraintExists:
+                tableName: payments
+                constraintName: uq_payments_transaction_code
+      changes:
+        - addUniqueConstraint:
+            tableName: payments
+            columnNames: transaction_code
+            constraintName: uq_payments_transaction_code
