@@ -59,11 +59,18 @@ public class SupabaseStorageService implements StorageService {
         String originalFilename = file.getOriginalFilename();
         String extension = extractExtension(originalFilename);
 
-        // Permitimos sobrepasar límite si es carpeta de documentos o extensión PDF,
-        // asumiendo que el servicio invocador ya aplicó su propia regla de negocio.
-        boolean isKycOrPdf = (folder != null && folder.startsWith("documents/")) || ".pdf".equalsIgnoreCase(extension);
+        // Permitimos sobrepasar el límite global para documentos KYC, PDFs, Modelos 3D y Planos,
+        // ya que sus servicios específicos aplican sus propias reglas de tamaño.
+        boolean isLargeFileAllowed = folder != null && 
+                (folder.startsWith("documents/") || 
+                 folder.startsWith("models/") || 
+                 folder.startsWith("floor-plans/")) &&
+                (".pdf".equalsIgnoreCase(extension) ||
+                 ".glb".equalsIgnoreCase(extension) ||
+                 ".gltf".equalsIgnoreCase(extension) ||
+                 ".bin".equalsIgnoreCase(extension));
 
-        if (!isKycOrPdf && file.getSize() > maxFileSizeBytes) {
+        if (!isLargeFileAllowed && file.getSize() > maxFileSizeBytes) {
             throw new IllegalArgumentException("El archivo supera el tamaño máximo permitido de " + maxFileSizeLabel + ".");
         }
 

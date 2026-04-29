@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.openroof.openroof.dto.offer.OfferRequestDTO;
 import com.openroof.openroof.dto.offer.OfferResponseDTO;
@@ -35,6 +37,7 @@ public class OfferService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final EmailService emailService;
 
     public OfferResponseDTO createOffer(OfferRequestDTO request, String currentUserEmail) {
         User buyer = getUserByEmail(currentUserEmail);
@@ -119,7 +122,25 @@ public class OfferService {
             offer.setCounterOfferAmount(null);
         }
 
-        return toResponseDTO(offerRepository.save(offer));
+        Offer savedOffer = offerRepository.save(offer);
+
+        if (request.getStatus() == OfferStatus.ACCEPTED) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.sendOfferAcceptedEmail(
+                            savedOffer.getBuyer().getEmail(),
+                            savedOffer.getBuyer().getName(),
+                            savedOffer.getProperty().getTitle(),
+                            savedOffer.getAmount(),
+                            java.time.LocalDateTime.now(),
+                            request.getAgentMessage()
+                    );
+                }
+            });
+        }
+
+        return toResponseDTO(savedOffer);
     }
 
     @Transactional(readOnly = true)
