@@ -10,6 +10,7 @@ import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
+import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
@@ -242,7 +243,7 @@ public class ContractService {
         contractSignatureRepository.save(signature);
 
         // 5. Evaluar cambio de estado
-        evaluateCompletion(contract);
+        evaluateCompletion(contract, user);
 
         Contract saved = contractRepository.save(contract);
 
@@ -360,7 +361,7 @@ public class ContractService {
         }
     }
 
-    private void evaluateCompletion(Contract contract) {
+    private void evaluateCompletion(Contract contract, User actor) {
         List<ContractSignature> sigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(contract.getId());
         Set<SignatureRole> signedRoles = sigs.stream().map(ContractSignature::getRole).collect(Collectors.toSet());
 
@@ -371,8 +372,45 @@ public class ContractService {
 
         if (buyerSigned && sellerSigned && listingAgentSigned && buyerAgentSigned) {
             contract.setStatus(ContractStatus.SIGNED);
+            updatePropertyStatusOnContractSigned(contract, actor);
         } else {
             contract.setStatus(ContractStatus.PARTIALLY_SIGNED);
+        }
+    }
+
+    /**
+     * Trigger de estado: Al firmarse un contrato de venta (SALE), cambia automáticamente 
+     * el PropertyStatus de la propiedad a SOLD y asigna al comprador.
+     */
+    private void updatePropertyStatusOnContractSigned(Contract contract, User actor) {
+        Property property = contract.getProperty();
+        if (property == null) return;
+
+        if (contract.getContractType() == ContractType.SALE) {
+            PropertyStatus oldStatus = property.getStatus();
+            property.setStatus(PropertyStatus.SOLD);
+            property.setBuyer(contract.getBuyer());
+            propertyRepository.save(property);
+
+            log.info("Trigger: Propiedad {} marcada como SOLD por contrato de venta {}", 
+                property.getId(), contract.getId());
+
+            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                    Map.of("status", PropertyStatus.SOLD.name()));
+        } else if (contract.getContractType() == ContractType.RENT) {
+            // Opcional: Manejar alquileres también para consistencia
+            PropertyStatus oldStatus = property.getStatus();
+            property.setStatus(PropertyStatus.RENTED);
+            property.setTenant(contract.getBuyer());
+            propertyRepository.save(property);
+
+            log.info("Trigger: Propiedad {} marcada como RENTED por contrato de alquiler {}", 
+                property.getId(), contract.getId());
+
+            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                    Map.of("status", PropertyStatus.RENTED.name()));
         }
     }
 
