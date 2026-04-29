@@ -8,13 +8,16 @@ import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.agent.AgentClient;
 import com.openroof.openroof.model.enums.AssignmentStatus;
+import com.openroof.openroof.model.enums.EventType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.enums.VisitStatus;
+import com.openroof.openroof.model.interaction.AgentAgenda;
 import com.openroof.openroof.model.interaction.Visit;
 import com.openroof.openroof.model.interaction.VisitRequest;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.repository.AgentAgendaRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.AgentClientRepository;
 import com.openroof.openroof.repository.PropertyAssignmentRepository;
@@ -45,6 +48,7 @@ public class VisitRequestService {
     private final AgentProfileRepository agentProfileRepository;
     private final PropertyAssignmentRepository propertyAssignmentRepository;
     private final AgentClientRepository agentClientRepository;
+    private final AgentAgendaRepository agentAgendaRepository;
     private final ClientInteractionService clientInteractionService;
     private final EmailService emailService;
 
@@ -136,6 +140,9 @@ public class VisitRequestService {
                         visit.getScheduledAt());
             }
         }
+
+        // ─── Auto-create agenda entries for both parties ──────────────
+        createAgendaEntriesForVisit(visitRequest, visit);
 
         String buyerEmail     = visitRequest.getBuyer().getEmail();
         String buyerName      = visitRequest.getBuyer().getName();
@@ -327,10 +334,77 @@ public class VisitRequestService {
             return property.getAgent();
         }
 
-        return propertyAssignmentRepository
+        AgentProfile assignedAgent = propertyAssignmentRepository
                 .findTopByProperty_IdAndStatusOrderByAssignedAtDesc(property.getId(), AssignmentStatus.ACCEPTED)
                 .map(pa -> pa.getAgent())
                 .orElse(null);
+
+        if (assignedAgent != null) {
+            return assignedAgent;
+        }
+
+        // Fallback: Si no hay agente externo asignado pero el dueño tiene perfil de agente,
+        // le asignamos la solicitud al dueño (como agente).
+        return agentProfileRepository.findByUser_Id(property.getOwner().getId()).orElse(null);
+    }
+
+    /**
+     * Creates one AgentAgenda entry for the responsible party (agent or property owner)
+     * and one for the buyer, so both have the visit on their calendar automatically.
+     */
+    private void createAgendaEntriesForVisit(VisitRequest visitRequest, Visit visit) {
+        Property property = visitRequest.getProperty();
+        String propertyTitle = property.getTitle();
+        LocalDateTime scheduledAt = visit.getScheduledAt();
+        // Default duration: 1 hour
+        LocalDateTime endsAt = scheduledAt.plusHours(1);
+        String location = property.getAddress();
+
+        // 1) Agenda entry for agent (or owner if no agent)
+        if (visitRequest.getAgent() != null) {
+            User agentUser = visitRequest.getAgent().getUser();
+            AgentAgenda agentEntry = AgentAgenda.builder()
+                    .user(agentUser)
+                    .agent(visitRequest.getAgent())
+                    .visit(visit)
+                    .eventType(EventType.VISIT)
+                    .title("Visita: " + propertyTitle)
+                    .description("Visita confirmada con " + visitRequest.getBuyerName())
+                    .startsAt(scheduledAt)
+                    .endsAt(endsAt)
+                    .location(location)
+                    .build();
+            agentAgendaRepository.save(agentEntry);
+        } else if (property.getOwner() != null) {
+            User ownerUser = property.getOwner();
+            AgentAgenda ownerEntry = AgentAgenda.builder()
+                    .user(ownerUser)
+                    .agent(null)
+                    .visit(visit)
+                    .eventType(EventType.VISIT)
+                    .title("Visita: " + propertyTitle)
+                    .description("Visita confirmada con " + visitRequest.getBuyerName())
+                    .startsAt(scheduledAt)
+                    .endsAt(endsAt)
+                    .location(location)
+                    .build();
+            agentAgendaRepository.save(ownerEntry);
+        }
+
+        // 2) Agenda entry for the buyer
+        User buyer = visitRequest.getBuyer();
+        AgentAgenda buyerEntry = AgentAgenda.builder()
+                .user(buyer)
+                .agent(null)
+                .visit(visit)
+                .eventType(EventType.VISIT)
+                .title("Visita: " + propertyTitle)
+                .description("Tu visita ha sido confirmada")
+                .startsAt(scheduledAt)
+                .endsAt(endsAt)
+                .location(location)
+                .build();
+        agentAgendaRepository.save(buyerEntry);
     }
 
     private void afterCommit(Runnable action) {
