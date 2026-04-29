@@ -68,11 +68,11 @@ class LeadControllerTest {
 
     private LeadResponse sampleLeadResponse() {
         return new LeadResponse(
-                1L, 10L, "Agent Test",
-                null, "John Doe", "john@example.com", "+595981234567",
+                1L, 10L, "Agent Test", null,
+                "John Doe", "john@example.com", "+595981234567",
                 "sell_wizard", "Nuevo", "#3b82f6",
                 "Solicitud desde Sell Wizard",
-                Map.of("address", "Calle Test 123"),
+                java.util.Collections.<String, Object>singletonMap("address", "Calle Test 123"),
                 Collections.emptyList(),
                 LocalDateTime.now()
         );

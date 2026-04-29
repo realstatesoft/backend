@@ -59,6 +59,16 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/compare")
+    @Operation(summary = "Obtener hasta 3 propiedades para comparar")
+    public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> compare(
+            @Parameter(description = "IDs de propiedades a comparar (máximo 3)")
+            @RequestParam List<Long> ids) {
+
+        List<PropertySummaryResponse> properties = propertyService.getForComparison(ids);
+        return ResponseEntity.ok(ApiResponse.ok(properties));
+    }
+
     @PostMapping("/{id}/views")
     @Operation(summary = "Registrar una visualización de una propiedad")
     public ResponseEntity<ApiResponse<Long>> registerView(
@@ -170,6 +180,14 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+    @GetMapping("/featured")
+    @Operation(summary = "Obtener las 8-12 propiedades destacadas o más recientes")
+    public ResponseEntity<ApiResponse<List<PropertySummaryResponse>>> getFeatured(
+            @Parameter(description = "Límite de propiedades") @RequestParam(defaultValue = "12") int limit) {
+        List<PropertySummaryResponse> properties = propertyService.getFeaturedProperties(limit);
+        return ResponseEntity.ok(ApiResponse.ok(properties));
+    }
+
     // --- UPDATE ---------------------------------------------------
 
     @PutMapping("/{id}")
@@ -263,6 +281,18 @@ public class PropertyController {
 
         PropertyResponse response = propertyService.changeStatus(id, request.newStatus(), user);
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
+    }
+
+    @PatchMapping("/{id}/highlight")
+    @Operation(summary = "Marcar o desmarcar una propiedad como destacada (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PropertyResponse>> toggleHighlight(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
+            @RequestParam boolean highlighted,
+            @AuthenticationPrincipal User user) {
+
+        PropertyResponse response = propertyService.toggleHighlight(id, highlighted, user);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad " + (highlighted ? "destacada" : "desmarcada como destacada")));
     }
 
     // --- SIMILAR --------------------------------------------

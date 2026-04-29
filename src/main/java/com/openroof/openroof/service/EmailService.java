@@ -276,6 +276,40 @@ public class EmailService {
     }
 
 
+    // ─── OFERTAS ───────────────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendOfferAcceptedEmail(String toEmail, String buyerName,
+                                        String propertyTitle, java.math.BigDecimal amount,
+                                        LocalDateTime acceptedAt, String agentMessage) {
+        String notes = (agentMessage != null && !agentMessage.isBlank())
+                ? "<p><em>Mensaje del agente/propietario: \"" + escapeHtml(agentMessage) + "\"</em></p>"
+                : "";
+        String subject = "¡Tu oferta ha sido aceptada! — " + propertyTitle;
+        String body = buildHtml(
+                "Oferta Aceptada",
+                "Hola, " + escapeHtml(buyerName) + ".",
+                """
+                <p>¡Excelentes noticias! Tu oferta por la propiedad <strong>%s</strong> ha sido <strong>aceptada</strong>.</p>
+                <p><strong>Detalles de la oferta:</strong></p>
+                <ul>
+                    <li>Monto aceptado: USD %s</li>
+                    <li>Fecha de aceptación: %s</li>
+                </ul>
+                %s
+                <p><strong>Próximos pasos:</strong> Te recomendamos contactar al agente o propietario para coordinar los detalles de la firma o los pasos legales a seguir. Puedes hacerlo desde la plataforma.</p>
+                """.formatted(
+                        escapeHtml(propertyTitle),
+                        String.format("%,.2f", amount),
+                        format(acceptedAt),
+                        notes
+                ),
+                "Ver oferta",
+                baseUrl + "/offers"
+        );
+        send(toEmail, subject, body);
+    }
+
     // ─── MENSAJES ───────────────────────────────────────────────────────────────
 
     @Async("emailTaskExecutor")

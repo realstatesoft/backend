@@ -2,6 +2,8 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.TestSecurityMocksConfig;
 import com.openroof.openroof.dto.contract.ContractResponse;
 import com.openroof.openroof.dto.contract.ContractStatusUpdateRequest;
 import com.openroof.openroof.exception.BadRequestException;
@@ -45,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ContractController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.config.TestSecurityMocksConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, TestSecurityMocksConfig.class})
 class ContractControllerTest {
 
     @Autowired

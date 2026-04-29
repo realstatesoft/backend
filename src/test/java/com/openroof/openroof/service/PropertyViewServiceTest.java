@@ -1,147 +1,137 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.common.embeddable.RequestMetadata;
+import com.openroof.openroof.dto.property.PropertySummaryResponse;
+import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
-import com.openroof.openroof.model.enums.PropertyType;
-import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyView;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.repository.AgentProfileRepository;
-import com.openroof.openroof.repository.ExteriorFeatureRepository;
-import com.openroof.openroof.repository.InteriorFeatureRepository;
-import com.openroof.openroof.repository.LocationRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
-import com.openroof.openroof.repository.UserPreferenceRepository;
-import com.openroof.openroof.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PropertyViewServiceTest {
 
-    @Mock private PropertyRepository propertyRepository;
-    @Mock private PropertyViewRepository propertyViewRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private LocationRepository locationRepository;
-    @Mock private AgentProfileRepository agentProfileRepository;
-    @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
-    @Mock private InteriorFeatureRepository interiorFeatureRepository;
-    @Mock private PropertyMapper propertyMapper;
-    @Mock private NotificationService notificationService;
-    @Mock private AuditService auditService;
-    @Mock private UserPreferenceRepository userPreferenceRepository;
-    @Mock private PropertyRelevanceService propertyRelevanceService;
-    @Mock private jakarta.servlet.http.HttpServletRequest request;
-    @Mock private jakarta.servlet.http.HttpSession session;
+    @Mock
+    private PropertyRepository propertyRepository;
 
-    private PropertyService propertyService;
+    @Mock
+    private PropertyViewRepository propertyViewRepository;
 
-    @BeforeEach
-    void setUp() {
-        propertyService = new PropertyService(
-                propertyRepository,
-                propertyViewRepository,
-                userRepository,
-                locationRepository,
-                agentProfileRepository,
-                exteriorFeatureRepository,
-                interiorFeatureRepository,
-                propertyMapper,
-                notificationService,
-                auditService,
-                userPreferenceRepository,
-                propertyRelevanceService);
-    }
+    @Mock
+    private PropertyMapper propertyMapper;
+
+    @InjectMocks
+    private PropertyViewService propertyViewService;
 
     @Test
-    void registerView_persistsViewAndUpdatesCount() {
-        Property property = property();
+    @DisplayName("Registrar vista reciente crea una nueva vista cuando la propiedad existe")
+    void registerRecentView_createsView() {
+        User user = user(1L);
+        Property property = property(10L, "Casa 1");
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property));
-        when(propertyViewRepository.save(any(PropertyView.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(propertyRepository.incrementViewCount(10L)).thenReturn(1);
-        Property updatedProperty = property();
-        updatedProperty.setViewCount(7);
-        AtomicInteger findByIdCallCount = new AtomicInteger(0);
-        when(propertyRepository.findById(10L)).thenAnswer(inv -> {
-            int call = findByIdCallCount.getAndIncrement();
-            return call == 0 ? Optional.of(property) : Optional.of(updatedProperty);
-        });
-        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(request.getHeader("X-Forwarded-For")).thenReturn(" 10.0.0.1 , 10.0.0.2");
-        when(request.getHeader("User-Agent")).thenReturn("JUnit");
-        when(request.getHeader("Referer")).thenReturn("https://example.com");
-        when(request.getSession(false)).thenReturn(session);
-        when(session.getId()).thenReturn("session-123");
+        when(propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(1L, 10L))
+                .thenReturn(Optional.empty());
 
-        long count = propertyService.registerView(10L, null, request);
+        propertyViewService.registerRecentView(10L, user);
 
-        assertEquals(7L, count);
-
-        ArgumentCaptor<PropertyView> captor = ArgumentCaptor.forClass(PropertyView.class);
-        verify(propertyViewRepository).save(captor.capture());
-        PropertyView saved = captor.getValue();
-        RequestMetadata metadata = saved.getRequestMetadata();
-        assertEquals("10.0.0.1", metadata.getIpAddress());
-        assertEquals("JUnit", metadata.getUserAgent());
-        assertEquals("https://example.com", saved.getReferrer());
-        assertEquals("session-123", saved.getSessionId());
-        verify(propertyRepository).incrementViewCount(10L);
-        verify(propertyViewRepository, never()).countByProperty_Id(eq(10L));
+        verify(propertyViewRepository).save(argThat(view ->
+                view.getUser().getId().equals(1L) && view.getProperty().getId().equals(10L)));
     }
 
     @Test
-    void getViewCount_returnsStoredCount() {
-        when(propertyRepository.findById(10L)).thenReturn(Optional.of(property()));
-        when(propertyViewRepository.countByProperty_Id(10L)).thenReturn(4L);
+    @DisplayName("Registrar vista reciente reemplaza una vista previa de la misma propiedad")
+    void registerRecentView_replacesExistingView() {
+        User user = user(1L);
+        Property property = property(10L, "Casa 1");
+        PropertyView existing = PropertyView.builder().property(property).user(user).build();
+        when(propertyRepository.findById(10L)).thenReturn(Optional.of(property));
+        when(propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(1L, 10L))
+                .thenReturn(Optional.of(existing));
 
-        long count = propertyService.getViewCount(10L);
+        propertyViewService.registerRecentView(10L, user);
 
-        assertEquals(4L, count);
+        verify(propertyViewRepository).delete(existing);
+        verify(propertyViewRepository).save(any(PropertyView.class));
     }
 
     @Test
-    void getViewCount_missingPropertyThrowsNotFound() {
+    @DisplayName("Registrar vista de propiedad inexistente lanza excepción")
+    void registerRecentView_missingProperty_throws() {
+        User user = user(1L);
         when(propertyRepository.findById(10L)).thenReturn(Optional.empty());
 
-        assertThrows(com.openroof.openroof.exception.ResourceNotFoundException.class,
-                () -> propertyService.getViewCount(10L));
+        assertThatThrownBy(() -> propertyViewService.registerRecentView(10L, user))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Propiedad no encontrada");
     }
 
-    private Property property() {
-        User owner = User.builder()
-                .email("owner@test.com")
-                .passwordHash("hash")
-                .role(UserRole.USER)
-                .name("Owner")
-                .build();
-        owner.setId(1L);
+    @Test
+    @DisplayName("Obtener propiedades recientes devuelve únicas y ordenadas por recencia")
+    void getRecentProperties_returnsOrderedUniqueProperties() {
+        User user = user(1L);
+        Property p1 = property(10L, "Casa 1");
+        Property p2 = property(20L, "Casa 2");
+        Property p3 = property(30L, "Casa 3");
+        PageRequest recentPage = PageRequest.of(0, 10, Sort.by("createdAt").descending());
 
-        Property property = Property.builder()
-                .title("Casa")
-                .propertyType(PropertyType.HOUSE)
-                .address("Calle 1")
-                .price(BigDecimal.valueOf(100000))
-                .owner(owner)
+        PropertyView v1 = view(p1, user, LocalDateTime.of(2026, 4, 21, 12, 0));
+        PropertyView v2 = view(p2, user, LocalDateTime.of(2026, 4, 21, 11, 0));
+        PropertyView v3 = view(p1, user, LocalDateTime.of(2026, 4, 21, 10, 0));
+        PropertyView v4 = view(p3, user, LocalDateTime.of(2026, 4, 21, 9, 0));
+
+        when(propertyViewRepository.findRecentByUserId(1L, recentPage)).thenReturn(List.of(v1, v2, v3, v4));
+        when(propertyMapper.toSummaryResponse(p1)).thenReturn(summary(10L, "Casa 1"));
+        when(propertyMapper.toSummaryResponse(p2)).thenReturn(summary(20L, "Casa 2"));
+        when(propertyMapper.toSummaryResponse(p3)).thenReturn(summary(30L, "Casa 3"));
+
+        List<PropertySummaryResponse> recent = propertyViewService.getRecentProperties(1L);
+
+        assertThat(recent).extracting(PropertySummaryResponse::id)
+                .containsExactly(10L, 20L, 30L);
+    }
+
+    private static User user(Long id) {
+        User user = User.builder()
+                .email("user@test.com")
+                .name("User Test")
                 .build();
-        property.setId(10L);
+        user.setId(id);
+        return user;
+    }
+
+    private static Property property(Long id, String title) {
+        Property property = Property.builder().title(title).build();
+        property.setId(id);
         return property;
+    }
+
+    private static PropertyView view(Property property, User user, LocalDateTime createdAt) {
+        PropertyView view = PropertyView.builder()
+                .property(property)
+                .user(user)
+                .build();
+        view.setCreatedAt(createdAt);
+        return view;
+    }
+
+    private static PropertySummaryResponse summary(Long id, String title) {
+        return new PropertySummaryResponse(id, title, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

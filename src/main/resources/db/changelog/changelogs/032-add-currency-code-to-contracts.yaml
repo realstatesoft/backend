@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-add-currency-code-to-contracts
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: contracts
+            columns:
+              - column:
+                  name: currency_code
+                  type: varchar(3)
+                  defaultValue: "PYG"
+                  constraints:
+                    nullable: false
