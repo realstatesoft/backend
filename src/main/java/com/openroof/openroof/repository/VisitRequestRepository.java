@@ -14,7 +14,12 @@ public interface VisitRequestRepository extends JpaRepository<VisitRequest, Long
 
     List<VisitRequest> findByBuyerId(Long buyerId);
 
-    List<VisitRequest> findByAgentId(Long agentId);
+    @Query("SELECT vr FROM VisitRequest vr " +
+           "JOIN FETCH vr.property " +
+           "JOIN FETCH vr.buyer " +
+           "WHERE vr.agent.id = :agentId " +
+           "ORDER BY vr.createdAt DESC")
+    List<VisitRequest> findByAgentId(@Param("agentId") Long agentId);
 
     List<VisitRequest> findByPropertyId(Long propertyId);
 

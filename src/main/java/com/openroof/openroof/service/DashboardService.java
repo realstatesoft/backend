@@ -54,9 +54,9 @@ public class DashboardService {
 
                 long activeClients = agentClientRepository.countByAgent_Id(agentId);
                 long totalSales = propertyRepository.countByAgentIdAndStatus(agentId, PropertyStatus.SOLD);
-                long scheduledVisits = visitRequestRepository.countByAgentIdAndStatus(agentId,
-                                VisitRequestStatus.PENDING)
-                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.ACCEPTED);
+                long scheduledVisits = visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.PENDING)
+                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.ACCEPTED)
+                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.COUNTER_PROPOSED);
 
                 List<Contract> signedContracts = contractRepository
                                 .findAllByParticipant(user.getId(), agentId).stream()
