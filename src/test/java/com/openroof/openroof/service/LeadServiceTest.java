@@ -14,6 +14,7 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.LeadInteractionRepository;
 import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
+import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -52,6 +53,9 @@ class LeadServiceTest {
     @Mock
     private AgentProfileRepository agentProfileRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private LeadService leadService;
 
@@ -86,6 +90,9 @@ class LeadServiceTest {
                 .active(true)
                 .build();
         defaultStatus.setId(1L);
+
+        lenient().when(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(anyString()))
+                .thenReturn(Optional.empty());
     }
 
     private CreateLeadFromWizardRequest sampleRequest() {
