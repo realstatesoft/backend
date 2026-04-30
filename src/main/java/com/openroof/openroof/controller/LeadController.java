@@ -2,8 +2,11 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.lead.CreateLeadFromWizardRequest;
+import com.openroof.openroof.dto.lead.CreateLeadInteractionRequest;
+import com.openroof.openroof.dto.lead.LeadInteractionResponse;
 import com.openroof.openroof.dto.lead.LeadResponse;
-import com.openroof.openroof.service.LeadService;
+import com.openroof.openroof.dto.lead.UpdateLeadStatusRequest;
+import com.openroof.openroof.service.LeadServiceApi;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class LeadController {
 
-    private final LeadService leadService;
+    private final LeadServiceApi leadService;
 
     /**
      * Crea un Lead desde el Sell Wizard.
@@ -56,6 +59,30 @@ public class LeadController {
     public ResponseEntity<ApiResponse<LeadResponse>> getById(@PathVariable Long id) {
         LeadResponse response = leadService.getById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /**
+     * Actualiza el estado del pipeline del lead y registra interacción STATUS_CHANGE si cambia.
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("isAuthenticated() and (hasRole('ADMIN') or @leadSecurity.isLeadOwner(principal, #id))")
+    public ResponseEntity<ApiResponse<LeadResponse>> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateLeadStatusRequest request) {
+        LeadResponse response = leadService.updateStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /**
+     * Registra una interacción manual (nota, llamada, correo…).
+     */
+    @PostMapping("/{id}/interactions")
+    @PreAuthorize("isAuthenticated() and (hasRole('ADMIN') or @leadSecurity.isLeadOwner(principal, #id))")
+    public ResponseEntity<ApiResponse<LeadInteractionResponse>> addInteraction(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateLeadInteractionRequest request) {
+        LeadInteractionResponse response = leadService.addInteraction(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     /**

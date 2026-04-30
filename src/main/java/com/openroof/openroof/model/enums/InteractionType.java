@@ -6,5 +6,7 @@ public enum InteractionType {
     WHATSAPP,
     VISIT,
     MEETING,
-    NOTE
+    NOTE,
+    /** Reservado para el cambio automático de estado del lead */
+    STATUS_CHANGE
 }
