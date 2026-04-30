@@ -712,7 +712,11 @@ public class PropertyService {
     }
 
     // ─── Destacar propiedad ───────────────────────────────────────
+    @Transactional
     public void highlightProperty(Long propertyId, int days) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("El número de días debe ser mayor que cero");
+        }
         Property property = findPropertyOrThrow(propertyId);
         LocalDateTime now = LocalDateTime.now();
 
@@ -731,9 +735,14 @@ public class PropertyService {
                 );
     }
 
+    @Transactional
     public void highlightPropertyWithPayment(Long propertyId, Long paymentId, int days) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("El número de días debe ser mayor que cero");
+        }
         Property property = findPropertyOrThrow(propertyId);
-        Payment payment = paymentRepository.getReferenceById(paymentId);
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
 
         if (payment.getStatus() != PaymentStatus.APPROVED) {
             throw new BadRequestException("El pago debe estar aprobado para destacar la propiedad");

@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
+import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.payment.Payment;
 import com.openroof.openroof.model.property.Highlight;
@@ -175,11 +176,11 @@ class PropertyHighlightServiceTest {
         @DisplayName("Crea un nuevo highlight con referencia al pago")
         void createsNewHighlightWithPayment() {
             Property property = buildProperty(PROPERTY_ID);
-            Payment payment = Payment.builder().build();
+            Payment payment = Payment.builder().status(PaymentStatus.APPROVED).build();
             payment.setId(5L);
 
             when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
-            when(paymentRepository.getReferenceById(5L)).thenReturn(payment);
+            when(paymentRepository.findById(5L)).thenReturn(Optional.of(payment));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
                             eq(PROPERTY_ID), any(LocalDateTime.class)))
@@ -202,11 +203,11 @@ class PropertyHighlightServiceTest {
             Property property = buildProperty(PROPERTY_ID);
             Highlight existing = buildActiveHighlight(property, 5);
             LocalDateTime originalUntil = existing.getHighlightedUntil();
-            Payment payment = Payment.builder().build();
+            Payment payment = Payment.builder().status(PaymentStatus.APPROVED).build();
             payment.setId(7L);
 
             when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
-            when(paymentRepository.getReferenceById(7L)).thenReturn(payment);
+            when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
                             eq(PROPERTY_ID), any(LocalDateTime.class)))

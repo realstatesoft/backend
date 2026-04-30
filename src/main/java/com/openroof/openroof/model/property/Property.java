@@ -9,6 +9,7 @@ import com.openroof.openroof.model.enums.*;
 import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
@@ -172,6 +173,7 @@ public class Property extends BaseEntity {
         // ─── Colecciones ──────────────────────────────────────────────
 
         @OneToMany(mappedBy = "property", fetch = FetchType.LAZY)
+        @BatchSize(size = 20)
         @Builder.Default
         private List<Highlight> highlights = new ArrayList<>();
 

@@ -92,6 +92,9 @@ public class PaymentService {
 
         if (payment.getType() == PaymentType.PROPERTY_HIGHLIGHT) {
             PaymentMetadata meta = payment.getMetadata();
+            if (meta == null || meta.getPropertyId() == null || meta.getHighlightDays() == null) {
+                throw new BadRequestException("Metadata de pago incompleta: se requiere propertyId y highlightDays");
+            }
             propertyService.highlightPropertyWithPayment(meta.getPropertyId(), payment.getId(), meta.getHighlightDays());
         }
         // TO-DO: activación de suscripción cuando se implemente

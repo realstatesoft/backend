@@ -7,6 +7,7 @@ import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -270,7 +271,12 @@ public class PropertyMapper {
         if (p.getHighlights() == null) return null;
         LocalDateTime now = LocalDateTime.now();
         return p.getHighlights().stream()
-                .filter(h -> h.getHighlightedUntil().isAfter(now))
+                .filter(h -> h.getHighlightedFrom() != null
+                        && h.getHighlightedUntil() != null
+                        && !now.isBefore(h.getHighlightedFrom())
+                        && now.isBefore(h.getHighlightedUntil()))
+                .sorted(Comparator.comparing(Highlight::getHighlightedFrom).reversed()
+                        .thenComparing(Comparator.comparing(Highlight::getHighlightedUntil).reversed()))
                 .findFirst()
                 .orElse(null);
     }

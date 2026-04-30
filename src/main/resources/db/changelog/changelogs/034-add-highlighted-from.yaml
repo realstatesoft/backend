@@ -4,6 +4,10 @@ databaseChangeLog:
       author: tania
       preConditions:
         - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: properties
+                columnName: highlighted_from
 
       changes:
         - addColumn:
