@@ -54,6 +54,8 @@ public class SecurityConfig {
                         "/auth/login",
                         "/auth/register",
                         "/auth/refresh-token",
+                        "/api/exchange-rates",
+                        "/api/exchange-rates/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",

@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.contract;
 
+import lombok.Builder;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
 
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 /**
  * Vista resumida de contrato para listados (dashboard, tabla de ventas/alquileres).
  */
+@Builder
 public record ContractSummaryResponse(
 
         Long id,
@@ -32,6 +34,9 @@ public record ContractSummaryResponse(
         BigDecimal totalCommissionAmount,
 
         LocalDate startDate,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        /** Indica si el usuario que realiza la consulta ya firmó este contrato */
+        boolean currentUserHasSigned
 ) {
 }

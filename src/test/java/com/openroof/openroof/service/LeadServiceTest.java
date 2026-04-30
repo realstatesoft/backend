@@ -11,8 +11,10 @@ import com.openroof.openroof.model.lead.Lead;
 import com.openroof.openroof.model.lead.LeadStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
+import com.openroof.openroof.repository.LeadInteractionRepository;
 import com.openroof.openroof.repository.LeadRepository;
 import com.openroof.openroof.repository.LeadStatusRepository;
+import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,9 +47,14 @@ class LeadServiceTest {
 
     @Mock
     private LeadStatusRepository leadStatusRepository;
+    @Mock
+    private LeadInteractionRepository leadInteractionRepository;
 
     @Mock
     private AgentProfileRepository agentProfileRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private LeadService leadService;
@@ -83,6 +90,9 @@ class LeadServiceTest {
                 .active(true)
                 .build();
         defaultStatus.setId(1L);
+
+        lenient().when(userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(anyString()))
+                .thenReturn(Optional.empty());
     }
 
     private CreateLeadFromWizardRequest sampleRequest() {
@@ -112,6 +122,7 @@ class LeadServiceTest {
                 .source("sell_wizard")
                 .notes("test notes")
                 .metadata(null)
+                .interactions(new ArrayList<>())
                 .build();
         lead.setId(1L);
         lead.setCreatedAt(LocalDateTime.now());
@@ -135,6 +146,7 @@ class LeadServiceTest {
             when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
             when(leadStatusRepository.findByName("Nuevo")).thenReturn(Optional.of(defaultStatus));
             when(leadRepository.save(any(Lead.class))).thenReturn(savedLead);
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -159,6 +171,7 @@ class LeadServiceTest {
             when(leadStatusRepository.findByNameIncludingDeleted("Nuevo")).thenReturn(Optional.empty());
             when(leadStatusRepository.saveAndFlush(any(LeadStatus.class))).thenReturn(defaultStatus);
             when(leadRepository.save(any(Lead.class))).thenReturn(savedLead);
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -187,6 +200,7 @@ class LeadServiceTest {
             when(leadStatusRepository.findByNameIncludingDeleted("Nuevo")).thenReturn(Optional.of(deletedStatus));
             when(leadStatusRepository.save(deletedStatus)).thenReturn(defaultStatus);
             when(leadRepository.save(any(Lead.class))).thenReturn(savedLead);
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -209,6 +223,7 @@ class LeadServiceTest {
             when(leadStatusRepository.saveAndFlush(any(LeadStatus.class)))
                     .thenThrow(new DataIntegrityViolationException("unique constraint"));
             when(leadRepository.save(any(Lead.class))).thenReturn(savedLead);
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -254,6 +269,7 @@ class LeadServiceTest {
                 l.setCreatedAt(LocalDateTime.now());
                 return l;
             });
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -276,6 +292,7 @@ class LeadServiceTest {
                 l.setCreatedAt(LocalDateTime.now());
                 return l;
             });
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(request);
 
@@ -308,6 +325,7 @@ class LeadServiceTest {
                 l.setCreatedAt(LocalDateTime.now());
                 return l;
             });
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(any())).thenReturn(Collections.emptyList());
 
             LeadResponse response = leadService.createFromWizard(rentRequest);
 
@@ -347,21 +365,31 @@ class LeadServiceTest {
     class GetByIdTests {
 
         @Test
-        @DisplayName("Retorna lead por ID")
-        void getById_existingLead_returnsResponse() {
+        @DisplayName("Retorna lead por ID con sus interacciones mapeadas")
+        void getById_withInteractions_returnsMappedInteractions() {
             Lead lead = buildSavedLead(sampleRequest());
-            when(leadRepository.findById(1L)).thenReturn(Optional.of(lead));
+            com.openroof.openroof.model.lead.LeadInteraction interaction = com.openroof.openroof.model.lead.LeadInteraction.builder()
+                    .type(com.openroof.openroof.model.enums.InteractionType.CALL)
+                    .subject("Llamada inicial")
+                    .note("El cliente no atendió")
+                    .build();
+            interaction.setId(1L);
+            interaction.setCreatedAt(LocalDateTime.now());
+
+            when(leadRepository.findWithDetailsById(1L)).thenReturn(Optional.of(lead));
+            when(leadInteractionRepository.findByLeadIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(interaction));
 
             LeadResponse response = leadService.getById(1L);
 
             assertThat(response).isNotNull();
-            assertThat(response.name()).isEqualTo("John Doe");
+            assertThat(response.interactions()).hasSize(1);
+            assertThat(response.interactions().get(0).subject()).isEqualTo("Llamada inicial");
         }
 
         @Test
         @DisplayName("Lead no encontrado → ResourceNotFoundException")
         void getById_notFound_throwsException() {
-            when(leadRepository.findById(999L)).thenReturn(Optional.empty());
+            when(leadRepository.findWithDetailsById(999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> leadService.getById(999L))
                     .isInstanceOf(ResourceNotFoundException.class)

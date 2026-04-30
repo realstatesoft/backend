@@ -160,9 +160,13 @@ class DashboardServiceTest {
             Contract c1 = Contract.builder().build();
             c1.setId(200L);
             when(contractRepository.findPendingSignaturesForUser(1L)).thenReturn(List.of(c1));
-            when(contractMapper.toSummaryResponse(c1)).thenReturn(
-                new com.openroof.openroof.dto.contract.ContractSummaryResponse(
-                    200L, 100L, "Prop 1", null, null, null, null, null, null, null, null, null, null));
+            when(contractMapper.toSummaryResponse(c1, false)).thenReturn(
+                com.openroof.openroof.dto.contract.ContractSummaryResponse.builder()
+                    .id(200L)
+                    .propertyId(100L)
+                    .propertyTitle("Prop 1")
+                    .currentUserHasSigned(false)
+                    .build());
 
             // Mock visits
             com.openroof.openroof.dto.visit.VisitRequestResponse v1 = new com.openroof.openroof.dto.visit.VisitRequestResponse(

@@ -6,26 +6,29 @@ import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.register.RegisterRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
-import com.openroof.openroof.service.AuthService;
+import com.openroof.openroof.service.AuthService; // PARA VALIDACIONES
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid; // PARA VALIDACIONES
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints para registro, login y gestión de sesiones")
-@CrossOrigin(origins = "http://localhost:5173") // Hay que modificar este para que apunte al puerto correcto del
-                                                // frontend
+@CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
 
     private final AuthService authService;

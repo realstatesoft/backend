@@ -112,6 +112,10 @@ public class Contract extends BaseEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "currency_code", nullable = false, length = 3)
+    @Builder.Default
+    private String currencyCode = "PYG";
+
     @Column(name = "start_date")
     private LocalDate startDate;
 

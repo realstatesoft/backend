@@ -54,9 +54,9 @@ public class DashboardService {
 
                 long activeClients = agentClientRepository.countByAgent_Id(agentId);
                 long totalSales = propertyRepository.countByAgentIdAndStatus(agentId, PropertyStatus.SOLD);
-                long scheduledVisits = visitRequestRepository.countByAgentIdAndStatus(agentId,
-                                VisitRequestStatus.PENDING)
-                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.ACCEPTED);
+                long scheduledVisits = visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.PENDING)
+                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.ACCEPTED)
+                                + visitRequestRepository.countByAgentIdAndStatus(agentId, VisitRequestStatus.COUNTER_PROPOSED);
 
                 List<Contract> signedContracts = contractRepository
                                 .findAllByParticipant(user.getId(), agentId).stream()
@@ -110,7 +110,7 @@ public class DashboardService {
                 // 3. Contratos urgentes (pendientes de firma por el usuario)
                 List<com.openroof.openroof.dto.contract.ContractSummaryResponse> urgentContracts = contractRepository
                                 .findPendingSignaturesForUser(userId).stream()
-                                .map(contractMapper::toSummaryResponse)
+                                .map(c -> contractMapper.toSummaryResponse(c, false))
                                 .collect(Collectors.toList());
                 
                 // 4. Solicitudes de visita nuevas/pendientes

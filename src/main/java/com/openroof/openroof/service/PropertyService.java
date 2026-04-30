@@ -30,6 +30,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -159,6 +161,42 @@ public class PropertyService {
         return propertyMapper.toResponse(property);
     }
 
+    @Transactional(readOnly = true)
+    public List<PropertySummaryResponse> getForComparison(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new BadRequestException("Debes indicar al menos una propiedad para comparar");
+        }
+
+        LinkedHashSet<Long> uniqueIds = ids.stream()
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+        if (uniqueIds.isEmpty()) {
+            throw new BadRequestException("Debes indicar IDs de propiedades válidos");
+        }
+
+        if (uniqueIds.size() > 3) {
+            throw new BadRequestException("Solo puedes comparar hasta 3 propiedades");
+        }
+
+        List<Property> properties = propertyRepository.findAllById(uniqueIds);
+        Map<Long, Property> propertyById = properties.stream()
+                .collect(java.util.stream.Collectors.toMap(Property::getId, property -> property));
+
+        List<Long> missingIds = uniqueIds.stream()
+                .filter(id -> !propertyById.containsKey(id))
+                .toList();
+
+        if (!missingIds.isEmpty()) {
+            throw new ResourceNotFoundException("Propiedades no encontradas: " + missingIds);
+        }
+
+        return uniqueIds.stream()
+                .map(propertyById::get)
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
+    }
+
     @Transactional
     public long registerView(Long propertyId, User user, HttpServletRequest request) {
         Property property = findPropertyOrThrow(propertyId);
@@ -225,6 +263,17 @@ public class PropertyService {
         }
 
         return getPageWithRelevance(spec, pageable, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PropertySummaryResponse> getFeaturedProperties(int limit) {
+        int safeLimit = limit <= 0 ? 1 : Math.min(limit, 100);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+        return propertyRepository.findFeaturedOrRecentProperties(PropertyStatus.PUBLISHED, com.openroof.openroof.model.enums.Visibility.PUBLIC, pageable)
+                .getContent()
+                .stream()
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
     }
 
     // ─── UPDATE ───────────────────────────────────────────────────
@@ -338,6 +387,7 @@ public class PropertyService {
     }
 
     @Scheduled(cron = "0 0 3 * * *") // every day at 3 am
+    @SchedulerLock(name = "cleanExpiredTrash", lockAtMostFor = "15m")
     public void cleanExpiredTrash() {
         LocalDateTime threshold = LocalDateTime.now().minusDays(10);
         propertyRepository.deleteExpiredTrash(threshold, LocalDateTime.now());
@@ -380,6 +430,28 @@ public class PropertyService {
         auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.STATUS_CHANGE,
                 Map.of("status", currentStatus.name()),
                 Map.of("status", validated.name()));
+        return propertyMapper.toResponse(property);
+    }
+
+    public PropertyResponse toggleHighlight(Long id, boolean highlighted, User caller) {
+        if (caller.getRole() != UserRole.ADMIN) {
+            throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
+        }
+        Property property = findPropertyOrThrow(id);
+        boolean previousHighlighted = property.getHighlighted() != null && property.getHighlighted();
+        
+        property.setHighlighted(highlighted);
+        if (highlighted) {
+            property.setHighlightedUntil(LocalDateTime.now().plusDays(30));
+        } else {
+            property.setHighlightedUntil(null);
+        }
+        property = propertyRepository.save(property);
+        
+        auditService.log(caller, AuditEntityType.PROPERTY, id, AuditAction.UPDATE,
+                Map.of("highlighted", previousHighlighted),
+                Map.of("highlighted", highlighted));
+                
         return propertyMapper.toResponse(property);
     }
 

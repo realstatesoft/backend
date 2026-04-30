@@ -19,6 +19,9 @@ public interface PropertyFlagRepository extends JpaRepository<PropertyFlag, Long
     /** Todos los flags activos en el sistema (uso exclusivo ADMIN). */
     List<PropertyFlag> findAllByResolvedAtIsNull();
 
+    /** Todos los flags resueltos en el sistema. */
+    List<PropertyFlag> findAllByResolvedAtIsNotNull();
+
     /**
      * Anti-spam: verifica si el usuario ya tiene un flag activo para esa propiedad.
      * Si hay resultado, se rechaza la creación del nuevo flag.

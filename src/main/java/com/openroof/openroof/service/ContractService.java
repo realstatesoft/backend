@@ -10,6 +10,7 @@ import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
+import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.SignatureRole;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
@@ -242,7 +243,7 @@ public class ContractService {
         contractSignatureRepository.save(signature);
 
         // 5. Evaluar cambio de estado
-        evaluateCompletion(contract);
+        evaluateCompletion(contract, user);
 
         Contract saved = contractRepository.save(contract);
 
@@ -360,7 +361,7 @@ public class ContractService {
         }
     }
 
-    private void evaluateCompletion(Contract contract) {
+    private void evaluateCompletion(Contract contract, User actor) {
         List<ContractSignature> sigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(contract.getId());
         Set<SignatureRole> signedRoles = sigs.stream().map(ContractSignature::getRole).collect(Collectors.toSet());
 
@@ -371,8 +372,45 @@ public class ContractService {
 
         if (buyerSigned && sellerSigned && listingAgentSigned && buyerAgentSigned) {
             contract.setStatus(ContractStatus.SIGNED);
+            updatePropertyStatusOnContractSigned(contract, actor);
         } else {
             contract.setStatus(ContractStatus.PARTIALLY_SIGNED);
+        }
+    }
+
+    /**
+     * Trigger de estado: Al firmarse un contrato de venta (SALE), cambia automáticamente 
+     * el PropertyStatus de la propiedad a SOLD y asigna al comprador.
+     */
+    private void updatePropertyStatusOnContractSigned(Contract contract, User actor) {
+        Property property = contract.getProperty();
+        if (property == null) return;
+
+        if (contract.getContractType() == ContractType.SALE) {
+            PropertyStatus oldStatus = property.getStatus();
+            property.setStatus(PropertyStatus.SOLD);
+            property.setBuyer(contract.getBuyer());
+            propertyRepository.save(property);
+
+            log.info("Trigger: Propiedad {} marcada como SOLD por contrato de venta {}", 
+                property.getId(), contract.getId());
+
+            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                    Map.of("status", PropertyStatus.SOLD.name()));
+        } else if (contract.getContractType() == ContractType.RENT) {
+            // Opcional: Manejar alquileres también para consistencia
+            PropertyStatus oldStatus = property.getStatus();
+            property.setStatus(PropertyStatus.RENTED);
+            property.setTenant(contract.getBuyer());
+            propertyRepository.save(property);
+
+            log.info("Trigger: Propiedad {} marcada como RENTED por contrato de alquiler {}", 
+                property.getId(), contract.getId());
+
+            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                    Map.of("status", PropertyStatus.RENTED.name()));
         }
     }
 
@@ -393,34 +431,32 @@ public class ContractService {
 
     /** Contratos donde el agente autenticado actúa como agente listador. */
     public List<ContractSummaryResponse> getAsListingAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
-        return contractRepository.findByListingAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
+        return mapWithSigned(contractRepository.findByListingAgent_Id(agent.getId()), user.getId());
     }
 
     /** Contratos donde el agente autenticado actúa como agente del comprador. */
     public List<ContractSummaryResponse> getAsBuyerAgent(String agentEmail) {
-        AgentProfile agent = findAgentByEmail(agentEmail);
-        return contractRepository.findByBuyerAgent_Id(agent.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        User user = findUserByEmail(agentEmail);
+        AgentProfile agent = agentProfileRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
+
+        return mapWithSigned(contractRepository.findByBuyerAgent_Id(agent.getId()), user.getId());
     }
 
     /** Contratos donde el usuario autenticado es vendedor/propietario. */
     public List<ContractSummaryResponse> getAsSeller(String sellerEmail) {
         User user = findUserByEmail(sellerEmail);
-        return contractRepository.findBySeller_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contractRepository.findBySeller_Id(user.getId()), user.getId());
     }
 
     /** Contratos donde el usuario autenticado es comprador/inquilino. */
     public List<ContractSummaryResponse> getAsBuyer(String buyerEmail) {
         User user = findUserByEmail(buyerEmail);
-        return contractRepository.findByBuyer_Id(user.getId()).stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contractRepository.findByBuyer_Id(user.getId()), user.getId());
     }
 
     /** Todos los contratos de una propiedad si el usuario participa en alguno de ellos o es ADMIN. */
@@ -433,9 +469,7 @@ public class ContractService {
         }
 
         List<Contract> contracts = contractRepository.findByProperty_Id(propertyId);
-        return contracts.stream()
-                .map(contractMapper::toSummaryResponse)
-                .toList();
+        return mapWithSigned(contracts, requester.getId());
     }
 
     // ─── UPDATE STATUS ────────────────────────────────────────────────────────
@@ -611,7 +645,7 @@ public class ContractService {
 
     // ─── Control de acceso ────────────────────────────────────────────────────
 
-    private boolean canAccess(Contract contract, User requester) {
+    public boolean canAccess(Contract contract, User requester) {
         if (requester.getRole() == UserRole.ADMIN) return true;
 
         Long uid = requester.getId();
@@ -739,11 +773,6 @@ public class ContractService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
-    private AgentProfile findAgentByEmail(String email) {
-        User user = findUserByEmail(email);
-        return agentProfileRepository.findByUser_Id(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil de agente no encontrado"));
-    }
 
     private AgentProfile resolveAgent(Long agentId, String errorMessage) {
         if (agentId == null) return null;
@@ -772,5 +801,15 @@ public class ContractService {
         } else {
             action.run();
         }
+    }
+    private java.util.List<com.openroof.openroof.dto.contract.ContractSummaryResponse> mapWithSigned(java.util.List<Contract> contracts, Long userId) {
+        if (contracts.isEmpty()) return java.util.List.of();
+        
+        java.util.List<Long> contractIds = contracts.stream().map(Contract::getId).toList();
+        java.util.Set<Long> signedIds = contractSignatureRepository.findSignedContractIds(contractIds, userId);
+        
+        return contracts.stream()
+                .map(c -> contractMapper.toSummaryResponse(c, signedIds.contains(c.getId())))
+                .toList();
     }
 }

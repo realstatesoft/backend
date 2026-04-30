@@ -2,6 +2,8 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.TestSecurityMocksConfig;
 import com.openroof.openroof.dto.contract.ContractResponse;
 import com.openroof.openroof.dto.contract.ContractStatusUpdateRequest;
 import com.openroof.openroof.exception.BadRequestException;
@@ -20,26 +22,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ContractController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.config.TestSecurityMocksConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, TestSecurityMocksConfig.class})
 class ContractControllerTest {
 
     @Autowired
@@ -62,6 +70,9 @@ class ContractControllerTest {
 
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private com.openroof.openroof.security.PropertyViewRateLimiter propertyViewRateLimiter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
@@ -148,5 +159,36 @@ class ContractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /{id} - Accept-Language mantiene el payload y resuelve el locale correcto")
+    void getById_acceptLanguage_keepsPayload_andResolvesLocale() throws Exception {
+        ContractResponse response = new ContractResponse(1L, 10L, "Prop", 20L, "Buyer", "b", 30L, "Seller", "s", null, null, null, null, ContractType.SALE, ContractStatus.PARTIALLY_SIGNED, new BigDecimal("150000"), null, null, "Terms", null, null, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, LocalDateTime.now(), LocalDateTime.now());
+
+        List<Locale> seenLocales = new ArrayList<>();
+
+        when(contractService.getById(eq(1L), eq("buyer"))).thenAnswer(invocation -> {
+            seenLocales.add(LocaleContextHolder.getLocale());
+            return response;
+        });
+
+        MvcResult en = mockMvc.perform(get("/contracts/1")
+                        .with(user("buyer").roles("USER"))
+                        .header("Accept-Language", "en"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult pt = mockMvc.perform(get("/contracts/1")
+                        .with(user("buyer").roles("USER"))
+                        .header("Accept-Language", "pt"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode enBody = objectMapper.readTree(en.getResponse().getContentAsString()).get("data");
+        JsonNode ptBody = objectMapper.readTree(pt.getResponse().getContentAsString()).get("data");
+
+        assertThat(enBody).isEqualTo(ptBody);
+        assertThat(seenLocales).containsExactly(Locale.forLanguageTag("en"), Locale.forLanguageTag("pt"));
     }
 }
