@@ -283,18 +283,6 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
-    @PatchMapping("/{id}/highlight")
-    @Operation(summary = "Marcar o desmarcar una propiedad como destacada (solo ADMIN)")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PropertyResponse>> toggleHighlight(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
-            @RequestParam boolean highlighted,
-            @AuthenticationPrincipal User user) {
-
-        PropertyResponse response = propertyService.toggleHighlight(id, highlighted, user);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad " + (highlighted ? "destacada" : "desmarcada como destacada")));
-    }
-
     // --- SIMILAR --------------------------------------------
     @GetMapping("/{id}/similar")
     @Operation(summary = "Obtener propiedades similares")

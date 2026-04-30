@@ -6,14 +6,9 @@ import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyView;
 import com.openroof.openroof.model.user.User;
-import com.openroof.openroof.repository.AgentProfileRepository;
-import com.openroof.openroof.repository.ExteriorFeatureRepository;
-import com.openroof.openroof.repository.HighlightRepository;
-import com.openroof.openroof.repository.InteriorFeatureRepository;
-import com.openroof.openroof.repository.LocationRepository;
-import com.openroof.openroof.repository.PaymentRepository;
-import com.openroof.openroof.repository.PropertyRepository;
-import com.openroof.openroof.repository.PropertyViewRepository;
+import com.openroof.openroof.repository.*;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +18,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,15 +70,6 @@ class PropertyViewServiceTest {
                 userPreferenceRepository,
                 propertyRelevanceService);
     }
-
-    @Mock
-    private PropertyRepository propertyRepository;
-
-    @Mock
-    private PropertyViewRepository propertyViewRepository;
-
-    @Mock
-    private PropertyMapper propertyMapper;
 
     @InjectMocks
     private PropertyViewService propertyViewService;
@@ -176,7 +165,26 @@ class PropertyViewServiceTest {
         return view;
     }
 
-    private static PropertySummaryResponse summary(Long id, String title) {
-        return new PropertySummaryResponse(id, title, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+    private PropertySummaryResponse summary(Long id, String title) {
+        return new PropertySummaryResponse(
+                id,                 // id
+                title,              // title
+                new BigDecimal("150000"),         // price
+                "APARTMENT",        // propertyType
+                "RESIDENTIAL",      // category
+                "Calle Falsa 123",  // address
+                null,               // primaryImageUrl
+                2,                  // bedrooms
+                new BigDecimal("2"),// bathrooms
+                new BigDecimal("80"),// surfaceArea
+                "PUBLISHED",        // status
+                "Asuncion",         // locationName
+                new BigDecimal("-25.2637"), // lat
+                new BigDecimal("-57.5759"), // lng
+                null,               // trashedAt
+                0,                   // relevanceScore
+                false,              // hihghlight
+                null                // highlighted until
+        );
     }
 }

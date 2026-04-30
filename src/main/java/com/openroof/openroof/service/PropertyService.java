@@ -433,6 +433,7 @@ public class PropertyService {
         return propertyMapper.toResponse(property);
     }
 
+    /*
     public PropertyResponse toggleHighlight(Long id, boolean highlighted, User caller) {
         if (caller.getRole() != UserRole.ADMIN) {
             throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
@@ -453,7 +454,7 @@ public class PropertyService {
                 Map.of("highlighted", highlighted));
                 
         return propertyMapper.toResponse(property);
-    }
+    }*/
 
     private Map<String, Object> propertyAuditSnapshot(Property property) {
         Map<String, Object> m = new HashMap<>();

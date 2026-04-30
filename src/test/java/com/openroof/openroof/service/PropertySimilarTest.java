@@ -56,7 +56,6 @@ class PropertySimilarTest {
     private static final Long PROPERTY_ID = 1L;
     private static final BigDecimal BASE_PRICE = new BigDecimal("150000");
 
-    // Constructor alineado con el record real (15 campos)
     private PropertySummaryResponse createSummaryResponse(String title) {
         return new PropertySummaryResponse(
                 null,               // id
