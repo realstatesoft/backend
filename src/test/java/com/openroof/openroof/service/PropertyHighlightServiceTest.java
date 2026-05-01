@@ -1,5 +1,6 @@
 package com.openroof.openroof.service;
 
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.enums.PaymentStatus;
@@ -109,10 +110,19 @@ class PropertyHighlightServiceTest {
     class HighlightProperty {
 
         @Test
+        @DisplayName("Lanza IllegalArgumentException cuando days es <= 0")
+        void throwsWhenDaysIsNonPositive() {
+            assertThatThrownBy(() -> propertyService.highlightProperty(PROPERTY_ID, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verify(highlightRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("Crea un nuevo highlight cuando no hay uno activo")
         void createsNewHighlightWhenNoneActive() {
             Property property = buildProperty(PROPERTY_ID);
-            when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+            when(propertyRepository.findByIdForUpdate(PROPERTY_ID)).thenReturn(Optional.of(property));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
                             eq(PROPERTY_ID), any(LocalDateTime.class)))
@@ -138,7 +148,7 @@ class PropertyHighlightServiceTest {
             Highlight existing = buildActiveHighlight(property, 3);
             LocalDateTime originalUntil = existing.getHighlightedUntil();
 
-            when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+            when(propertyRepository.findByIdForUpdate(PROPERTY_ID)).thenReturn(Optional.of(property));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
                             eq(PROPERTY_ID), any(LocalDateTime.class)))
@@ -156,7 +166,7 @@ class PropertyHighlightServiceTest {
         @Test
         @DisplayName("Lanza ResourceNotFoundException si la propiedad no existe")
         void throwsWhenPropertyNotFound() {
-            when(propertyRepository.findById(99L)).thenReturn(Optional.empty());
+            when(propertyRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> propertyService.highlightProperty(99L, 7))
                     .isInstanceOf(ResourceNotFoundException.class)
@@ -173,13 +183,29 @@ class PropertyHighlightServiceTest {
     class HighlightPropertyWithPayment {
 
         @Test
+        @DisplayName("Lanza BadRequestException cuando el pago no está aprobado")
+        void throwsWhenPaymentNotApproved() {
+            Property property = buildProperty(PROPERTY_ID);
+            Payment payment = Payment.builder().status(PaymentStatus.PENDING).build();
+            payment.setId(9L);
+
+            when(propertyRepository.findByIdForUpdate(PROPERTY_ID)).thenReturn(Optional.of(property));
+            when(paymentRepository.findById(9L)).thenReturn(Optional.of(payment));
+
+            assertThatThrownBy(() -> propertyService.highlightPropertyWithPayment(PROPERTY_ID, 9L, 7))
+                    .isInstanceOf(BadRequestException.class);
+
+            verify(highlightRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("Crea un nuevo highlight con referencia al pago")
         void createsNewHighlightWithPayment() {
             Property property = buildProperty(PROPERTY_ID);
             Payment payment = Payment.builder().status(PaymentStatus.APPROVED).build();
             payment.setId(5L);
 
-            when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+            when(propertyRepository.findByIdForUpdate(PROPERTY_ID)).thenReturn(Optional.of(property));
             when(paymentRepository.findById(5L)).thenReturn(Optional.of(payment));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
@@ -206,7 +232,7 @@ class PropertyHighlightServiceTest {
             Payment payment = Payment.builder().status(PaymentStatus.APPROVED).build();
             payment.setId(7L);
 
-            when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+            when(propertyRepository.findByIdForUpdate(PROPERTY_ID)).thenReturn(Optional.of(property));
             when(paymentRepository.findById(7L)).thenReturn(Optional.of(payment));
             when(highlightRepository
                     .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(
@@ -226,7 +252,7 @@ class PropertyHighlightServiceTest {
         @Test
         @DisplayName("Lanza ResourceNotFoundException si la propiedad no existe")
         void throwsWhenPropertyNotFound() {
-            when(propertyRepository.findById(99L)).thenReturn(Optional.empty());
+            when(propertyRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> propertyService.highlightPropertyWithPayment(99L, 5L, 7))
                     .isInstanceOf(ResourceNotFoundException.class);

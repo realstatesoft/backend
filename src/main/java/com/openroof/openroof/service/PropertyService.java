@@ -717,7 +717,8 @@ public class PropertyService {
         if (days <= 0) {
             throw new IllegalArgumentException("El número de días debe ser mayor que cero");
         }
-        Property property = findPropertyOrThrow(propertyId);
+        Property property = propertyRepository.findByIdForUpdate(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
         LocalDateTime now = LocalDateTime.now();
 
         highlightRepository
@@ -740,7 +741,8 @@ public class PropertyService {
         if (days <= 0) {
             throw new IllegalArgumentException("El número de días debe ser mayor que cero");
         }
-        Property property = findPropertyOrThrow(propertyId);
+        Property property = propertyRepository.findByIdForUpdate(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
 
