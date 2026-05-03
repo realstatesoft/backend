@@ -737,6 +737,18 @@ public class PropertyService {
     }
 
     @Transactional
+    public void removeHighlight(Long propertyId) {
+        Property property = findPropertyOrThrow(propertyId);
+        LocalDateTime now = LocalDateTime.now();
+        highlightRepository
+                .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(propertyId, now)
+                .ifPresent(existing -> {
+                    existing.setHighlightedUntil(now);
+                    highlightRepository.save(existing);
+                });
+    }
+
+    @Transactional
     public void highlightPropertyWithPayment(Long propertyId, Long paymentId, int days) {
         if (days <= 0) {
             throw new IllegalArgumentException("El número de días debe ser mayor que cero");
