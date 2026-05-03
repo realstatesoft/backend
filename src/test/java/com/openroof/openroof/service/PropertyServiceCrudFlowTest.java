@@ -11,8 +11,10 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.ExteriorFeatureRepository;
+import com.openroof.openroof.repository.HighlightRepository;
 import com.openroof.openroof.repository.InteriorFeatureRepository;
 import com.openroof.openroof.repository.LocationRepository;
+import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
@@ -55,6 +57,10 @@ class PropertyServiceCrudFlowTest {
     @Mock
     private InteriorFeatureRepository interiorFeatureRepository;
     @Mock
+    private HighlightRepository highlightRepository;
+    @Mock
+    private PaymentRepository paymentRepository;
+    @Mock
     private PropertyMapper propertyMapper;
     @Mock
     private NotificationService notificationService;
@@ -77,6 +83,8 @@ class PropertyServiceCrudFlowTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
+                highlightRepository,
+                paymentRepository,
                 propertyMapper,
                 notificationService,
                 auditService,
