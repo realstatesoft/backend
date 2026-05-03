@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 031-create-shedlock
       author: openroof
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: shedlock
