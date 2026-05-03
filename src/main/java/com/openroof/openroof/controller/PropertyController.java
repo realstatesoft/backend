@@ -283,6 +283,26 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
+    // --- HIGHLIGHT --------------------------------------------
+
+    @PostMapping("/{id}/highlight")
+    @Operation(summary = "Destacar una propiedad (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> highlight(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        propertyService.highlightProperty(id, 30); // Por defecto destacamos por 30 días
+        return ResponseEntity.ok(ApiResponse.ok(null, "Propiedad destacada exitosamente"));
+    }
+
+    @DeleteMapping("/{id}/highlight")
+    @Operation(summary = "Quitar destacado de una propiedad (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> removeHighlight(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        propertyService.removeHighlight(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Destacado removido exitosamente"));
+    }
+
     // --- SIMILAR --------------------------------------------
     @GetMapping("/{id}/similar")
     @Operation(summary = "Obtener propiedades similares")
