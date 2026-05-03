@@ -9,7 +9,7 @@ import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.security.LeadSecurity;
-import com.openroof.openroof.service.LeadService;
+import com.openroof.openroof.service.LeadServiceApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +54,7 @@ class LeadControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private LeadService leadService;
+    private LeadServiceApi leadService;
 
     @MockitoBean
     private LeadSecurity leadSecurity;
