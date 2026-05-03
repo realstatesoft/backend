@@ -1,6 +1,7 @@
 package com.openroof.openroof.dto.payment;
 
 import com.openroof.openroof.model.enums.PaymentType;
+import com.openroof.openroof.model.payment.PaymentMetadata;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -20,5 +21,7 @@ public record PaymentRequest(
 
         @NotBlank(message = "El concepto no puede estar vacío")
         @Size(max = 255, message = "El concepto no puede exceder 255 caracteres")
-        String concept
+        String concept,
+
+        PaymentMetadata metadata
 ) {}

@@ -119,3 +119,12 @@ databaseChangeLog:
   - include:
       file: changelogs/033-add-highlighted-to-properties.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/034-add-highlighted-from.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/035-create-highlights-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/036-add-metadata-to-payments.yaml
+      relativeToChangelogFile: true
