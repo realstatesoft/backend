@@ -5,6 +5,9 @@ import com.openroof.openroof.common.embeddable.GeoLocation;
 import com.openroof.openroof.common.embeddable.UtilityInfo;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
+
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -23,6 +26,7 @@ public class PropertyMapper {
         ConstructionDetails c = p.getConstruction();
         UtilityInfo u = p.getUtilities();
         GeoLocation g = p.getGeoLocation();
+        Highlight active = activeHighlight(p);
 
         return new PropertyResponse(
                 p.getId(),
@@ -57,8 +61,8 @@ public class PropertyMapper {
                 enumName(p.getStatus()),
                 enumName(p.getVisibility()),
                 enumName(p.getAvailability()),
-                p.getHighlighted(),
-                p.getHighlightedUntil(),
+                active != null,
+                active != null ? active.getHighlightedUntil() : null,
                 p.getViewCount(),
                 p.getFavoriteCount(),
                 // Relaciones
@@ -83,6 +87,8 @@ public class PropertyMapper {
     }
 
     public PropertySummaryResponse toSummaryResponse(Property p, Integer relevanceScore) {
+        Highlight active = activeHighlight(p);
+
         String primaryImage = Optional.ofNullable(p.getMedia())
                 .orElse(Collections.emptyList())
                 .stream()
@@ -107,7 +113,10 @@ public class PropertyMapper {
                 p.getGeoLocation() != null ? p.getGeoLocation().getLat() : null,
                 p.getGeoLocation() != null ? p.getGeoLocation().getLng() : null,
                 p.getTrashedAt(),
-                relevanceScore);
+                relevanceScore,
+                active != null,
+                active != null ? active.getHighlightedUntil() : null
+                );
     }
 
     // ─── Request → Entity ─────────────────────────────────────────
@@ -257,6 +266,20 @@ public class PropertyMapper {
     }
 
     // ─── Helpers privados ─────────────────────────────────────────
+
+    private Highlight activeHighlight(Property p) {
+        if (p.getHighlights() == null) return null;
+        LocalDateTime now = LocalDateTime.now();
+        return p.getHighlights().stream()
+                .filter(h -> h.getHighlightedFrom() != null
+                        && h.getHighlightedUntil() != null
+                        && !now.isBefore(h.getHighlightedFrom())
+                        && now.isBefore(h.getHighlightedUntil()))
+                .sorted(Comparator.comparing(Highlight::getHighlightedFrom).reversed()
+                        .thenComparing(Comparator.comparing(Highlight::getHighlightedUntil).reversed()))
+                .findFirst()
+                .orElse(null);
+    }
 
     private List<PropertyRoomDto> mapRooms(List<PropertyRoom> rooms) {
         if (rooms == null)

@@ -37,6 +37,8 @@ class PropertySimilarTest {
     @Mock private AgentProfileRepository agentProfileRepository;
     @Mock private ExteriorFeatureRepository exteriorFeatureRepository;
     @Mock private InteriorFeatureRepository interiorFeatureRepository;
+    @Mock private HighlightRepository highlightRepository;
+    @Mock private PaymentRepository paymentRepository;
     @Mock private PropertyMapper propertyMapper;
     @Mock private NotificationService notificationService;
     @Mock private AuditService auditService;
@@ -54,7 +56,6 @@ class PropertySimilarTest {
     private static final Long PROPERTY_ID = 1L;
     private static final BigDecimal BASE_PRICE = new BigDecimal("150000");
 
-    // Constructor alineado con el record real (15 campos)
     private PropertySummaryResponse createSummaryResponse(String title) {
         return new PropertySummaryResponse(
                 null,               // id
@@ -72,7 +73,9 @@ class PropertySimilarTest {
                 new BigDecimal("-25.2637"), // lat
                 new BigDecimal("-57.5759"), // lng
                 null,               // trashedAt
-                0                   // relevanceScore
+                0,                   // relevanceScore
+                false,              // hihghlight
+                null                // highlighted until
         );
     }
 
@@ -86,6 +89,8 @@ class PropertySimilarTest {
                 agentProfileRepository,
                 exteriorFeatureRepository,
                 interiorFeatureRepository,
+                highlightRepository,
+                paymentRepository,
                 propertyMapper,
                 notificationService,
                 auditService,

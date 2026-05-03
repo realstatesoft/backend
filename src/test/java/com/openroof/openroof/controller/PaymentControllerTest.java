@@ -81,7 +81,7 @@ class PaymentControllerTest {
     private PaymentResponse sampleResponse(Long id, PaymentStatus status) {
         return new PaymentResponse(id, 1L, "Juan Pérez", PaymentType.RESERVATION,
                 status, "Señal de reserva", "uuid-" + id,
-                new BigDecimal("500.00"), LocalDateTime.now(), LocalDateTime.now());
+                new BigDecimal("500.00"), null, LocalDateTime.now(), LocalDateTime.now());
     }
 
     // ── Tests ─────────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ class PaymentControllerTest {
     class CreatePayment {
 
         private final PaymentRequest validRequest = new PaymentRequest(
-                PaymentType.RESERVATION, new BigDecimal("500.00"), "Señal de reserva");
+                PaymentType.RESERVATION, new BigDecimal("500.00"), "Señal de reserva", null);
 
         @Test
         @DisplayName("Usuario autenticado crea un pago y recibe 201")

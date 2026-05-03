@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-add-metadata-to-payments
+      author: tania
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: property_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: highlight_days
+                  type: INTEGER
+                  constraints:
+                    nullable: true

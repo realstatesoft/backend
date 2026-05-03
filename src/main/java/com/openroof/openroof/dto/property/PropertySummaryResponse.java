@@ -19,5 +19,8 @@ public record PropertySummaryResponse(
         BigDecimal lat,
         BigDecimal lng,
         LocalDateTime trashedAt,
-        Integer relevanceScore) {
+        Integer relevanceScore,
+        Boolean highlighted,
+        LocalDateTime highlightedUntil
+        ) {
 }

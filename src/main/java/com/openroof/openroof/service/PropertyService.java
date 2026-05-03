@@ -11,7 +11,10 @@ import com.openroof.openroof.model.enums.AuditAction;
 import com.openroof.openroof.model.enums.AuditEntityType;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.payment.Payment;
+import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.property.*;
+import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.model.search.PropertySpecification;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
@@ -63,6 +66,8 @@ public class PropertyService {
     private final AgentProfileRepository agentProfileRepository;
     private final ExteriorFeatureRepository exteriorFeatureRepository;
     private final InteriorFeatureRepository interiorFeatureRepository;
+    private final HighlightRepository highlightRepository;
+    private final PaymentRepository paymentRepository;
     private final PropertyMapper propertyMapper;
     private final NotificationService notificationService;
     private final AuditService auditService;
@@ -428,6 +433,7 @@ public class PropertyService {
         return propertyMapper.toResponse(property);
     }
 
+    /*
     public PropertyResponse toggleHighlight(Long id, boolean highlighted, User caller) {
         if (caller.getRole() != UserRole.ADMIN) {
             throw new ForbiddenException("Solo el administrador puede destacar una propiedad");
@@ -448,7 +454,7 @@ public class PropertyService {
                 Map.of("highlighted", highlighted));
                 
         return propertyMapper.toResponse(property);
-    }
+    }*/
 
     private Map<String, Object> propertyAuditSnapshot(Property property) {
         Map<String, Object> m = new HashMap<>();
@@ -704,7 +710,81 @@ public class PropertyService {
         return new org.springframework.data.domain.PageImpl<>(
                 content, pageable, scoredList.size());
     }
-    
+
+    // ─── Destacar propiedad ───────────────────────────────────────
+    @Transactional
+    public void highlightProperty(Long propertyId, int days) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("El número de días debe ser mayor que cero");
+        }
+        Property property = propertyRepository.findByIdForUpdate(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
+        LocalDateTime now = LocalDateTime.now();
+
+        highlightRepository
+                .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(propertyId, now)
+                .ifPresentOrElse(
+                        existing -> {
+                            existing.setHighlightedUntil(existing.getHighlightedUntil().plusDays(days));
+                            highlightRepository.save(existing);
+                        },
+                        () -> highlightRepository.save(Highlight.builder()
+                                .property(property)
+                                .highlightedFrom(now)
+                                .highlightedUntil(now.plusDays(days))
+                                .build())
+                );
+    }
+
+    @Transactional
+    public void removeHighlight(Long propertyId) {
+        Property property = findPropertyOrThrow(propertyId);
+        LocalDateTime now = LocalDateTime.now();
+        highlightRepository
+                .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(propertyId, now)
+                .ifPresent(existing -> {
+                    existing.setHighlightedUntil(now);
+                    highlightRepository.save(existing);
+                });
+    }
+
+    @Transactional
+    public void highlightPropertyWithPayment(Long propertyId, Long paymentId, int days) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("El número de días debe ser mayor que cero");
+        }
+        Property property = propertyRepository.findByIdForUpdate(propertyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada con ID: " + propertyId));
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
+
+        if (payment.getStatus() != PaymentStatus.APPROVED) {
+            throw new BadRequestException("El pago debe estar aprobado para destacar la propiedad");
+        }
+        LocalDateTime now = LocalDateTime.now();
+
+        highlightRepository
+                .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(propertyId, now)
+                .ifPresentOrElse(
+                        existing -> {
+                            existing.setHighlightedUntil(existing.getHighlightedUntil().plusDays(days));
+                            existing.setPayment(payment);
+                            highlightRepository.save(existing);
+                        },
+                        () -> highlightRepository.save(Highlight.builder()
+                                .property(property)
+                                .payment(payment)
+                                .highlightedFrom(now)
+                                .highlightedUntil(now.plusDays(days))
+                                .build())
+                );
+    }
+
+    @Scheduled(cron = "0 0 3 * * *") // todos los dias a las 3 am
+    public void cleanExpiredHighlights() {
+        highlightRepository.deactivateExpired(LocalDateTime.now());
+    }
+
     // ─── Helpers privados ─────────────────────────────────────────
 
     /**
