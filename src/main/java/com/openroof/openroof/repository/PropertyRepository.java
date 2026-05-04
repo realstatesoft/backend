@@ -58,9 +58,9 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
             "OR LOWER(loc.department) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Property> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    List<Property> findByStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(PropertyStatus status, Visibility visibility, LocalDateTime after);
+    List<Property> findByDeletedAtIsNullAndStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(PropertyStatus status, Visibility visibility, LocalDateTime after);
 
-    List<Property> findByStatusAndVisibilityAndTrashedAtIsNull(PropertyStatus status, Visibility visibility);
+    List<Property> findByDeletedAtIsNullAndStatusAndVisibilityAndTrashedAtIsNull(PropertyStatus status, Visibility visibility);
 
     long countByStatus(PropertyStatus status);
 

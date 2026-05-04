@@ -8,15 +8,20 @@ import com.openroof.openroof.model.enums.Visibility;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.search.Alert;
 import com.openroof.openroof.model.search.SearchPreference;
+import com.openroof.openroof.model.config.SystemConfig;
 import com.openroof.openroof.repository.AlertRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.SearchPreferenceRepository;
+import com.openroof.openroof.repository.SystemConfigRepository;
 import com.openroof.openroof.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,6 +37,9 @@ public class PropertyAlertScheduler {
     private final SearchPreferenceRepository searchPreferenceRepository;
     private final AlertRepository alertRepository;
     private final EmailService emailService;
+    private final SystemConfigRepository systemConfigRepository;
+
+    private static final String LAST_RUN_KEY = "scheduler.property-alerts.last-run";
 
     // Mapa de traducción para tipos de propiedad
     private static final Map<String, String> TYPE_MAP = Map.of(
@@ -58,17 +66,19 @@ public class PropertyAlertScheduler {
     public void processPropertyAlerts() {
         log.info("Iniciando procesamiento de alertas de propiedades...");
 
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        LocalDateTime lastRun = getLastRunWatermark();
+        LocalDateTime currentRun = LocalDateTime.now();
 
-        List<Property> newProperties = propertyRepository.findByStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(
-                PropertyStatus.PUBLISHED, Visibility.PUBLIC, oneHourAgo);
+        List<Property> newProperties = propertyRepository.findByDeletedAtIsNullAndStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(
+                PropertyStatus.PUBLISHED, Visibility.PUBLIC, lastRun);
 
         if (newProperties.isEmpty()) {
-            log.info("No hay propiedades nuevas en la última hora.");
+            log.info("No hay propiedades nuevas desde la última ejecución ({}).", lastRun);
+            updateLastRunWatermark(currentRun);
             return;
         }
 
-        log.info("Se encontraron {} propiedades nuevas. Buscando matches...", newProperties.size());
+        log.info("Se encontraron {} propiedades nuevas desde {}. Buscando matches...", newProperties.size(), lastRun);
 
         List<SearchPreference> activePreferences = searchPreferenceRepository.findByNotificationsEnabledTrue();
 
@@ -77,8 +87,8 @@ public class PropertyAlertScheduler {
             for (SearchPreference preference : activePreferences) {
                 // No alertar al dueño de su propia propiedad
                 if (property.getOwner().getId().equals(preference.getUser().getId())) {
-                    log.debug("SALTEADO: El usuario {} es el dueño de la propiedad '{}'.",
-                            preference.getUser().getEmail(), property.getTitle());
+                    log.debug("SALTEADO: El usuario ID {} es el dueño de la propiedad ID {}.",
+                            preference.getUser().getId(), property.getId());
                     continue;
                 }
 
@@ -89,14 +99,36 @@ public class PropertyAlertScheduler {
             }
         }
 
+        updateLastRunWatermark(currentRun);
         log.info("Procesamiento de alertas finalizado. {} alertas generadas.", alertsCreated);
+    }
+
+    private LocalDateTime getLastRunWatermark() {
+        return systemConfigRepository.findByConfigKey(LAST_RUN_KEY)
+                .map(config -> {
+                    try {
+                        return LocalDateTime.parse(config.getConfigValue());
+                    } catch (Exception e) {
+                        log.warn("Error parseando watermark '{}': {}. Usando default.", config.getConfigValue(), e.getMessage());
+                        return LocalDateTime.now().minusHours(1);
+                    }
+                })
+                .orElse(LocalDateTime.now().minusHours(1));
+    }
+
+    private void updateLastRunWatermark(LocalDateTime timestamp) {
+        SystemConfig config = systemConfigRepository.findByConfigKey(LAST_RUN_KEY)
+                .orElse(SystemConfig.builder()
+                        .configKey(LAST_RUN_KEY)
+                        .build());
+        config.setConfigValue(timestamp.toString());
+        systemConfigRepository.save(config);
     }
 
     private boolean matches(Property prop, SearchPreference pref) {
         Map<String, Object> filters = pref.getFilters();
         if (filters == null || filters.isEmpty()) {
-            log.debug("PREF DESCARTADA: La preferencia '{}' (ID: {}) no tiene filtros configurados.", pref.getName(),
-                    pref.getId());
+            log.debug("PREF DESCARTADA: La preferencia ID {} no tiene filtros configurados.", pref.getId());
             return false;
         }
 
@@ -149,20 +181,23 @@ public class PropertyAlertScheduler {
             prefCity = (String) filters.get("q"); // El frontend usa 'q' para el buscador general
         }
 
-        if (prefCity != null && !prefCity.isBlank() && prop.getLocation() != null) {
+        if (prefCity != null && !prefCity.isBlank()) {
+            if (prop.getLocation() == null || prop.getLocation().getCity() == null || prop.getLocation().getCity().isBlank()) {
+                log.debug("DESCARTADO por CIUDAD: La preferencia requiere ciudad pero la propiedad no tiene ubicación o ciudad definida.");
+                return false;
+            }
+
             String pCity = normalize(prop.getLocation().getCity());
             String fCity = normalize(prefCity);
-            // Si la búsqueda es 'q', el usuario podría haber escrito 'Encarnación'
-            // pero la propiedad estar en una zona que lo contenga. Usamos contains o equals
-            // normalizado.
-            if (!pCity.contains(fCity) && !fCity.contains(pCity)) {
+            
+            if (pCity.isEmpty() || fCity.isEmpty() || (!pCity.contains(fCity) && !fCity.contains(pCity))) {
                 log.debug("DESCARTADO por CIUDAD: Propiedad '{}' vs Preferencia '{}'", pCity, fCity);
                 return false;
             }
         }
 
-        log.info("MATCH ENCONTRADO: Propiedad '{}' (ID: {}) coincide con preferencia '{}' del usuario {} (ID: {})",
-                prop.getTitle(), prop.getId(), pref.getName(), pref.getUser().getEmail(), pref.getUser().getId());
+        log.info("MATCH ENCONTRADO: Propiedad ID {} coincide con preferencia ID {} del usuario ID {}",
+                prop.getId(), pref.getId(), pref.getUser().getId());
         return true;
     }
 
@@ -205,8 +240,8 @@ public class PropertyAlertScheduler {
             return;
         }
 
-        log.info("GENERANDO ALERTA: User: {} | Property: {} | Match: {}",
-                pref.getUser().getEmail(), prop.getTitle(), pref.getName());
+        log.info("GENERANDO ALERTA: UserID: {} | PropertyID: {} | PreferenceID: {}",
+                pref.getUser().getId(), prop.getId(), pref.getId());
 
         Alert alert = Alert.builder()
                 .user(pref.getUser())
@@ -218,15 +253,37 @@ public class PropertyAlertScheduler {
                         + prop.getTitle())
                 .build();
 
-        alertRepository.save(alert);
+        try {
+            alertRepository.save(alert);
+        } catch (DataIntegrityViolationException e) {
+            log.info("ALERTA DUPLICADA (concurrente): Ya existe una alerta para UserID: {} | PropertyID: {} | PreferenceID: {}. Saltando.",
+                    pref.getUser().getId(), prop.getId(), pref.getId());
+            return;
+        }
 
-        // Enviar email asíncrono
-        emailService.sendNewMatchAlertEmail(
-                pref.getUser().getEmail(),
-                pref.getUser().getName(),
-                prop.getTitle(),
-                prop.getPrice(),
-                prop.getId(),
-                pref.getName());
+        // Enviar email asíncrono sólo tras el commit exitoso de la transacción
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.sendNewMatchAlertEmail(
+                            pref.getUser().getEmail(),
+                            pref.getUser().getName(),
+                            prop.getTitle(),
+                            prop.getPrice(),
+                            prop.getId(),
+                            pref.getName());
+                }
+            });
+        } else {
+            // Fallback si por alguna razón no hay transacción activa (aunque el método es @Transactional)
+            emailService.sendNewMatchAlertEmail(
+                    pref.getUser().getEmail(),
+                    pref.getUser().getName(),
+                    prop.getTitle(),
+                    prop.getPrice(),
+                    prop.getId(),
+                    pref.getName());
+        }
     }
 }

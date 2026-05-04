@@ -31,7 +31,7 @@ public class AlertDiagnosticController {
         Map<String, Object> report = new HashMap<>();
         
         // 1. Obtener propiedades (sin límite de tiempo para el test)
-        List<Property> properties = propertyRepository.findByStatusAndVisibilityAndTrashedAtIsNull(
+        List<Property> properties = propertyRepository.findByDeletedAtIsNullAndStatusAndVisibilityAndTrashedAtIsNull(
                 PropertyStatus.PUBLISHED, Visibility.PUBLIC);
         
         // 2. Obtener preferencias activas
@@ -81,13 +81,21 @@ public class AlertDiagnosticController {
         }
 
         String prefType = (String) filters.get("propertyType");
-        if (prefType != null && !prop.getPropertyType().name().equalsIgnoreCase(prefType)) {
-            failures.add("PropertyType mismatch: expected " + prefType + " but got " + prop.getPropertyType());
+        if (prefType != null) {
+            if (prop.getPropertyType() == null) {
+                failures.add("PropertyType mismatch: expected " + prefType + " but property has no type");
+            } else if (!prop.getPropertyType().name().equalsIgnoreCase(prefType)) {
+                failures.add("PropertyType mismatch: expected " + prefType + " but got " + prop.getPropertyType());
+            }
         }
 
         String prefCat = (String) filters.get("category");
-        if (prefCat != null && !prop.getCategory().name().equalsIgnoreCase(prefCat)) {
-            failures.add("Category mismatch: expected " + prefCat + " but got " + prop.getCategory());
+        if (prefCat != null) {
+            if (prop.getCategory() == null) {
+                failures.add("Category mismatch: expected " + prefCat + " but property has no category");
+            } else if (!prop.getCategory().name().equalsIgnoreCase(prefCat)) {
+                failures.add("Category mismatch: expected " + prefCat + " but got " + prop.getCategory());
+            }
         }
 
         BigDecimal price = prop.getPrice();
@@ -107,9 +115,12 @@ public class AlertDiagnosticController {
         }
 
         String prefCity = (String) filters.get("city");
-        if (prefCity != null && prop.getLocation() != null && 
-            !prop.getLocation().getCity().equalsIgnoreCase(prefCity)) {
-            failures.add("City mismatch: expected " + prefCity + " but got " + prop.getLocation().getCity());
+        if (prefCity != null) {
+            if (prop.getLocation() == null || prop.getLocation().getCity() == null) {
+                failures.add("City mismatch: expected " + prefCity + " but property location or city is missing");
+            } else if (!prop.getLocation().getCity().equalsIgnoreCase(prefCity)) {
+                failures.add("City mismatch: expected " + prefCity + " but got " + prop.getLocation().getCity());
+            }
         }
 
         return failures.isEmpty();
