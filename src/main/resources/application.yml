@@ -76,6 +76,9 @@ application:
       secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+    scheduler:
+      property-alerts:
+        cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
 
 logging:
   level:

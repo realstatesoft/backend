@@ -416,11 +416,20 @@ public class PropertyService {
     // ─── CHANGE STATUS ────────────────────────────────────────────
 
     public PropertyResponse changeStatus(Long id, PropertyStatus newStatus, User caller) {
-        if (caller.getRole() != UserRole.ADMIN) {
-            throw new ForbiddenException("Solo el administrador puede cambiar el estado de una propiedad");
-        }
         Property property = findPropertyOrThrow(id);
         PropertyStatus currentStatus = property.getStatus();
+
+        // Si no es ADMIN, restringir transiciones críticas
+        if (caller.getRole() != UserRole.ADMIN) {
+            // Un propietario/agente NO puede aprobar o rechazar propiedades (eso es tarea del Admin)
+            if (newStatus == PropertyStatus.APPROVED || newStatus == PropertyStatus.REJECTED) {
+                throw new ForbiddenException("Solo el administrador puede aprobar o rechazar una propiedad");
+            }
+
+            // Los usuarios comunes solo pueden transicionar desde ciertos estados (ej: no pueden "reabrir" una vendida si no está permitido)
+            // La máquina de estados en el Enum ya se encarga de las transiciones válidas, 
+            // así que aquí solo nos preocupamos por la autorización del rol.
+        }
 
         // Validar transición usando la máquina de estados del enum
         PropertyStatus validated = currentStatus.transitionTo(newStatus);
