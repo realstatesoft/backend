@@ -33,11 +33,11 @@ public class Alert extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "search_preference_id")
+    @JoinColumn(name = "search_preference_id", nullable = false)
     private SearchPreference searchPreference;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "property_id")
+    @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
     @Enumerated(EnumType.STRING)
