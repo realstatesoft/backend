@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-add-unique-alert-match-constraint
+      author: antigravity
+      changes:
+        - addNotNullConstraint:
+            columnName: search_preference_id
+            tableName: alerts
+            columnDataType: bigint
+        - addNotNullConstraint:
+            columnName: property_id
+            tableName: alerts
+            columnDataType: bigint
+        - addUniqueConstraint:
+            columnNames: user_id, property_id, search_preference_id
+            constraintName: uk_alerts_user_prop_pref
+            tableName: alerts
+

@@ -272,8 +272,8 @@ public class PropertyController {
     // --- CHANGE STATUS --------------------------------------------
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Cambiar el estado de una propiedad (solo ADMIN)")
-    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cambiar el estado de una propiedad (ADMIN, AGENTE asignado o PROPIETARIO)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request,

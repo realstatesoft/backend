@@ -128,3 +128,6 @@ databaseChangeLog:
   - include:
       file: changelogs/036-add-metadata-to-payments.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/037-add-unique-alert-match-constraint.yaml
+      relativeToChangelogFile: true
