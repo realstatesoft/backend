@@ -36,7 +36,7 @@
 
     <!-- Redirigir el Scheduler a su propio archivo y a la Consola -->
     <!-- additivity="false" evita que los logs se dupliquen en el root logger (openroof.log) -->
-    <logger name="com.openroof.openroof.scheduler.PropertyAlertScheduler" level="DEBUG" additivity="false">
+    <logger name="com.openroof.openroof.scheduler.PropertyAlertScheduler" level="INFO" additivity="false">
         <appender-ref ref="ALERTS-FILE"/>
         <appender-ref ref="CONSOLE"/>
     </logger>
