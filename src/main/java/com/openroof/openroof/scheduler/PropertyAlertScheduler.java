@@ -41,15 +41,13 @@ public class PropertyAlertScheduler {
             "oficina", "OFFICE",
             "deposito", "WAREHOUSE",
             "depósito", "WAREHOUSE",
-            "quinta", "FARM"
-    );
+            "quinta", "FARM");
 
     // Mapa de traducción para categorías
     private static final Map<String, String> CAT_MAP = Map.of(
             "venta", "SALE",
             "alquiler", "RENT",
-            "venta o alquiler", "SALE_OR_RENT"
-    );
+            "venta o alquiler", "SALE_OR_RENT");
 
     /**
      * Busca propiedades nuevas y las matchea con las preferencias de los usuarios.
@@ -79,7 +77,7 @@ public class PropertyAlertScheduler {
             for (SearchPreference preference : activePreferences) {
                 // No alertar al dueño de su propia propiedad
                 if (property.getOwner().getId().equals(preference.getUser().getId())) {
-                    log.debug("SALTEADO: El usuario {} es el dueño de la propiedad '{}'.", 
+                    log.debug("SALTEADO: El usuario {} es el dueño de la propiedad '{}'.",
                             preference.getUser().getEmail(), property.getTitle());
                     continue;
                 }
@@ -97,7 +95,8 @@ public class PropertyAlertScheduler {
     private boolean matches(Property prop, SearchPreference pref) {
         Map<String, Object> filters = pref.getFilters();
         if (filters == null || filters.isEmpty()) {
-            log.debug("PREF DESCARTADA: La preferencia '{}' (ID: {}) no tiene filtros configurados.", pref.getName(), pref.getId());
+            log.debug("PREF DESCARTADA: La preferencia '{}' (ID: {}) no tiene filtros configurados.", pref.getName(),
+                    pref.getId());
             return false;
         }
 
@@ -106,7 +105,7 @@ public class PropertyAlertScheduler {
         if (prefType != null && !prefType.isBlank()) {
             String translatedType = TYPE_MAP.getOrDefault(prefType.toLowerCase(), prefType.toUpperCase());
             if (!prop.getPropertyType().name().equalsIgnoreCase(translatedType)) {
-                log.debug("DESCARTADO por TIPO: Propiedad es {} vs Preferencia {} (Traducción: {})", 
+                log.debug("DESCARTADO por TIPO: Propiedad es {} vs Preferencia {} (Traducción: {})",
                         prop.getPropertyType(), prefType, translatedType);
                 return false;
             }
@@ -117,7 +116,7 @@ public class PropertyAlertScheduler {
         if (prefCat != null && !prefCat.isBlank()) {
             String translatedCat = CAT_MAP.getOrDefault(prefCat.toLowerCase(), prefCat.toUpperCase());
             if (!prop.getCategory().name().equalsIgnoreCase(translatedCat)) {
-                log.debug("DESCARTADO por CATEGORÍA: Propiedad es {} vs Preferencia {} (Traducción: {})", 
+                log.debug("DESCARTADO por CATEGORÍA: Propiedad es {} vs Preferencia {} (Traducción: {})",
                         prop.getCategory(), prefCat, translatedCat);
                 return false;
             }
@@ -153,8 +152,9 @@ public class PropertyAlertScheduler {
         if (prefCity != null && !prefCity.isBlank() && prop.getLocation() != null) {
             String pCity = normalize(prop.getLocation().getCity());
             String fCity = normalize(prefCity);
-            // Si la búsqueda es 'q', el usuario podría haber escrito 'Encarnación' 
-            // pero la propiedad estar en una zona que lo contenga. Usamos contains o equals normalizado.
+            // Si la búsqueda es 'q', el usuario podría haber escrito 'Encarnación'
+            // pero la propiedad estar en una zona que lo contenga. Usamos contains o equals
+            // normalizado.
             if (!pCity.contains(fCity) && !fCity.contains(pCity)) {
                 log.debug("DESCARTADO por CIUDAD: Propiedad '{}' vs Preferencia '{}'", pCity, fCity);
                 return false;
@@ -167,7 +167,8 @@ public class PropertyAlertScheduler {
     }
 
     private BigDecimal parseBigDecimal(Object obj) {
-        if (obj == null || obj.toString().isBlank()) return null;
+        if (obj == null || obj.toString().isBlank())
+            return null;
         try {
             return new BigDecimal(obj.toString());
         } catch (Exception e) {
@@ -176,7 +177,8 @@ public class PropertyAlertScheduler {
     }
 
     private Integer parseInteger(Object obj) {
-        if (obj == null || obj.toString().isBlank()) return null;
+        if (obj == null || obj.toString().isBlank())
+            return null;
         try {
             return Integer.parseInt(obj.toString());
         } catch (Exception e) {
@@ -185,7 +187,8 @@ public class PropertyAlertScheduler {
     }
 
     private String normalize(String str) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         return str.toLowerCase()
                 .replace("á", "a")
                 .replace("é", "e")
@@ -202,7 +205,7 @@ public class PropertyAlertScheduler {
             return;
         }
 
-        log.info("GENERANDO ALERTA: User: {} | Property: {} | Match: {}", 
+        log.info("GENERANDO ALERTA: User: {} | Property: {} | Match: {}",
                 pref.getUser().getEmail(), prop.getTitle(), pref.getName());
 
         Alert alert = Alert.builder()
