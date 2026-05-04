@@ -76,14 +76,17 @@ application:
       secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+    scheduler:
+      property-alerts:
+        cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
 
 logging:
   level:
     root: INFO
-    com.openroof: DEBUG
+    com.openroof: INFO
     org.springframework.security: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: ERROR
+    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
 
 supabase:
   url: ${SUPABASE_URL:}
