@@ -7,6 +7,7 @@ import com.openroof.openroof.model.search.SearchPreference;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.SearchPreferenceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class AlertDiagnosticController {
 
     private final PropertyRepository propertyRepository;
@@ -46,11 +48,8 @@ public class AlertDiagnosticController {
             for (SearchPreference pref : preferences) {
                 Map<String, Object> matchResult = new HashMap<>();
                 matchResult.put("propertyId", prop.getId());
-                matchResult.put("propertyTitle", prop.getTitle());
                 matchResult.put("preferenceId", pref.getId());
                 matchResult.put("preferenceName", pref.getName());
-                matchResult.put("ownerId", prop.getOwner().getId());
-                matchResult.put("prefUserId", pref.getUser().getId());
                 
                 boolean ownerMatch = prop.getOwner().getId().equals(pref.getUser().getId());
                 matchResult.put("isSameUser", ownerMatch);
@@ -102,11 +101,17 @@ public class AlertDiagnosticController {
         Number minPrice = (Number) filters.get("minPrice");
         Number maxPrice = (Number) filters.get("maxPrice");
         
-        if (minPrice != null && price.compareTo(BigDecimal.valueOf(minPrice.doubleValue())) < 0) {
-            failures.add("Price too low: " + price + " < " + minPrice);
+        if (minPrice != null) {
+            BigDecimal minVal = new BigDecimal(minPrice.toString());
+            if (price.compareTo(minVal) < 0) {
+                failures.add("Price too low: " + price + " < " + minPrice);
+            }
         }
-        if (maxPrice != null && price.compareTo(BigDecimal.valueOf(maxPrice.doubleValue())) > 0) {
-            failures.add("Price too high: " + price + " > " + maxPrice);
+        if (maxPrice != null) {
+            BigDecimal maxVal = new BigDecimal(maxPrice.toString());
+            if (price.compareTo(maxVal) > 0) {
+                failures.add("Price too high: " + price + " > " + maxPrice);
+            }
         }
 
         Number minBed = (Number) filters.get("minBedrooms");
