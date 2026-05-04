@@ -69,8 +69,9 @@ public class PropertyAlertScheduler {
         LocalDateTime lastRun = getLastRunWatermark();
         LocalDateTime currentRun = LocalDateTime.now();
 
-        List<Property> newProperties = propertyRepository.findByDeletedAtIsNullAndStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(
-                PropertyStatus.PUBLISHED, Visibility.PUBLIC, lastRun);
+        List<Property> newProperties = propertyRepository
+                .findByDeletedAtIsNullAndStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(
+                        PropertyStatus.PUBLISHED, Visibility.PUBLIC, lastRun);
 
         if (newProperties.isEmpty()) {
             log.info("No hay propiedades nuevas desde la última ejecución ({}).", lastRun);
@@ -109,7 +110,8 @@ public class PropertyAlertScheduler {
                     try {
                         return LocalDateTime.parse(config.getConfigValue());
                     } catch (Exception e) {
-                        log.warn("Error parseando watermark '{}': {}. Usando default.", config.getConfigValue(), e.getMessage());
+                        log.warn("Error parseando watermark '{}': {}. Usando default.", config.getConfigValue(),
+                                e.getMessage());
                         return LocalDateTime.now().minusHours(1);
                     }
                 })
@@ -182,14 +184,16 @@ public class PropertyAlertScheduler {
         }
 
         if (prefCity != null && !prefCity.isBlank()) {
-            if (prop.getLocation() == null || prop.getLocation().getCity() == null || prop.getLocation().getCity().isBlank()) {
-                log.debug("DESCARTADO por CIUDAD: La preferencia requiere ciudad pero la propiedad no tiene ubicación o ciudad definida.");
+            if (prop.getLocation() == null || prop.getLocation().getCity() == null
+                    || prop.getLocation().getCity().isBlank()) {
+                log.debug(
+                        "DESCARTADO por CIUDAD: La preferencia requiere ciudad pero la propiedad no tiene ubicación o ciudad definida.");
                 return false;
             }
 
             String pCity = normalize(prop.getLocation().getCity());
             String fCity = normalize(prefCity);
-            
+
             if (pCity.isEmpty() || fCity.isEmpty() || (!pCity.contains(fCity) && !fCity.contains(pCity))) {
                 log.debug("DESCARTADO por CIUDAD: Propiedad '{}' vs Preferencia '{}'", pCity, fCity);
                 return false;
@@ -256,8 +260,10 @@ public class PropertyAlertScheduler {
         try {
             alertRepository.save(alert);
         } catch (DataIntegrityViolationException e) {
-            log.info("ALERTA DUPLICADA (concurrente): Ya existe una alerta para UserID: {} | PropertyID: {} | PreferenceID: {}. Saltando.",
+            log.info(
+                    "ALERTA DUPLICADA (concurrente): Ya existe una alerta para UserID: {} | PropertyID: {} | PreferenceID: {}. Saltando.",
                     pref.getUser().getId(), prop.getId(), pref.getId());
+
             return;
         }
 
@@ -276,7 +282,8 @@ public class PropertyAlertScheduler {
                 }
             });
         } else {
-            // Fallback si por alguna razón no hay transacción activa (aunque el método es @Transactional)
+            // Fallback si por alguna razón no hay transacción activa (aunque el método es
+            // @Transactional)
             emailService.sendNewMatchAlertEmail(
                     pref.getUser().getEmail(),
                     pref.getUser().getName(),
