@@ -8,9 +8,12 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.UserSettingsRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,13 +41,22 @@ public class UserSettingsService {
     }
 
     private UserSettings getOrCreate(User user) {
-        return repo.findByUser(user)
-                .orElseGet(() -> repo.save(UserSettings.builder().user(user).build()));
+        return repo.findByUser(user).orElseGet(() -> {
+            try {
+                return repo.save(UserSettings.builder().user(user).build());
+            } catch (DataIntegrityViolationException e) {
+                return repo.findByUser(user)
+                        .orElseThrow(() -> new ResourceNotFoundException("Configuración de usuario no encontrada"));
+            }
+        });
     }
 
     private User getUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + email));
+                .orElseThrow(() -> {
+                    log.debug("Usuario no encontrado con email: {}", email);
+                    return new ResourceNotFoundException("Usuario no encontrado");
+                });
     }
 
     private UserSettingsResponse toResponse(UserSettings s) {

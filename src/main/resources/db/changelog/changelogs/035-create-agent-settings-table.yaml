@@ -71,3 +71,19 @@ databaseChangeLog:
       rollback:
         - dropTable:
             tableName: agent_settings
+
+  - changeSet:
+      id: 035-add-work-radius-non-negative-check
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: agent_settings
+      changes:
+        - sql:
+            sql: "UPDATE agent_settings SET work_radius_km = 0 WHERE work_radius_km IS NOT NULL AND work_radius_km < 0"
+        - sql:
+            sql: "ALTER TABLE agent_settings ADD CONSTRAINT ck_agent_settings_work_radius_km_non_negative CHECK (work_radius_km >= 0)"
+      rollback:
+        - sql:
+            sql: "ALTER TABLE agent_settings DROP CONSTRAINT ck_agent_settings_work_radius_km_non_negative"

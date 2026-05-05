@@ -125,6 +125,10 @@ public class AdminSettingsService {
     }
 
     private BigDecimal parseDecimal(SystemConfig config) {
+        if (config.getConfigValue() == null) {
+            throw new InvalidConfigurationException(
+                    "Valor nulo para " + config.getConfigKey() + ": null");
+        }
         try {
             return new BigDecimal(config.getConfigValue());
         } catch (NumberFormatException e) {

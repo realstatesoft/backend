@@ -36,6 +36,7 @@ class AdminSettingsServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        systemConfigRepository.deleteAll();
         systemConfigRepository.saveAll(List.of(
                 SystemConfig.builder().configKey(KEY_SALE_COMMISSION).configValue("10.00").build(),
                 SystemConfig.builder().configKey(KEY_RENT_COMMISSION).configValue("5.00").build(),

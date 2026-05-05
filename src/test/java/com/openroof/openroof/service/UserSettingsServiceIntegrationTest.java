@@ -81,10 +81,7 @@ class UserSettingsServiceIntegrationTest {
             userSettingsService.getSettings(USER_EMAIL);
             userSettingsService.getSettings(USER_EMAIL);
 
-            long count = userSettingsRepository.findAll().stream()
-                    .filter(s -> s.getUser().getId().equals(user.getId()))
-                    .count();
-            assertThat(count).isEqualTo(1);
+            assertThat(userSettingsRepository.findByUser(user)).isPresent();
         }
     }
 
@@ -165,7 +162,7 @@ class UserSettingsServiceIntegrationTest {
 
             userSettingsService.updateSettings(USER_EMAIL,
                     new UpdateUserSettingsRequest(false, false, false, NotifyChannel.EMAIL, false, false));
-            userSettingsService.updateSettings("user2@integration.test",
+            userSettingsService.updateSettings(user2.getEmail(),
                     new UpdateUserSettingsRequest(true, true, true, NotifyChannel.IN_APP, true, true));
 
             UserSettings settings1 = userSettingsRepository.findByUser(user).orElseThrow();

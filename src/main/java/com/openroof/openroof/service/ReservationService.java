@@ -71,12 +71,17 @@ public class ReservationService {
             throw new BadRequestException("Esta propiedad ya tiene una reserva activa");
         }
 
+        int ttlHours = adminSettingsService.getReservationTtlHours();
+        if (ttlHours <= 0) {
+            throw new IllegalStateException("TTL de reserva inválido configurado: " + ttlHours);
+        }
+
         Reservation reservation = Reservation.builder()
                 .property(property)
                 .buyer(buyer)
                 .reservationAmount(req.amount())
                 .status(ReservationStatus.PENDING)
-                .expiresAt(LocalDateTime.now().plusHours(adminSettingsService.getReservationTtlHours()))
+                .expiresAt(LocalDateTime.now().plusHours(ttlHours))
                 .notes(req.notes())
                 .build();
 

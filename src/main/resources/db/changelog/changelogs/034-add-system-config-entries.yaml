@@ -103,3 +103,45 @@ databaseChangeLog:
         - delete:
             tableName: system_config
             where: config_key = 'DEFAULT_CURRENCY'
+
+  - changeSet:
+      id: 034-add-rent-commission-percent
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: "SELECT COUNT(*) FROM system_config WHERE config_key = 'RENT_COMMISSION_PERCENT'"
+      changes:
+        - insert:
+            tableName: system_config
+            columns:
+              - column: { name: config_key, value: RENT_COMMISSION_PERCENT }
+              - column: { name: config_value, value: "5.00" }
+              - column: { name: created_at, valueComputed: "CURRENT_TIMESTAMP" }
+              - column: { name: version, valueNumeric: 0 }
+      rollback:
+        - delete:
+            tableName: system_config
+            where: config_key = 'RENT_COMMISSION_PERCENT'
+
+  - changeSet:
+      id: 034-add-rent-deposit-months
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: "SELECT COUNT(*) FROM system_config WHERE config_key = 'RENT_DEPOSIT_MONTHS'"
+      changes:
+        - insert:
+            tableName: system_config
+            columns:
+              - column: { name: config_key, value: RENT_DEPOSIT_MONTHS }
+              - column: { name: config_value, value: "1" }
+              - column: { name: created_at, valueComputed: "CURRENT_TIMESTAMP" }
+              - column: { name: version, valueNumeric: 0 }
+      rollback:
+        - delete:
+            tableName: system_config
+            where: config_key = 'RENT_DEPOSIT_MONTHS'
