@@ -114,12 +114,23 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changelogs/033-add-unique-transaction-code.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changelogs/032-add-currency-code-to-contracts.yaml
       relativeToChangelogFile: true
   - include:
       file: changelogs/033-add-highlighted-to-properties.yaml
       relativeToChangelogFile: true
   - include:
+      file: changelogs/034-add-system-config-entries.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/035-create-agent-settings-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/036-create-user-settings-table.yaml
+      relativeToChangelogFile: true
+ - include:
       file: changelogs/034-add-highlighted-from.yaml
       relativeToChangelogFile: true
   - include:
@@ -131,3 +142,4 @@ databaseChangeLog:
   - include:
       file: changelogs/037-add-unique-alert-match-constraint.yaml
       relativeToChangelogFile: true
+

@@ -1,6 +1,5 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.config.ReservationProperties;
 import com.openroof.openroof.dto.reservation.CancelReservationRequest;
 import com.openroof.openroof.dto.reservation.CreateReservationRequest;
 import com.openroof.openroof.dto.reservation.ReservationResponse;
@@ -51,6 +50,7 @@ class ReservationServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private PropertySecurity propertySecurity;
     @Mock private NotificationService notificationService;
+    @Mock private AdminSettingsService adminSettingsService;
 
     private ReservationService service;
 
@@ -60,9 +60,8 @@ class ReservationServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReservationProperties props = new ReservationProperties(72, new BigDecimal("1.00"));
         service = new ReservationService(reservationRepository, propertyRepository,
-                userRepository, propertySecurity, notificationService, props);
+                userRepository, propertySecurity, notificationService, adminSettingsService);
 
         buyer = User.builder().name("Comprador").email("buyer@test.com").role(UserRole.USER).build();
         buyer.setId(10L);
@@ -86,6 +85,7 @@ class ReservationServiceTest {
         @Test
         @DisplayName("Crea reserva PENDING con expiresAt = now + ttlHours")
         void createsPendingWithTtl() {
+            when(adminSettingsService.getReservationTtlHours()).thenReturn(72);
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
             when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
             when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
