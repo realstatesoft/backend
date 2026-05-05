@@ -16,4 +16,6 @@ public interface SearchPreferenceRepository extends JpaRepository<SearchPreferen
     Optional<SearchPreference> findByIdAndUserId(Long id, Long userId);
 
     long countByUserId(Long userId);
-}
+
+    java.util.List<SearchPreference> findByNotificationsEnabledTrue();
+}

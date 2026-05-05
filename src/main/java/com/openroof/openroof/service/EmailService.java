@@ -310,6 +310,30 @@ public class EmailService {
         send(toEmail, subject, body);
     }
 
+    @Async("emailTaskExecutor")
+    public void sendNewMatchAlertEmail(String toEmail, String userName,
+                                        String propertyTitle, java.math.BigDecimal price,
+                                        Long propertyId, String preferenceName) {
+        String subject = "¡Encontramos una propiedad para ti! — " + propertyTitle;
+        String body = buildHtml(
+                "Nueva coincidencia con tu búsqueda",
+                "Hola, " + escapeHtml(userName) + ".",
+                """
+                <p>Una nueva propiedad coincide con tu búsqueda guardada <strong>"%s"</strong>.</p>
+                <p><strong>%s</strong></p>
+                <p>Precio: <strong>USD %s</strong></p>
+                <p>No pierdas la oportunidad de ser el primero en verla.</p>
+                """.formatted(
+                        escapeHtml(preferenceName),
+                        escapeHtml(propertyTitle),
+                        String.format("%,.2f", price)
+                ),
+                "Ver propiedad",
+                baseUrl + "/properties/" + propertyId
+        );
+        send(toEmail, subject, body);
+    }
+
     // ─── MENSAJES ───────────────────────────────────────────────────────────────
 
     @Async("emailTaskExecutor")

@@ -17,6 +17,8 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_alerts_search", columnList = "search_preference_id"),
         @Index(name = "idx_alerts_property", columnList = "property_id"),
         @Index(name = "idx_alerts_type", columnList = "alert_type")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_alerts_user_prop_pref", columnNames = {"user_id", "property_id", "search_preference_id"})
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter
@@ -31,11 +33,11 @@ public class Alert extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "search_preference_id")
+    @JoinColumn(name = "search_preference_id", nullable = false)
     private SearchPreference searchPreference;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "property_id")
+    @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
     @Enumerated(EnumType.STRING)
