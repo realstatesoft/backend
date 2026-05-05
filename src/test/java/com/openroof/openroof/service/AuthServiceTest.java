@@ -1,6 +1,7 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.register.RegisterRequest;
+import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
@@ -140,5 +141,75 @@ class AuthServiceTest {
         ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
         verify(userSessionRepository).save(sessionCaptor.capture());
         assertEquals("127.0.0.1", sessionCaptor.getValue().getRequestMetadata().getIpAddress());
+    }
+
+    @Test
+    void registerAgent_createsAgentUserWithAdditionalFields() {
+        AgentSignupRequest request = AgentSignupRequest.builder()
+                .name("Agent Professional")
+                .email("agent.pro@test.com")
+                .password("123456")
+                .phone("+595981000004")
+                .companyName("Pro Real Estate")
+                .licenseNumber("LIC-2024-001")
+                .experienceYears(5)
+                .build();
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+
+        AuthResponse response = authService.registerAgent(request, httpRequest);
+
+        assertNotNull(response);
+        assertEquals("agent.pro@test.com", response.getEmail());
+        assertEquals("AGENT", response.getRole());
+
+        // Verificar que se guarde el usuario con role AGENT
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertEquals(UserRole.AGENT, savedUser.getRole());
+        assertEquals("Agent Professional", savedUser.getName());
+        assertEquals("agent.pro@test.com", savedUser.getEmail());
+        assertEquals("+595981000004", savedUser.getPhone());
+
+        // Verificar que se cree el AgentProfile con campos adicionales
+        ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
+        verify(agentProfileRepository).save(profileCaptor.capture());
+        AgentProfile savedProfile = profileCaptor.getValue();
+        assertEquals(savedUser, savedProfile.getUser());
+        assertEquals("Pro Real Estate", savedProfile.getCompanyName());
+        assertEquals("LIC-2024-001", savedProfile.getLicenseNumber());
+        assertEquals(5, savedProfile.getExperienceYears());
+    }
+
+    @Test
+    void registerAgent_createsAgentUserWithMinimalFields() {
+        AgentSignupRequest request = AgentSignupRequest.builder()
+                .name("Simple Agent")
+                .email("simple@test.com")
+                .password("123456")
+                .phone("+595981000005")
+                // Sin campos adicionales opcionales
+                .build();
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+
+        AuthResponse response = authService.registerAgent(request, httpRequest);
+
+        assertNotNull(response);
+        assertEquals("simple@test.com", response.getEmail());
+        assertEquals("AGENT", response.getRole());
+
+        // Verificar que se guarde el usuario
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertEquals(UserRole.AGENT, userCaptor.getValue().getRole());
+
+        // Verificar que se cree el AgentProfile básico
+        ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
+        verify(agentProfileRepository).save(profileCaptor.capture());
+        AgentProfile savedProfile = profileCaptor.getValue();
+        assertNotNull(savedProfile.getUser());
+        // Los campos opcionales deben ser null/default
     }
 }
