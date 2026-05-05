@@ -28,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,6 +46,7 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+        private final SecurityHeadersFilter securityHeadersFilter;
         private final UserDetailsService userDetailsService;
         private final com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
@@ -60,6 +62,7 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
+                        "/api/test/**"
         };
 
         @Bean
@@ -88,8 +91,14 @@ public class SecurityConfig {
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
                                 .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-                                
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class)
+                                .headers(headers -> headers
+                                        .httpStrictTransportSecurity(hsts -> hsts
+                                                .includeSubDomains(true)
+                                                .maxAgeInSeconds(31536000))
+                                        .frameOptions(frame -> frame.sameOrigin())
+                                        .contentTypeOptions(content -> {}));
 
                 return http.build();
         }

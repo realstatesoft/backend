@@ -130,3 +130,16 @@ databaseChangeLog:
   - include:
       file: changelogs/036-create-user-settings-table.yaml
       relativeToChangelogFile: true
+ - include:
+      file: changelogs/034-add-highlighted-from.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/035-create-highlights-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/036-add-metadata-to-payments.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/037-add-unique-alert-match-constraint.yaml
+      relativeToChangelogFile: true
+

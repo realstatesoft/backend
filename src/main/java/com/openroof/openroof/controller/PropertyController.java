@@ -272,8 +272,8 @@ public class PropertyController {
     // --- CHANGE STATUS --------------------------------------------
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Cambiar el estado de una propiedad (solo ADMIN)")
-    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cambiar el estado de una propiedad (ADMIN, AGENTE asignado o PROPIETARIO)")
+    @PreAuthorize("isAuthenticated() and @propertySecurity.canModify(#id, principal)")
     public ResponseEntity<ApiResponse<PropertyResponse>> changeStatus(
             @Parameter(description = "ID de la propiedad") @PathVariable Long id,
             @Valid @RequestBody ChangeStatusRequest request,
@@ -283,16 +283,24 @@ public class PropertyController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Estado actualizado exitosamente"));
     }
 
-    @PatchMapping("/{id}/highlight")
-    @Operation(summary = "Marcar o desmarcar una propiedad como destacada (solo ADMIN)")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PropertyResponse>> toggleHighlight(
-            @Parameter(description = "ID de la propiedad") @PathVariable Long id,
-            @RequestParam boolean highlighted,
-            @AuthenticationPrincipal User user) {
+    // --- HIGHLIGHT --------------------------------------------
 
-        PropertyResponse response = propertyService.toggleHighlight(id, highlighted, user);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Propiedad " + (highlighted ? "destacada" : "desmarcada como destacada")));
+    @PostMapping("/{id}/highlight")
+    @Operation(summary = "Destacar una propiedad (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> highlight(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        propertyService.highlightProperty(id, 30); // Por defecto destacamos por 30 días
+        return ResponseEntity.ok(ApiResponse.ok(null, "Propiedad destacada exitosamente"));
+    }
+
+    @DeleteMapping("/{id}/highlight")
+    @Operation(summary = "Quitar destacado de una propiedad (solo ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> removeHighlight(
+            @Parameter(description = "ID de la propiedad") @PathVariable Long id) {
+        propertyService.removeHighlight(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Destacado removido exitosamente"));
     }
 
     // --- SIMILAR --------------------------------------------

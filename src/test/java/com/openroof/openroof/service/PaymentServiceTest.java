@@ -9,6 +9,7 @@ import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.payment.Payment;
+import com.openroof.openroof.model.payment.PaymentMetadata;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.UserRepository;
@@ -43,6 +44,7 @@ class PaymentServiceTest {
 
     @Mock private PaymentRepository paymentRepository;
     @Mock private UserRepository userRepository;
+    @Mock private PropertyService propertyService;
 
     private PaymentService service;
 
@@ -51,7 +53,7 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentService(paymentRepository, userRepository);
+        service = new PaymentService(paymentRepository, userRepository, propertyService);
 
         user = User.builder().name("Juan Pérez").email("user@test.com").role(UserRole.USER).build();
         user.setId(1L);
@@ -70,6 +72,26 @@ class PaymentServiceTest {
                 .concept("Señal de reserva")
                 .amount(new BigDecimal("500.00"))
                 .transactionCode("uuid-test-" + id)
+                .build();
+        p.setId(id);
+        p.setCreatedAt(LocalDateTime.now());
+        p.setUpdatedAt(LocalDateTime.now());
+        return p;
+    }
+
+    private Payment buildHighlightPayment(Long id, User owner, PaymentStatus status, Long propertyId, int days) {
+        PaymentMetadata metadata = PaymentMetadata.builder()
+                .propertyId(propertyId)
+                .highlightDays(days)
+                .build();
+        Payment p = Payment.builder()
+                .user(owner)
+                .type(PaymentType.PROPERTY_HIGHLIGHT)
+                .status(status)
+                .concept("Destacar propiedad")
+                .amount(new BigDecimal("100.00"))
+                .transactionCode("uuid-highlight-" + id)
+                .metadata(metadata)
                 .build();
         p.setId(id);
         p.setCreatedAt(LocalDateTime.now());
@@ -96,7 +118,7 @@ class PaymentServiceTest {
             });
 
             PaymentRequest request = new PaymentRequest(
-                    PaymentType.RESERVATION, new BigDecimal("500.00"), "Señal de reserva");
+                    PaymentType.RESERVATION, new BigDecimal("500.00"), "Señal de reserva", null);
 
             PaymentResponse response = service.create(request, "user@test.com");
 
@@ -106,6 +128,7 @@ class PaymentServiceTest {
             assertThat(response.concept()).isEqualTo("Señal de reserva");
             assertThat(response.transactionCode()).isNotBlank();
             assertThat(response.userId()).isEqualTo(1L);
+            assertThat(response.metadata()).isNull();
         }
 
         @Test
@@ -121,13 +144,67 @@ class PaymentServiceTest {
             });
 
             PaymentRequest request = new PaymentRequest(
-                    PaymentType.SUBSCRIPTION, new BigDecimal("100.00"), "  Suscripción mensual  ");
+                    PaymentType.SUBSCRIPTION, new BigDecimal("100.00"), "  Suscripción mensual  ", null);
 
-            PaymentResponse response = service.create(request, "user@test.com");
+            service.create(request, "user@test.com");
 
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
             verify(paymentRepository).save(captor.capture());
             assertThat(captor.getValue().getConcept()).isEqualTo("Suscripción mensual");
+        }
+
+        @Test
+        @DisplayName("Crea pago PROPERTY_HIGHLIGHT con metadata y la persiste")
+        void createsHighlightPaymentWithMetadata() {
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
+                Payment p = inv.getArgument(0);
+                p.setId(12L);
+                p.setCreatedAt(LocalDateTime.now());
+                p.setUpdatedAt(LocalDateTime.now());
+                return p;
+            });
+
+            PaymentMetadata metadata = PaymentMetadata.builder().propertyId(5L).highlightDays(30).build();
+            PaymentRequest request = new PaymentRequest(
+                    PaymentType.PROPERTY_HIGHLIGHT, new BigDecimal("100.00"), "Destacar propiedad", metadata);
+
+            PaymentResponse response = service.create(request, "user@test.com");
+
+            assertThat(response.type()).isEqualTo(PaymentType.PROPERTY_HIGHLIGHT);
+            ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+            verify(paymentRepository).save(captor.capture());
+            assertThat(captor.getValue().getMetadata().getPropertyId()).isEqualTo(5L);
+            assertThat(captor.getValue().getMetadata().getHighlightDays()).isEqualTo(30);
+        }
+
+        @Test
+        @DisplayName("PROPERTY_HIGHLIGHT sin metadata lanza BadRequestException")
+        void highlightWithoutMetadataThrows() {
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+
+            PaymentRequest request = new PaymentRequest(
+                    PaymentType.PROPERTY_HIGHLIGHT, new BigDecimal("100.00"), "Destacar propiedad", null);
+
+            assertThatThrownBy(() -> service.create(request, "user@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("propertyId");
+            verify(paymentRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("PROPERTY_HIGHLIGHT con highlightDays fuera de rango lanza BadRequestException")
+        void highlightWithInvalidDaysThrows() {
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+
+            PaymentMetadata metadata = PaymentMetadata.builder().propertyId(5L).highlightDays(400).build();
+            PaymentRequest request = new PaymentRequest(
+                    PaymentType.PROPERTY_HIGHLIGHT, new BigDecimal("100.00"), "Destacar propiedad", metadata);
+
+            assertThatThrownBy(() -> service.create(request, "user@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("365");
+            verify(paymentRepository, never()).save(any());
         }
 
         @Test
@@ -136,7 +213,7 @@ class PaymentServiceTest {
             when(userRepository.findByEmail("nobody@test.com")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.create(
-                    new PaymentRequest(PaymentType.RESERVATION, new BigDecimal("100.00"), "Test"),
+                    new PaymentRequest(PaymentType.RESERVATION, new BigDecimal("100.00"), "Test", null),
                     "nobody@test.com"))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Usuario");
@@ -319,6 +396,18 @@ class PaymentServiceTest {
             ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
             verify(paymentRepository).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.APPROVED);
+        }
+
+        @Test
+        @DisplayName("Aprobar PROPERTY_HIGHLIGHT dispara la creación del highlight")
+        void approvingHighlightPaymentTriggersHighlight() {
+            Payment payment = buildHighlightPayment(1L, user, PaymentStatus.PENDING, 5L, 30);
+            when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+            when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.approvePayment(1L);
+
+            verify(propertyService).highlightPropertyWithPayment(eq(5L), eq(1L), eq(30));
         }
 
         @Test

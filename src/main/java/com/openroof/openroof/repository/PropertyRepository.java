@@ -58,6 +58,10 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
             "OR LOWER(loc.department) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Property> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
+    List<Property> findByDeletedAtIsNullAndStatusAndVisibilityAndCreatedAtAfterAndTrashedAtIsNull(PropertyStatus status, Visibility visibility, LocalDateTime after);
+
+    List<Property> findByDeletedAtIsNullAndStatusAndVisibilityAndTrashedAtIsNull(PropertyStatus status, Visibility visibility);
+
     long countByStatus(PropertyStatus status);
 
     @Query("SELECT COUNT(p) FROM Property p WHERE p.deletedAt IS NULL AND p.trashedAt IS NULL AND p.createdAt >= :start AND p.createdAt < :end")
@@ -65,7 +69,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     List<Property> findByDeletedAtIsNullAndTrashedAtIsNullAndStatusIn(List<PropertyStatus> statuses);
 
-    @Query("SELECT p FROM Property p WHERE p.status = :status AND p.visibility = :visibility AND p.trashedAt IS NULL AND p.deletedAt IS NULL ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Property p WHERE p.status = :status AND p.visibility = :visibility AND p.trashedAt IS NULL AND p.deletedAt IS NULL ORDER BY CASE WHEN EXISTS (SELECT h FROM Highlight h WHERE h.property = p AND h.highlightedUntil > CURRENT_TIMESTAMP) THEN 1 ELSE 0 END DESC, p.createdAt DESC")
     Page<Property> findFeaturedOrRecentProperties(@Param("status") PropertyStatus status, @Param("visibility") Visibility visibility, Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Property p WHERE p.deletedAt IS NULL AND p.trashedAt IS NULL AND p.status IN :statuses")
@@ -97,7 +101,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     @Query("SELECT COALESCE(AVG(p.price), 0) FROM Property p WHERE p.status IN :statuses AND p.trashedAt IS NULL AND p.deletedAt IS NULL")
     Double findAvgPriceByStatuses(@Param("statuses") List<PropertyStatus> statuses);
-
 
     // TRASHCAN ─────────────────────────────────────────
 
