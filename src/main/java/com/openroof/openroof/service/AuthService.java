@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.openroof.openroof.common.embeddable.RequestMetadata;
 import com.openroof.openroof.dto.register.RegisterRequest;
+import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
 import com.openroof.openroof.exception.BadRequestException;
@@ -109,6 +110,55 @@ public class AuthService {
                 var response = generateFullAuthResponse(user, httpRequest);
                 auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.REGISTER, null,
                                 Map.of("email", user.getEmail(), "role", selectedRole.name()));
+                return response;
+        }
+
+        /**
+         * Registra un nuevo agente usando la misma lógica que el registro estándar,
+         * pero forzando el Role.AGENT y permitiendo campos adicionales específicos de agente.
+         */
+        @Transactional
+        public AuthResponse registerAgent(AgentSignupRequest request, HttpServletRequest httpRequest) {
+                // Validar email duplicado (misma validación que registro normal)
+                if (userRepository.existsByEmail(request.getEmail())) {
+                        throw new BadRequestException("El email ya está registrado");
+                }
+
+                // Crear usuario con role AGENT forzado
+                var user = User.builder()
+                                .email(request.getEmail())
+                                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                                .name(request.getName())
+                                .phone(request.getPhone())
+                                .role(UserRole.AGENT) // Forzar role AGENT
+                                .build();
+
+                userRepository.save(user);
+                String userEmail = user.getEmail();
+                String userName = user.getName();
+                afterCommit(() -> emailService.sendWelcomeEmail(userEmail, userName));
+
+                // Crear AgentProfile con información adicional si está disponible
+                var agentProfileBuilder = AgentProfile.builder()
+                                .user(user);
+                
+                // Añadir campos específicos de agente si están presentes
+                if (request.getCompanyName() != null && !request.getCompanyName().trim().isEmpty()) {
+                        agentProfileBuilder.companyName(request.getCompanyName().trim());
+                }
+                if (request.getLicenseNumber() != null && !request.getLicenseNumber().trim().isEmpty()) {
+                        agentProfileBuilder.licenseNumber(request.getLicenseNumber().trim());
+                }
+                if (request.getExperienceYears() != null && request.getExperienceYears() >= 0) {
+                        agentProfileBuilder.experienceYears(request.getExperienceYears());
+                }
+
+                AgentProfile agentProfile = agentProfileBuilder.build();
+                agentProfileRepository.save(agentProfile);
+
+                var response = generateFullAuthResponse(user, httpRequest);
+                auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.REGISTER, null,
+                                Map.of("email", user.getEmail(), "role", "AGENT", "registrationType", "agent-signup"));
                 return response;
         }
 

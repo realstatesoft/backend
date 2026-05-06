@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.register.RegisterRequest;
+import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
 import com.openroof.openroof.service.AuthService; // PARA VALIDACIONES
@@ -51,6 +52,27 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest registerRequest,
             HttpServletRequest request) { // Inyectamos el request
         return ResponseEntity.ok(ApiResponse.ok(authService.register(registerRequest, request), "Registro exitoso"));
+    }
+
+    /*
+     * Desc: Endpoint específico para registrar agentes.
+     * Utiliza la misma lógica que el registro normal pero forzando Role.AGENT
+     * y permitiendo campos adicionales específicos de agente.
+     */
+    @Operation(
+        summary = "Registrar agente", 
+        description = "Endpoint específico para registro de agentes. Fuerza automáticamente el role AGENT y permite campos adicionales como empresa y licencia."
+    )
+    @PostMapping("/register-agent")
+    public ResponseEntity<ApiResponse<AuthResponse>> registerAgent(
+            @Valid @RequestBody AgentSignupRequest agentSignupRequest,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(
+            ApiResponse.ok(
+                authService.registerAgent(agentSignupRequest, request), 
+                "Registro de agente exitoso"
+            )
+        );
     }
 
     /*

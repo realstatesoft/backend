@@ -1,6 +1,5 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.config.ReservationProperties;
 import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.reservation.CancelReservationRequest;
 import com.openroof.openroof.dto.reservation.CreateReservationRequest;
@@ -53,7 +52,7 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final PropertySecurity propertySecurity;
     private final NotificationService notificationService;
-    private final ReservationProperties properties;
+    private final AdminSettingsService adminSettingsService;
 
     @Transactional
     public ReservationResponse createReservation(CreateReservationRequest req, String currentUserEmail) {
@@ -72,12 +71,17 @@ public class ReservationService {
             throw new BadRequestException("Esta propiedad ya tiene una reserva activa");
         }
 
+        int ttlHours = adminSettingsService.getReservationTtlHours();
+        if (ttlHours <= 0) {
+            throw new IllegalStateException("TTL de reserva inválido configurado: " + ttlHours);
+        }
+
         Reservation reservation = Reservation.builder()
                 .property(property)
                 .buyer(buyer)
                 .reservationAmount(req.amount())
                 .status(ReservationStatus.PENDING)
-                .expiresAt(LocalDateTime.now().plusHours(properties.ttlHours()))
+                .expiresAt(LocalDateTime.now().plusHours(ttlHours))
                 .notes(req.notes())
                 .build();
 

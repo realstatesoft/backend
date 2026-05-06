@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import com.openroof.openroof.dto.property.PropertyFilterRequest;
 import com.openroof.openroof.model.enums.Availability;
+import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.property.Property;
@@ -102,6 +103,15 @@ public final class PropertySpecification {
                 try {
                     PropertyType type = PropertyType.valueOf(filter.propertyType().trim().toUpperCase());
                     predicates.add(cb.equal(root.get("propertyType"), type));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+
+            // ── Categoría (Operación) ─────────────────────────────────────
+            if (filter.category() != null && !filter.category().isBlank()) {
+                try {
+                    PropertyCategory category = PropertyCategory.valueOf(filter.category().trim().toUpperCase());
+                    predicates.add(cb.equal(root.get("category"), category));
                 } catch (IllegalArgumentException ignored) {
                 }
             }

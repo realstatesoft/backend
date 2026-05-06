@@ -97,6 +97,8 @@ public class PropertyController {
 
             @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
 
+            @Parameter(description = "Tipo de operación (SALE, RENT, SALE_OR_RENT)") @RequestParam(required = false) String category,
+
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
 
             @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
@@ -112,7 +114,7 @@ public class PropertyController {
             Authentication auth) {
 
         PropertyFilterRequest filter = new PropertyFilterRequest(
-                availability, propertyType, status,
+                availability, propertyType, category, status,
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, null);
 
@@ -160,6 +162,7 @@ public class PropertyController {
             @Parameter(description = "Palabra clave de búsqueda") @RequestParam(name = "q", required = false) String keyword,
             @Parameter(description = "Disponibilidad (IMMEDIATE, IN_30_DAYS, IN_60_DAYS, TO_NEGOTIATE)") @RequestParam(required = false) String availability,
             @Parameter(description = "Tipo de propiedad (HOUSE, APARTMENT, LAND, OFFICE, WAREHOUSE, FARM)") @RequestParam(required = false) String propertyType,
+            @Parameter(description = "Tipo de operación (SALE, RENT, SALE_OR_RENT)") @RequestParam(required = false) String category,
             @Parameter(description = "Estado (PENDING, APPROVED, REJECTED, PUBLISHED, SOLD, RENTED, ARCHIVED)") @RequestParam(required = false) String status,
             @Parameter(description = "Precio mínimo (inclusive)") @RequestParam(required = false) java.math.BigDecimal minPrice,
             @Parameter(description = "Precio máximo (inclusive)") @RequestParam(required = false) java.math.BigDecimal maxPrice,
@@ -170,7 +173,7 @@ public class PropertyController {
             Authentication auth) {
 
         PropertyFilterRequest filter = new PropertyFilterRequest(
-                availability, propertyType, status,
+                availability, propertyType, category, status,
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, keyword);
 

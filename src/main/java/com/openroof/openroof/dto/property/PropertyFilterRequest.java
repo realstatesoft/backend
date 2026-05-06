@@ -20,6 +20,11 @@ public record PropertyFilterRequest(
          */
         String propertyType,
 
+        /**
+         * Tipo de operación (enum PropertyCategory: SALE, RENT, SALE_OR_RENT)
+         */
+        String category,
+
         /** Estado de la propiedad (enum PropertyStatus) */
         String status,
 

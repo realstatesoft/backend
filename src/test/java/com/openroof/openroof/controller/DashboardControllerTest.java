@@ -5,6 +5,7 @@ import com.openroof.openroof.config.JacksonConfig;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
+import com.openroof.openroof.service.ConversionFunnelService;
 import com.openroof.openroof.service.DashboardService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
@@ -45,6 +46,9 @@ class DashboardControllerTest {
 
     @MockitoBean
     private DashboardService dashboardService;
+
+    @MockitoBean
+    private ConversionFunnelService conversionFunnelService;
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
