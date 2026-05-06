@@ -55,6 +55,7 @@ public class SecurityConfig {
         private static final String[] PUBLIC_URLS = {
                         "/auth/login",
                         "/auth/register",
+                        "/auth/register-agent",
                         "/auth/refresh-token",
                         "/api/exchange-rates",
                         "/api/exchange-rates/**",
