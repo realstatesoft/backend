@@ -192,6 +192,32 @@ assertThatThrownBy(() -> service.createReservation(
                     .hasMessageContaining("alquiler");
             verify(reservationRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Permite reservar una propiedad SALE_OR_RENT")
+        void allowsSaleOrRentProperty() {
+            property.setCategory(PropertyCategory.SALE_OR_RENT);
+            when(adminSettingsService.getReservationTtlHours()).thenReturn(72);
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+            when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
+                    .thenReturn(false);
+            when(reservationRepository.saveAndFlush(any(Reservation.class)))
+                    .thenAnswer(inv -> {
+                        Reservation r = inv.getArgument(0);
+                        r.setId(2L);
+                        r.setCreatedAt(LocalDateTime.now());
+                        r.setUpdatedAt(LocalDateTime.now());
+                        return r;
+                    });
+
+            ReservationResponse res = service.createReservation(
+                    new CreateReservationRequest(100L, new BigDecimal("1000.00"), null),
+                    "buyer@test.com");
+
+            assertThat(res.status()).isEqualTo(ReservationStatus.PENDING);
+            verify(reservationRepository).saveAndFlush(any());
+        }
     }
 
     @Nested
