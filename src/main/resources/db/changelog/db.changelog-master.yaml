@@ -130,7 +130,7 @@ databaseChangeLog:
   - include:
       file: changelogs/036-create-user-settings-table.yaml
       relativeToChangelogFile: true
- - include:
+  - include:
       file: changelogs/034-add-highlighted-from.yaml
       relativeToChangelogFile: true
   - include:
