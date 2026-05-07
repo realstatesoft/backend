@@ -8,6 +8,7 @@ import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.NotificationType;
+import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.ReservationStatus;
 import com.openroof.openroof.model.property.Property;
@@ -60,6 +61,11 @@ public class ReservationService {
         Property property = propertyRepository.findById(req.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Propiedad no encontrada: " + req.propertyId()));
+
+        if (property.getCategory() != PropertyCategory.RENT
+                && property.getCategory() != PropertyCategory.SALE_OR_RENT) {
+            throw new BadRequestException("Solo se pueden reservar propiedades en alquiler.");
+        }
 
         if (property.getStatus() != PropertyStatus.PUBLISHED) {
             throw new BadRequestException("Solo se puede reservar una propiedad publicada");

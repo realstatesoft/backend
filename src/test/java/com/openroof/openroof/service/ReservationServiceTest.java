@@ -6,6 +6,7 @@ import com.openroof.openroof.dto.reservation.ReservationResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.enums.ReservationStatus;
 import com.openroof.openroof.model.enums.UserRole;
@@ -74,6 +75,7 @@ class ReservationServiceTest {
                 .owner(owner)
                 .price(new BigDecimal("100000.00"))
                 .status(PropertyStatus.PUBLISHED)
+                .category(PropertyCategory.RENT)
                 .build();
         property.setId(100L);
     }
@@ -161,6 +163,7 @@ assertThatThrownBy(() -> service.createReservation(
         @Test
         @DisplayName("Lanza BadRequestException si la BD rechaza por índice único parcial")
         void rejectsDataIntegrityViolation() {
+            when(adminSettingsService.getReservationTtlHours()).thenReturn(72);
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
             when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
             when(reservationRepository.existsBlockingReservation(eq(100L), anyCollection()))
@@ -173,6 +176,21 @@ assertThatThrownBy(() -> service.createReservation(
                     "buyer@test.com"))
                     .isInstanceOf(BadRequestException.class)
                     .hasMessageContaining("reserva activa");
+        }
+
+        @Test
+        @DisplayName("Rechaza si la propiedad no es de alquiler (SALE)")
+        void rejectsNonRentalProperty() {
+            property.setCategory(PropertyCategory.SALE);
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(propertyRepository.findById(100L)).thenReturn(Optional.of(property));
+
+            assertThatThrownBy(() -> service.createReservation(
+                    new CreateReservationRequest(100L, new BigDecimal("1000.00"), null),
+                    "buyer@test.com"))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessageContaining("alquiler");
+            verify(reservationRepository, never()).save(any());
         }
     }
 
