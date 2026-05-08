@@ -109,3 +109,6 @@ databaseChangeLog:
   - include:
       file: changelogs/031-shedlock-table.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/032-repair-missing-highlighted-columns.yaml
+      relativeToChangelogFile: true

@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-add-properties-highlighted-if-missing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: properties
+              columnName: highlighted
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 032-add-properties-highlighted-until-if-missing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: properties
+              columnName: highlighted_until
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted_until
+                  type: timestamp
+
+  - changeSet:
+      id: 032-add-properties-highlighted-index-if-missing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+          and:
+            - columnExists:
+                tableName: properties
+                columnName: highlighted
+            - not:
+                indexExists:
+                  tableName: properties
+                  indexName: idx_properties_highlighted
+      changes:
+        - createIndex:
+            indexName: idx_properties_highlighted
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted
+
+  - changeSet:
+      id: 032-add-properties-highlighted-active-index-if-missing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+          and:
+            - columnExists:
+                tableName: properties
+                columnName: highlighted
+            - columnExists:
+                tableName: properties
+                columnName: highlighted_until
+            - columnExists:
+                tableName: properties
+                columnName: status
+            - not:
+                indexExists:
+                  tableName: properties
+                  indexName: idx_properties_highlighted_active
+      changes:
+        - createIndex:
+            indexName: idx_properties_highlighted_active
+            tableName: properties
+            columns:
+              - column:
+                  name: highlighted
+              - column:
+                  name: highlighted_until
+              - column:
+                  name: status
