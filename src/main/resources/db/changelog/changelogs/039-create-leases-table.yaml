@@ -117,14 +117,12 @@ databaseChangeLog:
               - column:
                   name: parent_lease_id
                   type: BIGINT
-        - addCheckConstraint:
-            tableName: leases
-            constraintName: chk_leases_date_range
-            condition: "end_date > start_date"
-        - addCheckConstraint:
-            tableName: leases
-            constraintName: chk_leases_monthly_rent_positive
-            condition: "monthly_rent > 0"
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE leases ADD CONSTRAINT chk_leases_date_range CHECK (end_date > start_date)
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE leases ADD CONSTRAINT chk_leases_monthly_rent_positive CHECK (monthly_rent > 0)
         - addForeignKeyConstraint:
             baseTableName: leases
             baseColumnNames: property_id
