@@ -6,9 +6,9 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&sslmode=require
+    username: postgres.gnkzarhkjbuydrzybydm
+    password: OpenRoof$!*Supabase#Platform2026_TEST
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 4
@@ -73,26 +73,30 @@ application:
       # Inject JWT_SECRET from environment variables or vault. 
       # Fast fail if missing: use explicit reference without default.
       # To rotate: update environment variable and restart application. Do NOT commit secrets.
-      secret-key: ${JWT_SECRET}
+      secret-key: ${JWT_SECRET:c2VjcmV0S2V5UGFyYURlc2Fycm9sbG9Mb2NhbE9wZW5Sb29mMjAyNg==}
       expiration: ${JWT_EXPIRATION:86400000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
     scheduler:
       property-alerts:
         cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
 
+
 logging:
   level:
     root: INFO
-    com.openroof: INFO
+    com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: ERROR
-    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL:}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  url: ${SUPABASE_URL:https://gnkzarhkjbuydrzybydm.storage.supabase.co/storage/v1/s3}
+  service-role-key: ${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdua3phcmhramJ1eWRyenlieWRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjQ2OTE4OCwiZXhwIjoyMDg4MDQ1MTg4fQ.XxpJq7fIayI0CHRXOqfQC0s0btbjTzlrwWKqPPIt9Ec}
   storage:
-    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images-test}
 
 # ==================== UPLOAD ====================
 upload:
