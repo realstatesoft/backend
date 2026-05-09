@@ -28,7 +28,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
-import com.openroof.openroof.config.SecurityHeadersFilter;
 
 import lombok.RequiredArgsConstructor;
 

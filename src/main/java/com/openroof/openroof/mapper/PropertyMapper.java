@@ -5,6 +5,7 @@ import com.openroof.openroof.common.embeddable.GeoLocation;
 import com.openroof.openroof.common.embeddable.UtilityInfo;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
+import com.openroof.openroof.model.enums.ListingType;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -38,6 +39,11 @@ public class PropertyMapper {
                 g != null ? g.getLat() : null,
                 g != null ? g.getLng() : null,
                 p.getPrice(),
+                enumName(p.getListingType()),
+                p.getRentAmount(),
+                p.getRentCurrency(),
+                p.getRentFrequency(),
+                p.getRentBillingCycle(),
                 p.getBedrooms(),
                 p.getBathrooms(),
                 p.getHalfBathrooms(),
@@ -127,8 +133,16 @@ public class PropertyMapper {
                 .description(req.description())
                 .propertyType(req.propertyType())
                 .category(req.category())
+                .listingType(req.listingType())
                 .address(req.address())
                 .price(req.price());
+
+        if (req.listingType() == ListingType.RENT) {
+            builder.rentAmount(req.rentAmount())
+                    .rentCurrency(req.rentCurrency())
+                    .rentFrequency(req.rentFrequency())
+                    .rentBillingCycle(req.rentBillingCycle());
+        }
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {
@@ -217,6 +231,27 @@ public class PropertyMapper {
             property.setAvailability(req.availability());
         if (req.visibility() != null)
             property.setVisibility(req.visibility());
+        ListingType effectiveListingType = req.listingType() != null ? req.listingType() : property.getListingType();
+        if (req.listingType() != null) {
+            property.setListingType(req.listingType());
+        }
+
+        if (effectiveListingType == ListingType.RENT) {
+            if (req.rentAmount() != null)
+                property.setRentAmount(req.rentAmount());
+            if (req.rentCurrency() != null)
+                property.setRentCurrency(req.rentCurrency());
+            if (req.rentFrequency() != null)
+                property.setRentFrequency(req.rentFrequency());
+            if (req.rentBillingCycle() != null)
+                property.setRentBillingCycle(req.rentBillingCycle());
+        } else {
+            // Limpiamos campos de renta si el tipo no es RENT
+            property.setRentAmount(null);
+            property.setRentCurrency(null);
+            property.setRentFrequency(null);
+            property.setRentBillingCycle(null);
+        }
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {

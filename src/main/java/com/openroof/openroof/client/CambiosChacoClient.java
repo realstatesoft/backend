@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.util.StringUtils;
 
 import com.openroof.openroof.exception.ExchangeRateUnavailableException;
 

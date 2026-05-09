@@ -1,0 +1,83 @@
+databaseChangeLog:
+  # OR-290: [BE] Migracion DB: tablas Notification y notification_preferences
+  # The 'notifications' table already exists. We extend it with rental-specific columns
+  # and create the new 'notification_preferences' table.
+
+  - changeSet:
+      id: 051-add-rental-columns-to-notifications
+      author: openroof
+      changes:
+        - addColumn:
+            tableName: notifications
+            columns:
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+              - column:
+                  name: delivery_status
+                  type: VARCHAR(20)
+              - column:
+                  name: sent_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: related_entity_type
+                  type: VARCHAR(50)
+              - column:
+                  name: related_entity_id
+                  type: BIGINT
+        - createIndex:
+            indexName: idx_notifications_recipient_status
+            tableName: notifications
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: delivery_status
+
+  - changeSet:
+      id: 051-create-notification-preferences-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: notification_preferences
+      changes:
+        - createTable:
+            tableName: notification_preferences
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+        - addPrimaryKey:
+            tableName: notification_preferences
+            columnNames: user_id, event_type, channel
+            constraintName: pk_notification_preferences
+        - addForeignKeyConstraint:
+            baseTableName: notification_preferences
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_notification_preferences_user
+        - createIndex:
+            indexName: idx_notification_preferences_user
+            tableName: notification_preferences
+            columns:
+              - column:
+                  name: user_id

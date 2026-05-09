@@ -10,7 +10,9 @@ import com.openroof.openroof.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -78,6 +80,53 @@ public class Property extends BaseEntity {
         @Enumerated(EnumType.STRING)
         @Column(name = "property_type", nullable = false, length = 50)
         private PropertyType propertyType;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "listing_type", length = 20)
+        private ListingType listingType;
+
+        @Column(name = "rent_amount", precision = 12, scale = 2)
+        private BigDecimal rentAmount;
+
+        @Column(name = "rent_currency", length = 3)
+        private String rentCurrency;
+
+        @Column(name = "rent_frequency", length = 20)
+        private String rentFrequency;
+
+        @Column(name = "rent_billing_cycle", length = 20)
+        private String rentBillingCycle;
+
+        @Column(name = "rental_status", length = 30)
+        private String rentalStatus;
+
+        @Column(name = "min_lease_term_months")
+        private Integer minLeaseTermMonths;
+
+        @Column(name = "max_lease_term_months")
+        private Integer maxLeaseTermMonths;
+
+        @Column(name = "available_from")
+        private java.time.LocalDate availableFrom;
+
+        @Column(name = "furnishing_status", length = 20)
+        private String furnishingStatus;
+
+        @JdbcTypeCode(SqlTypes.JSON)
+        @Column(name = "utilities_included", columnDefinition = "jsonb")
+        private List<String> utilitiesIncluded;
+
+        @Column(name = "pet_policy", length = 20)
+        private String petPolicy;
+
+        @Column(name = "smoking_allowed")
+        private Boolean smokingAllowed;
+
+        @Column(name = "rental_advertisement_active")
+        private Boolean rentalAdvertisementActive;
+
+        @Column(name = "active_lease_id")
+        private Long activeLeaseId;
 
         // ─── Ubicación ────────────────────────────────────────────────
 
