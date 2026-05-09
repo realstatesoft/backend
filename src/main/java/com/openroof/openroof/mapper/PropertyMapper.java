@@ -134,12 +134,15 @@ public class PropertyMapper {
                 .propertyType(req.propertyType())
                 .category(req.category())
                 .listingType(req.listingType())
-                .rentAmount(req.rentAmount())
-                .rentCurrency(req.rentCurrency())
-                .rentFrequency(req.rentFrequency())
-                .rentBillingCycle(req.rentBillingCycle())
                 .address(req.address())
                 .price(req.price());
+
+        if (req.listingType() == ListingType.RENT) {
+            builder.rentAmount(req.rentAmount())
+                    .rentCurrency(req.rentCurrency())
+                    .rentFrequency(req.rentFrequency())
+                    .rentBillingCycle(req.rentBillingCycle());
+        }
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {
@@ -228,24 +231,27 @@ public class PropertyMapper {
             property.setAvailability(req.availability());
         if (req.visibility() != null)
             property.setVisibility(req.visibility());
+        ListingType effectiveListingType = req.listingType() != null ? req.listingType() : property.getListingType();
         if (req.listingType() != null) {
             property.setListingType(req.listingType());
-            // Si deja de ser RENT, limpiamos campos de renta que no vengan explícitos
-            if (req.listingType() != ListingType.RENT) {
-                if (req.rentAmount() == null) property.setRentAmount(null);
-                if (req.rentCurrency() == null) property.setRentCurrency(null);
-                if (req.rentFrequency() == null) property.setRentFrequency(null);
-                if (req.rentBillingCycle() == null) property.setRentBillingCycle(null);
-            }
         }
-        if (req.rentAmount() != null)
-            property.setRentAmount(req.rentAmount());
-        if (req.rentCurrency() != null)
-            property.setRentCurrency(req.rentCurrency());
-        if (req.rentFrequency() != null)
-            property.setRentFrequency(req.rentFrequency());
-        if (req.rentBillingCycle() != null)
-            property.setRentBillingCycle(req.rentBillingCycle());
+
+        if (effectiveListingType == ListingType.RENT) {
+            if (req.rentAmount() != null)
+                property.setRentAmount(req.rentAmount());
+            if (req.rentCurrency() != null)
+                property.setRentCurrency(req.rentCurrency());
+            if (req.rentFrequency() != null)
+                property.setRentFrequency(req.rentFrequency());
+            if (req.rentBillingCycle() != null)
+                property.setRentBillingCycle(req.rentBillingCycle());
+        } else {
+            // Limpiamos campos de renta si el tipo no es RENT
+            property.setRentAmount(null);
+            property.setRentCurrency(null);
+            property.setRentFrequency(null);
+            property.setRentBillingCycle(null);
+        }
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {
