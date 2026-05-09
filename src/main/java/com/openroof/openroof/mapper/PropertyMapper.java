@@ -5,6 +5,7 @@ import com.openroof.openroof.common.embeddable.GeoLocation;
 import com.openroof.openroof.common.embeddable.UtilityInfo;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
+import com.openroof.openroof.model.enums.ListingType;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -41,6 +42,8 @@ public class PropertyMapper {
                 enumName(p.getListingType()),
                 p.getRentAmount(),
                 p.getRentCurrency(),
+                p.getRentFrequency(),
+                p.getRentBillingCycle(),
                 p.getBedrooms(),
                 p.getBathrooms(),
                 p.getHalfBathrooms(),
@@ -133,6 +136,8 @@ public class PropertyMapper {
                 .listingType(req.listingType())
                 .rentAmount(req.rentAmount())
                 .rentCurrency(req.rentCurrency())
+                .rentFrequency(req.rentFrequency())
+                .rentBillingCycle(req.rentBillingCycle())
                 .address(req.address())
                 .price(req.price());
 
@@ -223,12 +228,24 @@ public class PropertyMapper {
             property.setAvailability(req.availability());
         if (req.visibility() != null)
             property.setVisibility(req.visibility());
-        if (req.listingType() != null)
+        if (req.listingType() != null) {
             property.setListingType(req.listingType());
+            // Si deja de ser RENT, limpiamos campos de renta que no vengan explícitos
+            if (req.listingType() != ListingType.RENT) {
+                if (req.rentAmount() == null) property.setRentAmount(null);
+                if (req.rentCurrency() == null) property.setRentCurrency(null);
+                if (req.rentFrequency() == null) property.setRentFrequency(null);
+                if (req.rentBillingCycle() == null) property.setRentBillingCycle(null);
+            }
+        }
         if (req.rentAmount() != null)
             property.setRentAmount(req.rentAmount());
         if (req.rentCurrency() != null)
             property.setRentCurrency(req.rentCurrency());
+        if (req.rentFrequency() != null)
+            property.setRentFrequency(req.rentFrequency());
+        if (req.rentBillingCycle() != null)
+            property.setRentBillingCycle(req.rentBillingCycle());
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {

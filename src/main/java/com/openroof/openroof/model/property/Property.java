@@ -91,6 +91,12 @@ public class Property extends BaseEntity {
         @Column(name = "rent_currency", length = 3)
         private String rentCurrency;
 
+        @Column(name = "rent_frequency", length = 20)
+        private String rentFrequency;
+
+        @Column(name = "rent_billing_cycle", length = 20)
+        private String rentBillingCycle;
+
         @Column(name = "rental_status", length = 30)
         private String rentalStatus;
 

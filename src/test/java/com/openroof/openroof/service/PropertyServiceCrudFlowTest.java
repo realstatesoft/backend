@@ -128,6 +128,8 @@ class PropertyServiceCrudFlowTest {
                 null, // listingType (new)
                 null, // rentAmount (new)
                 null, // rentCurrency (new)
+                null, // rentFrequency (new)
+                null, // rentBillingCycle (new)
                 "Calle 1",
                 null,
                 null,
@@ -166,6 +168,8 @@ class PropertyServiceCrudFlowTest {
                 null, // listingType (new)
                 null, // rentAmount (new)
                 null, // rentCurrency (new)
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -241,6 +245,8 @@ class PropertyServiceCrudFlowTest {
                 null,
                 BigDecimal.ONE,
                 "SALE",
+                null,
+                null,
                 null,
                 null,
                 null,

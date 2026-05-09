@@ -17,6 +17,8 @@ public record PropertyResponse(
         String listingType,
         BigDecimal rentAmount,
         String rentCurrency,
+        String rentFrequency,
+        String rentBillingCycle,
         Integer bedrooms,
         BigDecimal bathrooms,
         Integer halfBathrooms,

@@ -102,7 +102,7 @@ Cubre los tickets **OR-192, OR-193, OR-194, OR-212, OR-228, OR-246, OR-247, OR-2
 
 **Tabla:** `leases` | **Migración:** `038-create-leases-table.yaml`
 
-```
+```text
 Lease
 ├── property (ManyToOne → Property)
 ├── landlord (ManyToOne → User)
@@ -132,7 +132,7 @@ Lease
 
 **Tabla:** `rental_applications` | **Migración:** `040-create-rental-applications-table.yaml`
 
-```
+```text
 RentalApplication
 ├── property (ManyToOne → Property)
 ├── applicant (ManyToOne → User)
@@ -153,7 +153,7 @@ RentalApplication
 
 **Tabla:** `rental_installments` | **Migración:** `041-create-rental-installments-table.yaml`
 
-```
+```text
 RentalInstallment
 ├── lease (ManyToOne → Lease)
 ├── installmentNumber
@@ -176,7 +176,7 @@ RentalInstallment
 
 > Se usa tabla `lease_payments` separada de `payments` (reservas/contratos) para evitar conflicto de dominio.
 
-```
+```text
 LeasePayment
 ├── lease (ManyToOne → Lease)
 ├── installment (ManyToOne → RentalInstallment, nullable)
@@ -194,7 +194,7 @@ LeasePayment
 
 **Métodos de dominio:**
 - `isCompleted()` — status == COMPLETED
-- `isRefundable()` — isCompleted() y refundAmount == null
+- `isRefundable()` — true si status == COMPLETED y paidAt != null
 
 ---
 
@@ -202,7 +202,7 @@ LeasePayment
 
 **Tabla:** `tenant_screenings` | **Migración:** `043-create-tenant-screenings-table.yaml`
 
-```
+```text
 TenantScreening
 ├── application (OneToOne → RentalApplication, unique FK)
 ├── provider (ScreeningProvider)
@@ -226,7 +226,7 @@ TenantScreening
 #### `Vendor` (`model/maintenance/Vendor.java`)
 **Tabla:** `vendors` | **Migración:** `046-create-vendors-table.yaml`
 
-```
+```text
 Vendor
 ├── companyName / contactName / email / phone / taxId
 ├── specialties (JSONB: List<MaintenanceCategory>)
@@ -239,7 +239,7 @@ Vendor
 #### `MaintenanceRequest` (`model/maintenance/MaintenanceRequest.java`)
 **Tabla:** `maintenance_requests` | **Migración:** `047-create-maintenance-requests-table.yaml`
 
-```
+```text
 MaintenanceRequest
 ├── property (ManyToOne → Property)
 ├── lease (ManyToOne → Lease, nullable)
@@ -257,7 +257,7 @@ MaintenanceRequest
 #### `WorkOrder` (`model/maintenance/WorkOrder.java`)
 **Tabla:** `work_orders` | **Migración:** `048-create-work-orders-table.yaml`
 
-```
+```text
 WorkOrder
 ├── maintenanceRequest (ManyToOne → MaintenanceRequest)
 ├── vendor (ManyToOne → Vendor)
@@ -277,7 +277,7 @@ WorkOrder
 #### `Conversation` (`model/conversation/Conversation.java`)
 **Tabla:** `conversations` | **Migración:** `049-create-conversations-table.yaml`
 
-```
+```text
 Conversation
 ├── subject
 ├── relatedLease (ManyToOne → Lease, nullable)
@@ -291,7 +291,7 @@ Conversation
 
 > **No extiende BaseEntity** — no tiene soft delete por diseño (mensajes son inmutables).
 
-```
+```text
 ConversationMessage
 ├── id (@Id @GeneratedValue)
 ├── conversation (ManyToOne → Conversation)
@@ -313,7 +313,7 @@ ConversationMessage
 
 > Registros contables — inmutables por convención. Se crea pero nunca se actualiza ni elimina.
 
-```
+```text
 LedgerEntry
 ├── lease (ManyToOne → Lease)
 ├── property (ManyToOne → Property)
@@ -363,7 +363,7 @@ public void markAsRead() {
 
 > No extiende `BaseEntity`. Usa clave primaria compuesta (user_id, event_type, channel).
 
-```
+```text
 NotificationPreference
 ├── id: NotificationPreferenceId @EmbeddedId
 │   ├── userId (Long)

@@ -21,6 +21,12 @@ databaseChangeLog:
                   name: rent_currency
                   type: VARCHAR(3)
               - column:
+                  name: rent_frequency
+                  type: VARCHAR(20)
+              - column:
+                  name: rent_billing_cycle
+                  type: VARCHAR(20)
+              - column:
                   name: min_lease_term_months
                   type: INTEGER
               - column:
