@@ -185,4 +185,7 @@ databaseChangeLog:
   - include:
       file: changelogs/051-add-notification-preferences.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/052-add-notes-to-tenant-screenings.yaml
+      relativeToChangelogFile: true
 

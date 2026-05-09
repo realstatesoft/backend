@@ -84,6 +84,9 @@ public class TenantScreening extends BaseEntity {
     @Column(name = "run_at")
     private LocalDateTime runAt;
 
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     public boolean isExpired() {
         return expiresAt != null && expiresAt.isBefore(LocalDateTime.now());
     }

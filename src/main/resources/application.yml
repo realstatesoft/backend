@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASS}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 4
@@ -80,19 +80,23 @@ application:
       property-alerts:
         cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
 
+
 logging:
   level:
     root: INFO
-    com.openroof: INFO
+    com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: ERROR
-    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL:}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_KEY}
   storage:
-    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images-test}
 
 # ==================== UPLOAD ====================
 upload:
