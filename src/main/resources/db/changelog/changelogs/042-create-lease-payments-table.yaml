@@ -1,0 +1,133 @@
+databaseChangeLog:
+  # OR-210: [BE] Migracion DB: crear tabla Payment
+  # Named 'lease_payments' to avoid conflict with existing 'payments' table (reservations/contracts)
+  - changeSet:
+      id: 042-create-lease-payments-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: lease_payments
+      changes:
+        - createTable:
+            tableName: lease_payments
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: lease_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: installment_id
+                  type: BIGINT
+              - column:
+                  name: payer_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: NUMERIC(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: method
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gateway
+                  type: VARCHAR(50)
+              - column:
+                  name: gateway_transaction_id
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processing_fee
+                  type: NUMERIC(12, 2)
+                  defaultValueNumeric: 0
+              - column:
+                  name: net_amount
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: receipt_number
+                  type: VARCHAR(50)
+              - column:
+                  name: receipt_pdf_url
+                  type: VARCHAR(500)
+              - column:
+                  name: paid_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(255)
+                  constraints:
+                    unique: true
+        - addForeignKeyConstraint:
+            baseTableName: lease_payments
+            baseColumnNames: lease_id
+            referencedTableName: leases
+            referencedColumnNames: id
+            constraintName: fk_lease_payments_lease
+        - addForeignKeyConstraint:
+            baseTableName: lease_payments
+            baseColumnNames: installment_id
+            referencedTableName: rental_installments
+            referencedColumnNames: id
+            constraintName: fk_lease_payments_installment
+        - addForeignKeyConstraint:
+            baseTableName: lease_payments
+            baseColumnNames: payer_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_lease_payments_payer
+        - createIndex:
+            indexName: idx_lease_payments_lease_paid_at
+            tableName: lease_payments
+            columns:
+              - column:
+                  name: lease_id
+              - column:
+                  name: paid_at
+        - createIndex:
+            indexName: idx_lease_payments_status
+            tableName: lease_payments
+            columns:
+              - column:
+                  name: status

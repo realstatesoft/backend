@@ -1,0 +1,115 @@
+databaseChangeLog:
+  # OR-190: [BE] Migracion DB: crear tabla RentalInstallment (cuotas)
+  - changeSet:
+      id: 041-create-rental-installments-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: rental_installments
+      changes:
+        - createTable:
+            tableName: rental_installments
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: lease_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: installment_number
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: period_start
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: period_end
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_rent
+                  type: NUMERIC(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: other_charges
+                  type: JSONB
+              - column:
+                  name: total_amount
+                  type: NUMERIC(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paid_amount
+                  type: NUMERIC(12, 2)
+                  defaultValueNumeric: 0
+              - column:
+                  name: balance
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: late_fee
+                  type: NUMERIC(12, 2)
+                  defaultValueNumeric: 0
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invoice_number
+                  type: VARCHAR(50)
+              - column:
+                  name: invoice_pdf_url
+                  type: VARCHAR(500)
+        - addForeignKeyConstraint:
+            baseTableName: rental_installments
+            baseColumnNames: lease_id
+            referencedTableName: leases
+            referencedColumnNames: id
+            constraintName: fk_rental_installments_lease
+        - createIndex:
+            indexName: idx_rental_installments_lease_due
+            tableName: rental_installments
+            columns:
+              - column:
+                  name: lease_id
+              - column:
+                  name: due_date
+        - createIndex:
+            indexName: idx_rental_installments_status
+            tableName: rental_installments
+            columns:
+              - column:
+                  name: status

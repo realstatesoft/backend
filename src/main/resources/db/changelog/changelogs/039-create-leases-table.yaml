@@ -1,0 +1,173 @@
+databaseChangeLog:
+  # OR-188: [BE] Migracion DB: crear tabla Lease con todos sus campos
+  - changeSet:
+      id: 039-create-leases-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: leases
+      changes:
+        - createTable:
+            tableName: leases
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: property_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: landlord_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: primary_tenant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lease_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: monthly_rent
+                  type: NUMERIC(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: USD
+              - column:
+                  name: billing_frequency
+                  type: VARCHAR(20)
+              - column:
+                  name: due_day
+                  type: INTEGER
+              - column:
+                  name: grace_period_days
+                  type: INTEGER
+              - column:
+                  name: late_fee_type
+                  type: VARCHAR(20)
+              - column:
+                  name: late_fee_value
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: max_late_fee_cap
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: security_deposit
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: deposit_status
+                  type: VARCHAR(20)
+              - column:
+                  name: move_in_date
+                  type: DATE
+              - column:
+                  name: document_url
+                  type: VARCHAR(500)
+              - column:
+                  name: auto_renew
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: renewal_notice_days
+                  type: INTEGER
+              - column:
+                  name: parent_lease_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: leases
+            baseColumnNames: property_id
+            referencedTableName: properties
+            referencedColumnNames: id
+            constraintName: fk_leases_property
+        - addForeignKeyConstraint:
+            baseTableName: leases
+            baseColumnNames: landlord_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_leases_landlord
+        - addForeignKeyConstraint:
+            baseTableName: leases
+            baseColumnNames: primary_tenant_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_leases_tenant
+        - addForeignKeyConstraint:
+            baseTableName: leases
+            baseColumnNames: parent_lease_id
+            referencedTableName: leases
+            referencedColumnNames: id
+            constraintName: fk_leases_parent
+        - createIndex:
+            indexName: idx_leases_property
+            tableName: leases
+            columns:
+              - column:
+                  name: property_id
+        - createIndex:
+            indexName: idx_leases_tenant
+            tableName: leases
+            columns:
+              - column:
+                  name: primary_tenant_id
+        - createIndex:
+            indexName: idx_leases_status
+            tableName: leases
+            columns:
+              - column:
+                  name: status
+
+  # Add FK from properties.active_lease_id -> leases (deferred to after leases table exists)
+  - changeSet:
+      id: 039-fk-properties-active-lease
+      author: openroof
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: properties
+            baseColumnNames: active_lease_id
+            referencedTableName: leases
+            referencedColumnNames: id
+            constraintName: fk_properties_active_lease

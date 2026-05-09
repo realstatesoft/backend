@@ -1,0 +1,51 @@
+databaseChangeLog:
+  # OR-191: [BE] Migracion DB: modificar tabla Property para soporte RENT
+  - changeSet:
+      id: 038-add-rental-columns-to-properties
+      author: openroof
+      changes:
+        - addColumn:
+            tableName: properties
+            columns:
+              - column:
+                  name: listing_type
+                  type: VARCHAR(20)
+                  defaultValue: SALE
+              - column:
+                  name: rental_status
+                  type: VARCHAR(30)
+              - column:
+                  name: rent_amount
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: rent_currency
+                  type: VARCHAR(3)
+              - column:
+                  name: min_lease_term_months
+                  type: INTEGER
+              - column:
+                  name: max_lease_term_months
+                  type: INTEGER
+              - column:
+                  name: available_from
+                  type: DATE
+              - column:
+                  name: furnishing_status
+                  type: VARCHAR(20)
+              - column:
+                  name: utilities_included
+                  type: JSONB
+              - column:
+                  name: pet_policy
+                  type: VARCHAR(20)
+              - column:
+                  name: smoking_allowed
+                  type: BOOLEAN
+              - column:
+                  name: rental_advertisement_active
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  # FK to leases will be added in 039 after leases table exists
+                  name: active_lease_id
+                  type: BIGINT

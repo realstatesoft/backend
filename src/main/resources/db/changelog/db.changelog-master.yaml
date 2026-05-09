@@ -142,4 +142,47 @@ databaseChangeLog:
   - include:
       file: changelogs/037-add-unique-alert-match-constraint.yaml
       relativeToChangelogFile: true
+  # Rental Management Module - DB Migrations
+  - include:
+      file: changelogs/038-add-rental-columns-to-properties.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/039-create-leases-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/040-create-rental-applications-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/041-create-rental-installments-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/042-create-lease-payments-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/043-create-recurring-charges-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/044-create-tenant-screenings-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/045-add-esignature-to-leases.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/046-create-vendors-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/047-create-maintenance-tables.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/048-create-property-inspections-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/049-create-lease-conversations-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/050-create-ledger-entries-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/051-add-notification-preferences.yaml
+      relativeToChangelogFile: true
 

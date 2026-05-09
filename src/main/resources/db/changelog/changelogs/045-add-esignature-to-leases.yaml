@@ -1,0 +1,27 @@
+databaseChangeLog:
+  # OR-234: [BE] Migracion DB: campos de firma digital en tabla Lease
+  - changeSet:
+      id: 045-add-esignature-to-leases
+      author: openroof
+      changes:
+        - addColumn:
+            tableName: leases
+            columns:
+              - column:
+                  name: signature_token_landlord
+                  type: UUID
+              - column:
+                  name: signature_token_tenant
+                  type: UUID
+              - column:
+                  name: signature_token_expires_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: signed_by_landlord_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: signed_by_tenant_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: signature_audit_trail
+                  type: JSONB
