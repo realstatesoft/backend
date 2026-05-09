@@ -9,7 +9,6 @@ import com.openroof.openroof.exception.InvalidConfigurationException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.config.SystemConfig;
 import com.openroof.openroof.repository.SystemConfigRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

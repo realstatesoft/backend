@@ -124,7 +124,10 @@ class PropertyServiceCrudFlowTest {
                 "Casa inicial",
                 "Descripcion",
                 PropertyType.HOUSE,
-                null,
+                null, // category
+                null, // listingType (new)
+                null, // rentAmount (new)
+                null, // rentCurrency (new)
                 "Calle 1",
                 null,
                 null,
@@ -159,7 +162,10 @@ class PropertyServiceCrudFlowTest {
                 "Casa modificada",
                 null,
                 null,
-                null,
+                null, // category
+                null, // listingType (new)
+                null, // rentAmount (new)
+                null, // rentCurrency (new)
                 null,
                 null,
                 null,
@@ -234,6 +240,9 @@ class PropertyServiceCrudFlowTest {
                 null,
                 null,
                 BigDecimal.ONE,
+                "SALE",
+                null,
+                null,
                 null,
                 null,
                 null,

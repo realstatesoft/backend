@@ -38,6 +38,9 @@ public class PropertyMapper {
                 g != null ? g.getLat() : null,
                 g != null ? g.getLng() : null,
                 p.getPrice(),
+                enumName(p.getListingType()),
+                p.getRentAmount(),
+                p.getRentCurrency(),
                 p.getBedrooms(),
                 p.getBathrooms(),
                 p.getHalfBathrooms(),
@@ -127,6 +130,9 @@ public class PropertyMapper {
                 .description(req.description())
                 .propertyType(req.propertyType())
                 .category(req.category())
+                .listingType(req.listingType())
+                .rentAmount(req.rentAmount())
+                .rentCurrency(req.rentCurrency())
                 .address(req.address())
                 .price(req.price());
 
@@ -217,6 +223,12 @@ public class PropertyMapper {
             property.setAvailability(req.availability());
         if (req.visibility() != null)
             property.setVisibility(req.visibility());
+        if (req.listingType() != null)
+            property.setListingType(req.listingType());
+        if (req.rentAmount() != null)
+            property.setRentAmount(req.rentAmount());
+        if (req.rentCurrency() != null)
+            property.setRentCurrency(req.rentCurrency());
 
         // GeoLocation
         if (req.lat() != null && req.lng() != null) {

@@ -89,11 +89,13 @@ public class TenantScreening extends BaseEntity {
     }
 
     public ScreeningRecommendation autoRecommend() {
+        if (backgroundCheckStatus == null || creditScore == null) {
+            return ScreeningRecommendation.REVIEW;
+        }
         if (backgroundCheckStatus == BackgroundCheckStatus.FAILED) {
             return ScreeningRecommendation.REJECT;
         }
-        if (backgroundCheckStatus == BackgroundCheckStatus.FLAGGED
-                || (creditScore != null && creditScore < 580)) {
+        if (backgroundCheckStatus == BackgroundCheckStatus.FLAGGED || creditScore < 580) {
             return ScreeningRecommendation.REVIEW;
         }
         return ScreeningRecommendation.APPROVE;

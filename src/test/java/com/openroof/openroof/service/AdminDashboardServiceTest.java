@@ -1,7 +1,6 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.model.enums.PropertyStatus;
-import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;

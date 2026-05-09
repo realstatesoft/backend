@@ -23,5 +23,6 @@ public class NotificationPreference {
     private NotificationPreferenceId id;
 
     @Column(name = "is_enabled", nullable = false)
-    private Boolean isEnabled;
+    @Builder.Default
+    private boolean isEnabled = true;
 }

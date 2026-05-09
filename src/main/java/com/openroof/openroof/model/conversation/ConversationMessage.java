@@ -64,6 +64,9 @@ public class ConversationMessage {
     private LocalDateTime sentAt;
 
     public boolean isReadBy(Long userId) {
-        return readBy != null && readBy.containsKey(String.valueOf(userId));
+        if (userId == null) {
+            return false;
+        }
+        return readBy != null && readBy.containsKey(userId.toString());
     }
 }

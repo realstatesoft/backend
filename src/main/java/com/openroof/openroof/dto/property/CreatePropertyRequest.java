@@ -18,6 +18,11 @@ public record CreatePropertyRequest(
 
         PropertyCategory category,
 
+        ListingType listingType,
+
+        @DecimalMin(value = "0.0", inclusive = false, message = "El alquiler debe ser mayor a 0") BigDecimal rentAmount,
+
+        @Size(max = 3, message = "La moneda debe tener máximo 3 caracteres") String rentCurrency,
         // ─── Ubicación ────────────────────────────────────────────────
         @NotBlank(message = "La dirección es obligatoria") @Size(max = 500, message = "La dirección no puede exceder 500 caracteres") String address,
 
@@ -71,4 +76,12 @@ public record CreatePropertyRequest(
         @Valid List<PropertyMediaDto> media,
 
         List<Long> exteriorFeatureIds) {
+
+    @AssertTrue(message = "rentCurrency es obligatorio cuando listingType es RENT y rentAmount está presente")
+    public boolean isRentCurrencyValid() {
+        if (listingType == ListingType.RENT && rentAmount != null) {
+            return rentCurrency != null && !rentCurrency.isBlank();
+        }
+        return true;
+    }
 }

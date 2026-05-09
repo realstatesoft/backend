@@ -753,7 +753,7 @@ public class PropertyService {
 
     @Transactional
     public void removeHighlight(Long propertyId) {
-        Property property = findPropertyOrThrow(propertyId);
+        findPropertyOrThrow(propertyId);
         LocalDateTime now = LocalDateTime.now();
         highlightRepository
                 .findFirstByProperty_IdAndHighlightedUntilAfterOrderByHighlightedUntilDesc(propertyId, now)

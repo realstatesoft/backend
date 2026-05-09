@@ -107,11 +107,20 @@ public class LedgerEntry extends BaseEntity {
     }
 
     public static LedgerEntry fromWorkOrder(WorkOrder workOrder) {
+        Lease lease = workOrder.getMaintenanceRequest().getLease();
+        if (lease == null) {
+            throw new IllegalArgumentException("lease is required for LedgerEntry from WorkOrder id=" + workOrder.getId());
+        }
+
         BigDecimal amount = workOrder.getFinalAmount() != null
                 ? workOrder.getFinalAmount()
                 : workOrder.getQuotedAmount();
+        if (amount == null) {
+            throw new IllegalArgumentException("amount is required for LedgerEntry from WorkOrder id=" + workOrder.getId());
+        }
+
         return LedgerEntry.builder()
-                .lease(workOrder.getMaintenanceRequest().getLease())
+                .lease(lease)
                 .property(workOrder.getMaintenanceRequest().getProperty())
                 .date(workOrder.getCompletedDate() != null
                         ? workOrder.getCompletedDate().toLocalDate()

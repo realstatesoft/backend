@@ -49,3 +49,11 @@ databaseChangeLog:
                   # FK to leases will be added in 039 after leases table exists
                   name: active_lease_id
                   type: BIGINT
+
+  - changeSet:
+      id: 038b-add-rent-currency-constraint
+      author: openroof
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE properties ADD CONSTRAINT ck_properties_rent_currency CHECK (listing_type != 'RENT' OR (rent_amount IS NULL OR rent_currency IS NOT NULL))

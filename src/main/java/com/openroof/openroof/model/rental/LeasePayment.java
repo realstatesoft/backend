@@ -92,7 +92,7 @@ public class LeasePayment extends BaseEntity {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
-    @Column(name = "idempotency_key", unique = true, length = 255)
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 255)
     private String idempotencyKey;
 
     public boolean isCompleted() {
@@ -101,5 +101,20 @@ public class LeasePayment extends BaseEntity {
 
     public boolean isRefundable() {
         return LeasePaymentStatus.COMPLETED == status && paidAt != null;
+    }
+
+    public void markAsCompleted() {
+        this.status = LeasePaymentStatus.COMPLETED;
+        if (this.paidAt == null) {
+            this.paidAt = LocalDateTime.now();
+        }
+    }
+
+    @jakarta.persistence.PrePersist
+    @jakarta.persistence.PreUpdate
+    protected void onPreSave() {
+        if (LeasePaymentStatus.COMPLETED == status && paidAt == null) {
+            this.paidAt = LocalDateTime.now();
+        }
     }
 }

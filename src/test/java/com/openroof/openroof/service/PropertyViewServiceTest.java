@@ -50,25 +50,9 @@ class PropertyViewServiceTest {
     @Mock private jakarta.servlet.http.HttpServletRequest request;
     @Mock private jakarta.servlet.http.HttpSession session;
 
-    private PropertyService propertyService;
 
     @BeforeEach
     void setUp() {
-        propertyService = new PropertyService(
-                propertyRepository,
-                propertyViewRepository,
-                userRepository,
-                locationRepository,
-                agentProfileRepository,
-                exteriorFeatureRepository,
-                interiorFeatureRepository,
-                highlightRepository,
-                paymentRepository,
-                propertyMapper,
-                notificationService,
-                auditService,
-                userPreferenceRepository,
-                propertyRelevanceService);
     }
 
     @InjectMocks

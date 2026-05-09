@@ -75,13 +75,14 @@ databaseChangeLog:
                   name: paid_amount
                   type: NUMERIC(12, 2)
                   defaultValueNumeric: 0
-              - column:
-                  name: balance
-                  type: NUMERIC(12, 2)
+                  constraints:
+                    nullable: false
               - column:
                   name: late_fee
                   type: NUMERIC(12, 2)
                   defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
               - column:
                   name: status
                   type: VARCHAR(20)
@@ -93,6 +94,10 @@ databaseChangeLog:
               - column:
                   name: invoice_pdf_url
                   type: VARCHAR(500)
+        - addUniqueConstraint:
+            tableName: rental_installments
+            columnNames: lease_id, installment_number
+            constraintName: uq_rental_installments_lease_installment
         - addForeignKeyConstraint:
             baseTableName: rental_installments
             baseColumnNames: lease_id

@@ -66,14 +66,13 @@ public class RentalInstallment extends BaseEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "paid_amount", precision = 12, scale = 2)
-    private BigDecimal paidAmount;
+    @Column(name = "paid_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal paidAmount = BigDecimal.ZERO;
 
-    @Column(name = "balance", precision = 12, scale = 2)
-    private BigDecimal balance;
-
-    @Column(name = "late_fee", precision = 12, scale = 2)
-    private BigDecimal lateFee;
+    @Column(name = "late_fee", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal lateFee = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
