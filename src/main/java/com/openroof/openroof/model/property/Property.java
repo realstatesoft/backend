@@ -116,8 +116,9 @@ public class Property extends BaseEntity {
         @Column(name = "utilities_included", columnDefinition = "jsonb")
         private List<String> utilitiesIncluded;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "pet_policy", length = 20)
-        private String petPolicy;
+        private PetPolicy petPolicy;
 
         @Column(name = "smoking_allowed")
         private Boolean smokingAllowed;
