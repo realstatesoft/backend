@@ -26,4 +26,5 @@ public record TenantScreeningResponse(
         LocalDateTime runAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
+        
 ) {}
