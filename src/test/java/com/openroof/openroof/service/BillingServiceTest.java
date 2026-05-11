@@ -71,6 +71,18 @@ class BillingServiceTest {
         lease.setId(42L);
     }
 
+    private void stubDefaultInstallmentGeneration(List<RecurringCharge> charges) {
+        when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
+        when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
+                .thenReturn(charges);
+        when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private void stubDefaultInstallmentGeneration() {
+        stubDefaultInstallmentGeneration(List.of());
+    }
+
     @Nested
     @DisplayName("generateInstallments")
     class GenerateInstallments {
@@ -78,11 +90,7 @@ class BillingServiceTest {
         @Test
         @DisplayName("FIXED_TERM de 12 meses genera exactamente 12 cuotas")
         void fixedTerm12MonthsGenerates12Installments() {
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -94,11 +102,7 @@ class BillingServiceTest {
         @Test
         @DisplayName("Todas las cuotas se crean en estado PENDING con paidAmount en ZERO")
         void allInstallmentsCreatedAsPending() {
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -112,11 +116,7 @@ class BillingServiceTest {
         @Test
         @DisplayName("invoiceNumber con formato INV-{leaseId}-{nnn}")
         void invoiceNumberFormat() {
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -140,11 +140,7 @@ class BillingServiceTest {
         @Test
         @DisplayName("Genera un LedgerEntry por cada cuota")
         void generatesLedgerEntryPerInstallment() {
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             billingService.generateInstallments(lease);
 
@@ -161,6 +157,20 @@ class BillingServiceTest {
             assertThat(first.getDescription()).contains("Cuota #1");
             assertThat(first.getDescription()).contains("Test Property");
         }
+
+        @Test
+        @DisplayName("LedgerEntry description usa fallback si property title es null")
+        void ledgerEntryFallbackWhenTitleNull() {
+            property.setTitle(null);
+            stubDefaultInstallmentGeneration();
+
+            billingService.generateInstallments(lease);
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<List<LedgerEntry>> captor = ArgumentCaptor.forClass(List.class);
+            verify(ledgerEntryRepository).saveAll(captor.capture());
+            assertThat(captor.getValue().get(0).getDescription()).contains("Property #100");
+        }
     }
 
     @Nested
@@ -171,11 +181,7 @@ class BillingServiceTest {
         @DisplayName("Primer mes prorrateado si moveInDate no es el dia 1")
         void proratesWhenMoveInDateNotFirstOfMonth() {
             lease.setMoveInDate(LocalDate.of(2026, 6, 15));
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -191,11 +197,7 @@ class BillingServiceTest {
         @DisplayName("Monto prorrateado correcto: moveInDate = dia 15 de mes 30")
         void proratedAmountCorrect() {
             lease.setMoveInDate(LocalDate.of(2026, 6, 15));
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -212,11 +214,7 @@ class BillingServiceTest {
         void noProrateWhenMoveInDateIsNull() {
             lease.setMoveInDate(null);
             lease.setStartDate(LocalDate.of(2026, 6, 1));
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -231,11 +229,7 @@ class BillingServiceTest {
         @Test
         @DisplayName("dueDate calculado como el dia dueDay del mes")
         void dueDateCalculatedFromDueDay() {
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -248,11 +242,7 @@ class BillingServiceTest {
             lease.setStartDate(LocalDate.of(2026, 2, 1));
             lease.setEndDate(LocalDate.of(2026, 2, 28));
             lease.setDueDay(31);
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -263,11 +253,7 @@ class BillingServiceTest {
         @DisplayName("dueDay por defecto es 1 si no se especifica")
         void dueDayDefaultsTo1() {
             lease.setDueDay(null);
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -297,11 +283,7 @@ class BillingServiceTest {
                     .isActive(true)
                     .build();
 
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of(parking, expenses));
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration(List.of(parking, expenses));
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -323,19 +305,8 @@ class BillingServiceTest {
                     .startDate(LocalDate.of(2026, 1, 1))
                     .isActive(true)
                     .build();
-            RecurringCharge inactive = RecurringCharge.builder()
-                    .description("internet")
-                    .amount(new BigDecimal("20000"))
-                    .frequency(BillingFrequency.MONTHLY)
-                    .startDate(LocalDate.of(2026, 1, 1))
-                    .isActive(false)
-                    .build();
 
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of(active));
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration(List.of(active));
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -353,11 +324,7 @@ class BillingServiceTest {
         void monthToMonthGenerates12Installments() {
             lease.setLeaseType(LeaseType.MONTH_TO_MONTH);
             lease.setEndDate(LocalDate.of(2027, 5, 31));
-            when(installmentRepository.existsByLeaseId(42L)).thenReturn(false);
-            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
-                    .thenReturn(List.of());
-            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            stubDefaultInstallmentGeneration();
 
             List<RentalInstallment> result = billingService.generateInstallments(lease);
 
@@ -426,6 +393,77 @@ class BillingServiceTest {
         void fixedTermMonthlyReturnsMonthsBetween() {
             int periods = billingService.calculateTotalPeriods(lease);
             assertThat(periods).isEqualTo(12);
+        }
+
+        @Test
+        @DisplayName("BillingFrequency.WEEKLY lanza IllegalArgumentException")
+        void weeklyThrowsException() {
+            lease.setBillingFrequency(BillingFrequency.WEEKLY);
+
+            assertThatThrownBy(() -> billingService.calculateTotalPeriods(lease))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("WEEKLY");
+        }
+
+        @Test
+        @DisplayName("FIXED_TERM con billing BIMONTHLY divide periodos correctamente")
+        void bimonthlyDividesCorrectly() {
+            lease.setBillingFrequency(BillingFrequency.BIMONTHLY);
+            int periods = billingService.calculateTotalPeriods(lease);
+            assertThat(periods).isEqualTo(6);
+        }
+
+        @Test
+        @DisplayName("FIXED_TERM con billing QUARTERLY divide periodos correctamente")
+        void quarterlyDividesCorrectly() {
+            lease.setBillingFrequency(BillingFrequency.QUARTERLY);
+            int periods = billingService.calculateTotalPeriods(lease);
+            assertThat(periods).isEqualTo(4);
+        }
+    }
+
+    @Nested
+    @DisplayName("calculatePeriodEnd")
+    class CalculatePeriodEnd {
+
+        @Test
+        @DisplayName("BIMONTHLY frequency spans 2 months")
+        void bimonthlySpansTwoMonths() {
+            LocalDate result = billingService.calculatePeriodEnd(
+                    LocalDate.of(2026, 6, 1), LeaseType.FIXED_TERM,
+                    LocalDate.of(2027, 5, 31), BillingFrequency.BIMONTHLY, false);
+
+            assertThat(result).isEqualTo(LocalDate.of(2026, 7, 31));
+        }
+
+        @Test
+        @DisplayName("QUARTERLY frequency spans 3 months")
+        void quarterlySpansThreeMonths() {
+            LocalDate result = billingService.calculatePeriodEnd(
+                    LocalDate.of(2026, 6, 1), LeaseType.FIXED_TERM,
+                    LocalDate.of(2027, 5, 31), BillingFrequency.QUARTERLY, false);
+
+            assertThat(result).isEqualTo(LocalDate.of(2026, 8, 31));
+        }
+
+        @Test
+        @DisplayName("last period returns lease end date for FIXED_TERM")
+        void lastPeriodReturnsLeaseEndDate() {
+            LocalDate result = billingService.calculatePeriodEnd(
+                    LocalDate.of(2027, 5, 1), LeaseType.FIXED_TERM,
+                    LocalDate.of(2027, 5, 31), BillingFrequency.MONTHLY, true);
+
+            assertThat(result).isEqualTo(LocalDate.of(2027, 5, 31));
+        }
+
+        @Test
+        @DisplayName("MONTH_TO_MONTH last period does not return lease end date")
+        void monthToMonthLastPeriodUsesFrequency() {
+            LocalDate result = billingService.calculatePeriodEnd(
+                    LocalDate.of(2026, 6, 1), LeaseType.MONTH_TO_MONTH,
+                    LocalDate.of(2027, 5, 31), BillingFrequency.MONTHLY, true);
+
+            assertThat(result).isEqualTo(LocalDate.of(2026, 6, 30));
         }
     }
 

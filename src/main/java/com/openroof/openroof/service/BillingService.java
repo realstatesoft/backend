@@ -14,6 +14,7 @@ import com.openroof.openroof.repository.RecurringChargeRepository;
 import com.openroof.openroof.repository.RentalInstallmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +45,16 @@ public class BillingService {
                     "Installments already generated for lease id=" + lease.getId());
         }
 
-        List<RentalInstallment> installments = buildInstallments(lease);
-        List<RentalInstallment> saved = installmentRepository.saveAll(installments);
+        List<RecurringCharge> charges = recurringChargeRepository
+                .findByLeaseIdAndIsActiveTrue(lease.getId());
+        List<RentalInstallment> installments = buildInstallments(lease, charges);
+        List<RentalInstallment> saved;
+        try {
+            saved = installmentRepository.saveAll(installments);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException(
+                    "Installments already generated for lease id=" + lease.getId(), e);
+        }
 
         List<LedgerEntry> ledgerEntries = buildLedgerEntries(lease, saved);
         ledgerEntryRepository.saveAll(ledgerEntries);
@@ -73,12 +82,14 @@ public class BillingService {
         int nextNumber = last.getInstallmentNumber() + 1;
 
         List<RentalInstallment> newInstallments = new ArrayList<>();
+        List<RecurringCharge> charges = recurringChargeRepository
+                .findByLeaseIdAndIsActiveTrue(lease.getId());
         for (int i = 0; i < additionalMonths; i++) {
             YearMonth ym = YearMonth.from(periodStart);
             LocalDate periodEnd = ym.atEndOfMonth();
 
             RentalInstallment inst = buildSingleInstallment(
-                    lease, nextNumber + i, periodStart, periodEnd);
+                    lease, nextNumber + i, periodStart, periodEnd, charges);
             newInstallments.add(inst);
 
             periodStart = ym.plusMonths(1).atDay(1);
@@ -94,7 +105,8 @@ public class BillingService {
         return saved;
     }
 
-    private List<RentalInstallment> buildInstallments(Lease lease) {
+    private List<RentalInstallment> buildInstallments(Lease lease,
+                                                       List<RecurringCharge> charges) {
         int totalPeriods = calculateTotalPeriods(lease);
         List<RentalInstallment> installments = new ArrayList<>(totalPeriods);
 
@@ -111,13 +123,16 @@ public class BillingService {
                     lease.getEndDate(), frequency, i == totalPeriods);
 
             RentalInstallment inst = buildSingleInstallment(
-                    lease, i, periodStart, periodEnd);
+                    lease, i, periodStart, periodEnd, charges);
 
             if (i == 1 && proratedFirstMonth) {
                 BigDecimal proratedRent = calculateProratedRent(
                         lease.getMonthlyRent(), lease.getMoveInDate());
                 inst.setBaseRent(proratedRent);
-                inst.setTotalAmount(proratedRent.add(sumOtherCharges(lease, inst)));
+
+                BigDecimal otherChargesSum = sumActiveRecurringChargeAmounts(
+                        charges, periodStart, periodEnd);
+                inst.setTotalAmount(proratedRent.add(otherChargesSum));
             }
 
             installments.add(inst);
@@ -129,9 +144,12 @@ public class BillingService {
 
     private RentalInstallment buildSingleInstallment(Lease lease, int number,
                                                      LocalDate periodStart,
-                                                     LocalDate periodEnd) {
-        BigDecimal otherChargesAmount = sumActiveRecurringChargeAmounts(lease, periodStart, periodEnd);
-        Map<String, Object> otherChargesMap = buildOtherChargesMap(lease, periodStart, periodEnd);
+                                                     LocalDate periodEnd,
+                                                     List<RecurringCharge> charges) {
+        BigDecimal otherChargesAmount = sumActiveRecurringChargeAmounts(
+                charges, periodStart, periodEnd);
+        Map<String, Object> otherChargesMap = buildOtherChargesMap(
+                charges, periodStart, periodEnd);
         BigDecimal totalAmount = lease.getMonthlyRent().add(otherChargesAmount);
 
         return RentalInstallment.builder()
@@ -153,11 +171,8 @@ public class BillingService {
     private List<LedgerEntry> buildLedgerEntries(Lease lease,
                                                   List<RentalInstallment> installments) {
         List<LedgerEntry> entries = new ArrayList<>(installments.size());
+        String propertyTitle = resolvePropertyTitle(lease);
         for (RentalInstallment inst : installments) {
-            String propertyTitle = lease.getProperty() != null
-                    ? lease.getProperty().getTitle()
-                    : "Property #" + lease.getProperty().getId();
-
             entries.add(LedgerEntry.builder()
                     .lease(lease)
                     .property(lease.getProperty())
@@ -171,6 +186,21 @@ public class BillingService {
                     .build());
         }
         return entries;
+    }
+
+    private String resolvePropertyTitle(Lease lease) {
+        if (lease.getProperty() == null) {
+            return "Property unknown";
+        }
+        String title = lease.getProperty().getTitle();
+        if (title != null && !title.isBlank()) {
+            return title;
+        }
+        Long propertyId = lease.getProperty().getId();
+        if (propertyId != null) {
+            return "Property #" + propertyId;
+        }
+        return "Property unknown";
     }
 
     int calculateTotalPeriods(Lease lease) {
@@ -205,11 +235,12 @@ public class BillingService {
         int monthsToAdd = monthsPerFrequency(frequency);
         YearMonth nextYm = ym.plusMonths(monthsToAdd);
 
-        if (leaseType == LeaseType.FIXED_TERM && !nextYm.atEndOfMonth().isBefore(leaseEndDate)) {
+        if (leaseType == LeaseType.FIXED_TERM
+                && !nextYm.minusMonths(1).atEndOfMonth().isBefore(leaseEndDate)) {
             return leaseEndDate;
         }
 
-        return ym.atEndOfMonth();
+        return nextYm.minusMonths(1).atEndOfMonth();
     }
 
     LocalDate calculateDueDate(LocalDate periodStart, Integer dueDay) {
@@ -236,17 +267,9 @@ public class BillingService {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    BigDecimal sumOtherCharges(Lease lease, RentalInstallment installment) {
-        return sumActiveRecurringChargeAmounts(lease,
-                installment.getPeriodStart(), installment.getPeriodEnd());
-    }
-
-    private BigDecimal sumActiveRecurringChargeAmounts(Lease lease,
+    private BigDecimal sumActiveRecurringChargeAmounts(List<RecurringCharge> charges,
                                                         LocalDate periodStart,
                                                         LocalDate periodEnd) {
-        List<RecurringCharge> charges = recurringChargeRepository
-                .findByLeaseIdAndIsActiveTrue(lease.getId());
-
         BigDecimal total = BigDecimal.ZERO;
         for (RecurringCharge charge : charges) {
             if (isChargeActiveInPeriod(charge, periodStart, periodEnd)) {
@@ -256,12 +279,9 @@ public class BillingService {
         return total;
     }
 
-    private Map<String, Object> buildOtherChargesMap(Lease lease,
+    private Map<String, Object> buildOtherChargesMap(List<RecurringCharge> charges,
                                                       LocalDate periodStart,
                                                       LocalDate periodEnd) {
-        List<RecurringCharge> charges = recurringChargeRepository
-                .findByLeaseIdAndIsActiveTrue(lease.getId());
-
         Map<String, Object> map = new HashMap<>();
         for (RecurringCharge charge : charges) {
             if (isChargeActiveInPeriod(charge, periodStart, periodEnd)) {
@@ -299,7 +319,8 @@ public class BillingService {
 
     private int monthsPerFrequency(BillingFrequency frequency) {
         return switch (frequency) {
-            case WEEKLY -> 0; // approx, handled differently
+            case WEEKLY -> throw new IllegalArgumentException(
+                    "BillingFrequency.WEEKLY is not supported for installment generation");
             case MONTHLY -> 1;
             case BIMONTHLY -> 2;
             case QUARTERLY -> 3;

@@ -33,8 +33,9 @@ public class LeaseService {
                     "Lease must be signed by both parties before activation");
         }
 
-        if (lease.getStatus() == LeaseStatus.ACTIVE) {
-            throw new BadRequestException("Lease is already active");
+        if (lease.getStatus() != LeaseStatus.PENDING_SIGNATURE) {
+            throw new BadRequestException(
+                    "Lease can only be activated from PENDING_SIGNATURE status");
         }
 
         lease.setStatus(LeaseStatus.ACTIVE);
