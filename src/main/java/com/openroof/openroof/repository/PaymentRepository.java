@@ -34,7 +34,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @EntityGraph(attributePaths = "user")
     Page<Payment> findByUser_IdAndStatus(Long userId, PaymentStatus status, Pageable pageable);
 
-    java.util.Optional<Payment> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
+    java.util.Optional<Payment> findFirstByUser_IdAndStatusOrderByCreatedAtDesc(Long userId, PaymentStatus status);
 
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.user.id = :userId AND p.status = :status AND p.createdAt >= :since")
     BigDecimal sumCompletedByUserSince(@Param("userId") Long userId, @Param("status") PaymentStatus status, @Param("since") LocalDateTime since);

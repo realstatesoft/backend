@@ -22,7 +22,7 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
     @Query("SELECT l FROM Lease l WHERE l.primaryTenant.id = :tenantId AND l.status = :status AND l.startDate <= :now AND l.endDate >= :now")
     java.util.Optional<Lease> findActiveByTenantId(@Param("tenantId") Long tenantId, @Param("status") LeaseStatus status, @Param("now") LocalDate now);
 
-    java.util.Optional<Lease> findFirstByPrimaryTenantIdAndStatus(Long tenantId, LeaseStatus status);
+    java.util.Optional<Lease> findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(Long tenantId, LeaseStatus status);
 
     @Query("""
            SELECT l FROM Lease l

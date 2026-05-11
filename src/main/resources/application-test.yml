@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   # Override the .env import so production credentials don't bleed into tests
   config:
     import: ""
@@ -15,9 +15,6 @@
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
     open-in-view: false
 
   liquibase:

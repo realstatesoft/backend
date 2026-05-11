@@ -48,7 +48,7 @@ public class TenantDashboardService {
         Long tenantId = tenant.getId();
 
         // Buscar lease activo del tenant
-        Optional<Lease> activeLeaseOpt = leaseRepository.findFirstByPrimaryTenantIdAndStatus(tenantId, LeaseStatus.ACTIVE);
+        Optional<Lease> activeLeaseOpt = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenantId, LeaseStatus.ACTIVE);
 
         if (activeLeaseOpt.isEmpty()) {
             return buildInactiveResponse(messageRepository.countUnreadByUserId(tenantId));
@@ -134,7 +134,7 @@ public class TenantDashboardService {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatus(tenant.getId(), LeaseStatus.ACTIVE)
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
 
         LocalDate today = LocalDate.now();

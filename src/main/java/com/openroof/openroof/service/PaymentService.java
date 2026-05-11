@@ -111,6 +111,14 @@ public class PaymentService {
         return toResponse(paymentRepository.save(payment));
     }
 
+    @Transactional
+    public PaymentResponse completePayment(Long id) {
+        Payment payment = getPaymentOrThrow(id);
+        validateTransition(payment.getStatus(), PaymentStatus.COMPLETED);
+        payment.setStatus(PaymentStatus.COMPLETED);
+        return toResponse(paymentRepository.save(payment));
+    }
+
     private void validateMetadata(PaymentType type, PaymentMetadata metadata) {
         if (type == PaymentType.PROPERTY_HIGHLIGHT) {
             if (metadata == null || metadata.getPropertyId() == null || metadata.getHighlightDays() == null) {

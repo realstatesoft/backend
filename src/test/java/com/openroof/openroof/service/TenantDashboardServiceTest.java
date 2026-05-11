@@ -53,8 +53,8 @@ class TenantDashboardServiceTest {
     @DisplayName("getDashboard() - Usuario sin lease activo → retorna status INACTIVE")
     void getDashboard_noActiveLease_returnsInactive() {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
-        when(messageRepository.countUnreadByUserId(32L)).thenReturn(0L);
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(messageRepository.countUnreadByUserId(testUser.getId())).thenReturn(0L);
 
         TenantDashboardResponse response = tenantDashboardService.getDashboard(testEmail);
 
@@ -81,19 +81,19 @@ class TenantDashboardServiceTest {
                 .build();
         lease.setId(100L);
 
-        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
         when(rentalInstallmentRepository.sumPendingBalanceByLeaseId(eq(100L), any())).thenReturn(new BigDecimal("500"));
-        when(maintenanceRequestRepository.countByTenantIdAndStatusIn(eq(32L), any())).thenReturn(2L);
-        when(messageRepository.countUnreadByUserId(32L)).thenReturn(5L);
-        when(paymentRepository.sumCompletedByUserSince(eq(32L), any(com.openroof.openroof.model.enums.PaymentStatus.class), any())).thenReturn(new BigDecimal("12000"));
+        when(maintenanceRequestRepository.countByTenantIdAndStatusIn(eq(testUser.getId()), any())).thenReturn(2L);
+        when(messageRepository.countUnreadByUserId(testUser.getId())).thenReturn(5L);
+        when(paymentRepository.sumCompletedByUserSince(eq(testUser.getId()), any(com.openroof.openroof.model.enums.PaymentStatus.class), any())).thenReturn(new BigDecimal("12000"));
         
         // Mock para buildLastPaymentInfo
         org.springframework.data.domain.Page<com.openroof.openroof.model.payment.Payment> paymentPage = new org.springframework.data.domain.PageImpl<>(java.util.List.of());
-        when(paymentRepository.findByUser_IdAndStatus(eq(32L), any(), any())).thenReturn(paymentPage);
+        when(paymentRepository.findByUser_IdAndStatus(eq(testUser.getId()), any(), any())).thenReturn(paymentPage);
 
         // Listas vacías para simplificar el mock de repositorios de installments y maintenance
         when(rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateDesc(100L)).thenReturn(List.of());
-        when(maintenanceRequestRepository.findTop5ByTenantIdOrderByCreatedAtDesc(32L)).thenReturn(List.of());
+        when(maintenanceRequestRepository.findTop5ByTenantIdOrderByCreatedAtDesc(testUser.getId())).thenReturn(List.of());
 
         TenantDashboardResponse response = tenantDashboardService.getDashboard(testEmail);
 
@@ -128,7 +128,7 @@ class TenantDashboardServiceTest {
                 .build();
         lease.setId(100L);
 
-        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
 
         com.openroof.openroof.dto.dashboard.TenantLeaseResponse response = tenantDashboardService.getLease(testEmail);
 
@@ -145,7 +145,7 @@ class TenantDashboardServiceTest {
     @DisplayName("getLease() - No existe lease activo → arroja ResourceNotFoundException")
     void getLease_noActiveLease_throwsException() {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> tenantDashboardService.getLease(testEmail))
                 .isInstanceOf(com.openroof.openroof.exception.ResourceNotFoundException.class)

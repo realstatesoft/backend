@@ -4,13 +4,17 @@ databaseChangeLog:
       author: openroof
       context: dev,test
       changes:
-        # 1. Asegurar Landlord (ID 300)
+        # 1. Asegurar Landlord (ID 300) y Tenant (ID 32)
         - sql:
             dbms: postgresql
             sql: |
               INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at, version, onboarding_completed)
               SELECT 300, 'landlord.test@openroof.com', '$2a$10$mC7ms9E7U8z.og.0uA6jbeuO0u5XvGzXj.Esh8N8VfK.S9U6G5Fqy', 'Juan Landlord', 'USER', NOW(), NOW(), 1, TRUE
               WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = 300);
+              
+              INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at, version, onboarding_completed)
+              SELECT 32, 'tenant.dashboard@openroof.com', '$2a$10$mC7ms9E7U8z.og.0uA6jbeuO0u5XvGzXj.Esh8N8VfK.S9U6G5Fqy', 'Test Tenant Dashboard', 'USER', NOW(), NOW(), 1, TRUE
+              WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = 32);
 
         # 2. Crear una Propiedad (si no existe)
         - sql:
@@ -47,3 +51,13 @@ databaseChangeLog:
               INSERT INTO payments (id, user_id, amount, type, concept, status, transaction_code, created_at, updated_at, version)
               SELECT 701, 32, 1200, 'CONTRACT', 'Alquiler Enero 2026', 'COMPLETED', 'TXN-123456', NOW(), NOW(), 1
               WHERE NOT EXISTS (SELECT 1 FROM payments WHERE id = 701);
+
+        # 6. Actualizar secuencias para evitar colisiones
+        - sql:
+            dbms: postgresql
+            sql: |
+              SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
+              SELECT setval('properties_id_seq', (SELECT MAX(id) FROM properties));
+              SELECT setval('leases_id_seq', (SELECT MAX(id) FROM leases));
+              SELECT setval('rental_installments_id_seq', (SELECT MAX(id) FROM rental_installments));
+              SELECT setval('payments_id_seq', (SELECT MAX(id) FROM payments));
