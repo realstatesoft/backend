@@ -14,7 +14,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UserPreferenceController.class)
 @Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
-@ActiveProfiles("test")
 class UserPreferenceControllerTest {
 
     @Autowired
@@ -42,6 +40,8 @@ class UserPreferenceControllerTest {
     @MockitoBean private com.openroof.openroof.security.JwtService jwtService;
     @MockitoBean private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
     @MockitoBean private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    @MockitoBean private com.openroof.openroof.security.PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean private com.openroof.openroof.config.SecurityHeadersFilter securityHeadersFilter;
 
     @Autowired
     private ObjectMapper objectMapper;

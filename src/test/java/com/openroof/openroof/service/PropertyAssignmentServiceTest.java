@@ -43,6 +43,8 @@ class PropertyAssignmentServiceTest {
     private AgentProfileRepository agentProfileRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private PropertyAssignmentService propertyAssignmentService;
@@ -161,6 +163,7 @@ class PropertyAssignmentServiceTest {
             when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(assignedAgentUser));
             when(assignmentRepository.findById(333L)).thenReturn(Optional.of(assignment));
             when(propertyRepository.findById(40L)).thenReturn(Optional.of(property));
+            lenient().when(propertyRepository.findByIdForUpdate(40L)).thenReturn(Optional.of(property));
             when(assignmentRepository.save(any(PropertyAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             PropertyAssignmentResponse response = propertyAssignmentService.accept(333L, "agent@openroof.com");

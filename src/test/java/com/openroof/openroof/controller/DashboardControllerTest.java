@@ -2,8 +2,10 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.ConversionFunnelService;
 import com.openroof.openroof.service.DashboardService;
@@ -61,6 +63,12 @@ class DashboardControllerTest {
 
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {

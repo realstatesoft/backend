@@ -11,6 +11,10 @@ import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.mapper.ContractMapper;
 import com.openroof.openroof.mapper.PropertyMapper;
+import com.openroof.openroof.model.maintenance.MaintenanceRequest;
+import com.openroof.openroof.model.payment.Payment;
+import com.openroof.openroof.model.rental.Lease;
+import com.openroof.openroof.model.rental.RentalInstallment;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +45,11 @@ public class DashboardService {
         private final PropertyViewRepository propertyViewRepository;
         private final OfferRepository offerRepository;
         private final UserRepository userRepository;
+        private final LeaseRepository leaseRepository;
+        private final RentalInstallmentRepository rentalInstallmentRepository;
+        private final MaintenanceRequestRepository maintenanceRequestRepository;
+        private final MessageRepository messageRepository;
+        private final PaymentRepository paymentRepository;
 
         private final PropertyMapper propertyMapper;
         private final ContractMapper contractMapper;
@@ -319,6 +329,131 @@ public class DashboardService {
                                                                         prev.size())));
                 }
                 return result;
+        }
+
+        // ─── Tenant Dashboard ──────────────────────────────────────────────────────
+
+        public TenantDashboardResponse getTenantDashboard(String email) {
+                User user = findUserByEmail(email);
+                Long userId = user.getId();
+
+                // 1. Buscar Lease activo
+                Lease activeLease = leaseRepository.findActiveByTenantId(userId, LocalDate.now())
+                                .orElse(null);
+
+                if (activeLease == null) {
+                        return new TenantDashboardResponse(
+                                        TenantDashboardResponse.TenantStatus.INACTIVE,
+                                        "No tienes un contrato de alquiler activo en este momento.",
+                                        null, null, BigDecimal.ZERO, 0, 
+                                        messageRepository.countUnreadByUserId(userId),
+                                        null, BigDecimal.ZERO, java.util.List.of(), java.util.List.of());
+                }
+
+                // 2. Información del Lease
+                long daysRemaining = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), activeLease.getEndDate());
+                if (daysRemaining < 0) daysRemaining = 0;
+
+                TenantDashboardResponse.ActiveLeaseInfo leaseInfo = new TenantDashboardResponse.ActiveLeaseInfo(
+                                activeLease.getId(),
+                                activeLease.getProperty().getTitle(),
+                                activeLease.getProperty().getAddress(),
+                                activeLease.getLandlord().getName(),
+                                activeLease.getLandlord().getEmail(),
+                                activeLease.getLandlord().getPhone(),
+                                activeLease.getStartDate(),
+                                activeLease.getEndDate(),
+                                daysRemaining,
+                                activeLease.getMonthlyRent(),
+                                activeLease.getCurrency());
+
+                // 3. Próxima cuota
+                RentalInstallment nextInstallment = rentalInstallmentRepository
+                                .findFirstByLease_IdAndStatusNotOrderByDueDateAsc(activeLease.getId(), com.openroof.openroof.model.enums.InstallmentStatus.PAID)
+                                .orElse(null);
+
+                TenantDashboardResponse.NextInstallmentInfo installmentInfo = null;
+                if (nextInstallment != null) {
+                        long daysUntilDue = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), nextInstallment.getDueDate());
+                        installmentInfo = new TenantDashboardResponse.NextInstallmentInfo(
+                                        nextInstallment.getId(),
+                                        nextInstallment.getInstallmentNumber(),
+                                        nextInstallment.getTotalAmount(),
+                                        nextInstallment.getPaidAmount(),
+                                        nextInstallment.getBalance(),
+                                        nextInstallment.getDueDate(),
+                                        nextInstallment.getStatus().name(),
+                                        daysUntilDue);
+                }
+
+                // 4. Balance pendiente total
+                BigDecimal pendingBalance = rentalInstallmentRepository.sumBalanceByLeaseId(activeLease.getId());
+                if (pendingBalance == null) pendingBalance = BigDecimal.ZERO;
+
+                // 5. Tickets de mantenimiento
+                long openTickets = maintenanceRequestRepository.countOpenByTenantId(userId);
+
+                // 6. Mensajes no leídos
+                long unreadMessages = messageRepository.countUnreadByUserId(userId);
+
+                // 7. Último pago
+                Payment lastPayment = paymentRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId)
+                                .orElse(null);
+
+                TenantDashboardResponse.LastPaymentInfo paymentInfo = null;
+                if (lastPayment != null) {
+                        paymentInfo = new TenantDashboardResponse.LastPaymentInfo(
+                                        lastPayment.getId(),
+                                        lastPayment.getAmount(),
+                                        lastPayment.getConcept(),
+                                        lastPayment.getCreatedAt(),
+                                        lastPayment.getTransactionCode());
+                }
+
+                // 8. Total pagado en el último año
+                BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(userId, LocalDateTime.now().minusYears(1));
+                if (totalPaidLastYear == null) totalPaidLastYear = BigDecimal.ZERO;
+
+                // 9. Listas de resumen (Top 2 para el diseño compacto)
+                java.util.List<TenantDashboardResponse.NextInstallmentInfo> recentInstallments = rentalInstallmentRepository
+                                .findTop5ByLeaseIdOrderByDueDateDesc(activeLease.getId())
+                                .stream()
+                                .map(i -> new TenantDashboardResponse.NextInstallmentInfo(
+                                                i.getId(),
+                                                i.getInstallmentNumber(),
+                                                i.getTotalAmount(),
+                                                i.getPaidAmount(),
+                                                i.getTotalAmount().subtract(i.getPaidAmount()),
+                                                i.getDueDate(),
+                                                i.getStatus().name(),
+                                                java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), i.getDueDate())))
+                                .limit(2)
+                                .toList();
+
+                java.util.List<TenantDashboardResponse.MaintenanceTicketInfo> recentMaintenance = maintenanceRequestRepository
+                                .findTop5ByTenantIdOrderByCreatedAtDesc(userId)
+                                .stream()
+                                .map(m -> new TenantDashboardResponse.MaintenanceTicketInfo(
+                                                m.getId(),
+                                                m.getTitle(),
+                                                m.getCategory().name(),
+                                                m.getStatus().name(),
+                                                m.getCreatedAt().toLocalDate()))
+                                .limit(2)
+                                .toList();
+
+                return new TenantDashboardResponse(
+                                TenantDashboardResponse.TenantStatus.ACTIVE,
+                                "Contrato activo",
+                                leaseInfo,
+                                installmentInfo,
+                                pendingBalance,
+                                openTickets,
+                                unreadMessages,
+                                paymentInfo,
+                                totalPaidLastYear,
+                                recentInstallments,
+                                recentMaintenance);
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────────

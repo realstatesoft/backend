@@ -1,6 +1,7 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.repository.ImageRepository;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
@@ -76,6 +77,9 @@ class SecurityEndpointsTest {
     private UserDetailsService userDetailsService;
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setUp() throws Exception {

@@ -16,6 +16,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyAssignment;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentClientRepository;
+import com.openroof.openroof.repository.AgentAgendaRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.PropertyRepository;
@@ -64,6 +65,9 @@ class VisitRequestServiceTest {
     private AgentClientRepository agentClientRepository;
     @Mock
     private ClientInteractionService clientInteractionService;
+
+    @Mock
+    private AgentAgendaRepository agentAgendaRepository;
 
     @Mock
     private EmailService emailService;

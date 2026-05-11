@@ -6,10 +6,12 @@ import com.openroof.openroof.exception.GlobalExceptionHandler;
 import com.openroof.openroof.dto.agent.AgentClientSearchRequest;
 import com.openroof.openroof.dto.agent.UnifiedClientSummaryResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.security.AgentClientSecurity;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentClientService;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +69,12 @@ class AgentClientSearchControllerTest {
 
     @MockitoBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     private static final String API_BASE = "/clients";
 
