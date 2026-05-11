@@ -1,0 +1,21 @@
+databaseChangeLog:
+  # OR-198: [BE] DTOs + Mapper RentalApplication — agregar columnas message y number_of_occupants
+  - changeSet:
+      id: 053-add-message-occupants-to-rental-applications
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: rental_applications
+                columnName: message
+      changes:
+        - addColumn:
+            tableName: rental_applications
+            columns:
+              - column:
+                  name: message
+                  type: TEXT
+              - column:
+                  name: number_of_occupants
+                  type: INTEGER

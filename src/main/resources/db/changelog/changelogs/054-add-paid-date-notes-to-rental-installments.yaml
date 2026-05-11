@@ -1,0 +1,21 @@
+databaseChangeLog:
+  # OR-199: [BE] DTOs + Mapper RentalInstallment — agregar columnas paid_date y notes
+  - changeSet:
+      id: 054-add-paid-date-notes-to-rental-installments
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: rental_installments
+                columnName: paid_date
+      changes:
+        - addColumn:
+            tableName: rental_installments
+            columns:
+              - column:
+                  name: paid_date
+                  type: DATE
+              - column:
+                  name: notes
+                  type: TEXT

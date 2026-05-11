@@ -78,6 +78,12 @@ public class RentalInstallment extends BaseEntity {
     @Column(nullable = false, length = 20)
     private InstallmentStatus status;
 
+    @Column(name = "paid_date")
+    private LocalDate paidDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @Column(name = "invoice_number", length = 50)
     private String invoiceNumber;
 

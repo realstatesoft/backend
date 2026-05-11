@@ -1,0 +1,18 @@
+databaseChangeLog:
+  # OR-197: [BE] DTOs + Mapper Lease — agregar columna activated_at
+  - changeSet:
+      id: 055-add-activated-at-to-leases
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: leases
+                columnName: activated_at
+      changes:
+        - addColumn:
+            tableName: leases
+            columns:
+              - column:
+                  name: activated_at
+                  type: TIMESTAMP
