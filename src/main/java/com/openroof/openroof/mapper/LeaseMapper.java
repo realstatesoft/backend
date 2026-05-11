@@ -9,6 +9,8 @@ import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
 public class LeaseMapper {
 
@@ -47,6 +49,11 @@ public class LeaseMapper {
     }
 
     public Lease toEntity(CreateLeaseRequest dto, Property property, User tenant, User landlord) {
+        Objects.requireNonNull(dto, "dto is required");
+        Objects.requireNonNull(property, "property is required");
+        Objects.requireNonNull(tenant, "tenant is required");
+        Objects.requireNonNull(landlord, "landlord is required");
+
         return Lease.builder()
                 .property(property)
                 .primaryTenant(tenant)
