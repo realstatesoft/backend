@@ -74,6 +74,14 @@ class ExchangeRateControllerTest {
             chain.doFilter(request, response);
             return null;
         }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
     }
 
     @Test

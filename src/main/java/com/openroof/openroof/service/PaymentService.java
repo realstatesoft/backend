@@ -125,7 +125,8 @@ public class PaymentService {
     private void validateTransition(PaymentStatus current, PaymentStatus next) {
         boolean valid = switch (current) {
             case PENDING -> next == PaymentStatus.APPROVED || next == PaymentStatus.REJECTED;
-            case APPROVED, REJECTED -> false;
+            case APPROVED -> next == PaymentStatus.COMPLETED;
+            case COMPLETED, REJECTED -> false;
         };
         if (!valid) {
             throw new BadRequestException("Transición de estado no permitida: " + current + " → " + next);

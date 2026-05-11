@@ -62,6 +62,20 @@ class PropertyFloorPlanControllerTest {
             return null;
         }).when(jwtAuthFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            FilterChain chain = inv.getArgument(2);
+            chain.doFilter(inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            FilterChain chain = inv.getArgument(2);
+            chain.doFilter(inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 
     private PropertyMediaResponse response(Long id) {

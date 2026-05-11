@@ -53,7 +53,8 @@ class TenantDashboardServiceTest {
     @DisplayName("getDashboard() - Usuario sin lease activo → retorna status INACTIVE")
     void getDashboard_noActiveLease_returnsInactive() {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-        when(leaseRepository.findByPrimaryTenantId(32L)).thenReturn(List.of());
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
+        when(messageRepository.countUnreadByUserId(32L)).thenReturn(0L);
 
         TenantDashboardResponse response = tenantDashboardService.getDashboard(testEmail);
 
@@ -80,11 +81,11 @@ class TenantDashboardServiceTest {
                 .build();
         lease.setId(100L);
 
-        when(leaseRepository.findByPrimaryTenantId(32L)).thenReturn(List.of(lease));
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
         when(rentalInstallmentRepository.sumPendingBalanceByLeaseId(eq(100L), any())).thenReturn(new BigDecimal("500"));
         when(maintenanceRequestRepository.countByTenantIdAndStatusIn(eq(32L), any())).thenReturn(2L);
         when(messageRepository.countUnreadByUserId(32L)).thenReturn(5L);
-        when(paymentRepository.sumCompletedByUserSince(eq(32L), any())).thenReturn(new BigDecimal("12000"));
+        when(paymentRepository.sumCompletedByUserSince(eq(32L), any(com.openroof.openroof.model.enums.PaymentStatus.class), any())).thenReturn(new BigDecimal("12000"));
         
         // Mock para buildLastPaymentInfo
         org.springframework.data.domain.Page<com.openroof.openroof.model.payment.Payment> paymentPage = new org.springframework.data.domain.PageImpl<>(java.util.List.of());
@@ -103,5 +104,51 @@ class TenantDashboardServiceTest {
         assertThat(response.openMaintenanceTickets()).isEqualTo(2);
         assertThat(response.unreadMessages()).isEqualTo(5);
         assertThat(response.totalPaidLastYear()).isEqualByComparingTo("12000");
+    }
+
+    @Test
+    @DisplayName("getLease() - Happy path con landlord, property y signature audit")
+    void getLease_returnsLeaseData() {
+        when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+
+        User landlord = User.builder().email("landlord@test.com").name("Landlord Test").phone("1234").build();
+        landlord.setId(55L);
+        Property property = Property.builder().title("Propiedad Test").address("Calle Falsa 123").build();
+        property.setId(88L);
+        
+        Lease lease = Lease.builder()
+                .status(LeaseStatus.ACTIVE)
+                .startDate(LocalDate.now().minusMonths(1))
+                .endDate(LocalDate.now().plusDays(15))
+                .monthlyRent(new BigDecimal("1000"))
+                .currency("USD")
+                .landlord(landlord)
+                .property(property)
+                .signatureAuditTrail(java.util.Map.of("auditPdfUrl", "http://audit.pdf"))
+                .build();
+        lease.setId(100L);
+
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
+
+        com.openroof.openroof.dto.dashboard.TenantLeaseResponse response = tenantDashboardService.getLease(testEmail);
+
+        assertThat(response.daysRemaining()).isEqualTo(15);
+        assertThat(response.landlord().userId()).isEqualTo(55L);
+        assertThat(response.landlord().name()).isEqualTo("Landlord Test");
+        
+        assertThat(response.documents()).hasSize(1);
+        assertThat(response.documents().get(0).type()).isEqualTo("SIGNATURE_AUDIT");
+        assertThat(response.documents().get(0).fileUrl()).isEqualTo("http://audit.pdf");
+    }
+
+    @Test
+    @DisplayName("getLease() - No existe lease activo → arroja ResourceNotFoundException")
+    void getLease_noActiveLease_throwsException() {
+        when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatus(32L, LeaseStatus.ACTIVE)).thenReturn(Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> tenantDashboardService.getLease(testEmail))
+                .isInstanceOf(com.openroof.openroof.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("No tenes un lease activo actualmente");
     }
 }

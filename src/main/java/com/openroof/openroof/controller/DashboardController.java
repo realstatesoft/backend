@@ -53,14 +53,6 @@ public class DashboardController {
                 dashboardService.getOwnerOverview(auth.getName())));
     }
 
-    @GetMapping("/tenant")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Resumen consolidado para el dashboard del inquilino")
-    public ResponseEntity<ApiResponse<TenantDashboardResponse>> getTenantDashboard(Authentication auth) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                dashboardService.getTenantDashboard(auth.getName())));
-    }
-
     @GetMapping("/sales")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Lista de ventas del usuario autenticado")

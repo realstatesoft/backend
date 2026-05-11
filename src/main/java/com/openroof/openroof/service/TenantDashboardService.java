@@ -48,12 +48,10 @@ public class TenantDashboardService {
         Long tenantId = tenant.getId();
 
         // Buscar lease activo del tenant
-        Optional<Lease> activeLeaseOpt = leaseRepository.findByPrimaryTenantId(tenantId).stream()
-                .filter(l -> l.getStatus() == LeaseStatus.ACTIVE)
-                .findFirst();
+        Optional<Lease> activeLeaseOpt = leaseRepository.findFirstByPrimaryTenantIdAndStatus(tenantId, LeaseStatus.ACTIVE);
 
         if (activeLeaseOpt.isEmpty()) {
-            return buildInactiveResponse();
+            return buildInactiveResponse(messageRepository.countUnreadByUserId(tenantId));
         }
 
         Lease lease = activeLeaseOpt.get();
@@ -84,14 +82,16 @@ public class TenantDashboardService {
         LastPaymentInfo lastPayment = buildLastPaymentInfo(tenantId);
 
         // 8. Total pagado en el último año
-        BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(tenantId, LocalDateTime.now().minusYears(1));
+        BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(tenantId, PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidLastYear == null) totalPaidLastYear = BigDecimal.ZERO;
 
         // 9. Listas de resumen (Top 2)
         List<NextInstallmentInfo> recentInstallments = rentalInstallmentRepository
                 .findTop5ByLeaseIdOrderByDueDateDesc(lease.getId())
                 .stream()
-                .map(i -> new NextInstallmentInfo(
+                .map(i -> {
+                    long due = ChronoUnit.DAYS.between(today, i.getDueDate());
+                    return new NextInstallmentInfo(
                         i.getId(),
                         i.getInstallmentNumber(),
                         i.getTotalAmount(),
@@ -99,7 +99,8 @@ public class TenantDashboardService {
                         i.getBalance(),
                         i.getDueDate(),
                         i.getStatus().name(),
-                        ChronoUnit.DAYS.between(today, i.getDueDate())))
+                        due < 0 ? 0 : due);
+                })
                 .limit(2)
                 .toList();
 
@@ -133,9 +134,7 @@ public class TenantDashboardService {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findByPrimaryTenantId(tenant.getId()).stream()
-                .filter(l -> l.getStatus() == LeaseStatus.ACTIVE)
-                .findFirst()
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatus(tenant.getId(), LeaseStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
 
         LocalDate today = LocalDate.now();
@@ -143,6 +142,12 @@ public class TenantDashboardService {
         if (daysRemaining < 0) daysRemaining = 0;
 
         User landlord = lease.getLandlord();
+        if (landlord == null) {
+            throw new IllegalStateException("Landlord not found for leaseId=" + lease.getId());
+        }
+        if (lease.getProperty() == null) {
+            throw new IllegalStateException("Property not found for leaseId=" + lease.getId());
+        }
 
         LandlordContact landlordContact = new LandlordContact(
                 landlord.getId(),
@@ -197,21 +202,18 @@ public class TenantDashboardService {
                     lease.isSigned()));
         }
 
-        if (lease.getSignatureAuditTrail() != null) {
-            Object auditUrl = lease.getSignatureAuditTrail().get("auditPdfUrl");
-            if (auditUrl != null && !auditUrl.toString().isBlank()) {
-                docs.add(new LeaseDocument(
-                        "SIGNATURE_AUDIT",
-                        "Acta de Firmas Digitales",
-                        auditUrl.toString(),
-                        true));
-            }
+        if (lease.getSignatureAuditPdfUrl() != null) {
+            docs.add(new LeaseDocument(
+                    "SIGNATURE_AUDIT",
+                    "Acta de Firmas Digitales",
+                    lease.getSignatureAuditPdfUrl(),
+                    true));
         }
 
         return docs;
     }
 
-    private TenantDashboardResponse buildInactiveResponse() {
+    private TenantDashboardResponse buildInactiveResponse(long unreadMessages) {
         return new TenantDashboardResponse(
                 TenantStatus.INACTIVE,
                 "No tienes un arriendo activo en este momento. Explora nuestras propiedades disponibles para encontrar tu próximo hogar.",
@@ -219,7 +221,7 @@ public class TenantDashboardService {
                 null,
                 BigDecimal.ZERO,
                 0,
-                0,
+                unreadMessages,
                 null,
                 BigDecimal.ZERO,
                 List.of(),
@@ -246,19 +248,17 @@ public class TenantDashboardService {
     }
 
     private NextInstallmentInfo buildNextInstallmentInfo(Long leaseId, LocalDate today) {
-        List<RentalInstallment> installments = rentalInstallmentRepository
-                .findByLeaseIdOrderByDueDateAsc(leaseId);
-
-        Optional<RentalInstallment> nextOpt = installments.stream()
-                .filter(i -> i.getStatus() == InstallmentStatus.PENDING
-                        || i.getStatus() == InstallmentStatus.PARTIAL
-                        || i.getStatus() == InstallmentStatus.OVERDUE)
-                .findFirst();
+        Optional<RentalInstallment> nextOpt = rentalInstallmentRepository
+                .findFirstByLeaseIdAndStatusInOrderByDueDateAsc(
+                        leaseId, 
+                        List.of(InstallmentStatus.PENDING, InstallmentStatus.PARTIAL, InstallmentStatus.OVERDUE)
+                );
 
         if (nextOpt.isEmpty()) return null;
 
         RentalInstallment next = nextOpt.get();
         long daysUntilDue = ChronoUnit.DAYS.between(today, next.getDueDate());
+        if (daysUntilDue < 0) daysUntilDue = 0;
 
         return new NextInstallmentInfo(
                 next.getId(),

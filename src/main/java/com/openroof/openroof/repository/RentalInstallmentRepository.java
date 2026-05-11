@@ -38,8 +38,6 @@ public interface RentalInstallmentRepository extends JpaRepository<RentalInstall
 
     java.util.Optional<RentalInstallment> findFirstByLease_IdAndStatusNotOrderByDueDateAsc(Long leaseId, InstallmentStatus status);
 
-    @Query("SELECT COALESCE(SUM(i.totalAmount - i.paidAmount), 0) FROM RentalInstallment i WHERE i.lease.id = :leaseId AND i.status != 'PAID' AND i.status != 'WAIVED'")
-    BigDecimal sumBalanceByLeaseId(@Param("leaseId") Long leaseId);
-
+    java.util.Optional<RentalInstallment> findFirstByLeaseIdAndStatusInOrderByDueDateAsc(Long leaseId, Collection<InstallmentStatus> statuses);
     List<RentalInstallment> findTop5ByLeaseIdOrderByDueDateDesc(Long leaseId);
 }

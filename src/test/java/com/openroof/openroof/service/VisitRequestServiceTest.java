@@ -265,6 +265,7 @@ class VisitRequestServiceTest {
             verify(visitRepository).save(visitCaptor.capture());
             assertThat(visitCaptor.getValue().getStatus()).isEqualTo(VisitStatus.CONFIRMED);
             assertThat(visitCaptor.getValue().getProperty().getId()).isEqualTo(property.getId());
+            verify(agentAgendaRepository, times(1)).save(any(com.openroof.openroof.model.interaction.AgentAgenda.class));
         }
 
         @Test
@@ -302,6 +303,7 @@ class VisitRequestServiceTest {
             verify(agentClientRepository).save(any(AgentClient.class));
             verify(clientInteractionService, times(2))
                     .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
+            verify(agentAgendaRepository, times(1)).save(any(com.openroof.openroof.model.interaction.AgentAgenda.class));
         }
 
         @Test
@@ -331,6 +333,7 @@ class VisitRequestServiceTest {
             verify(agentClientRepository, never()).save(any(AgentClient.class));
             verify(clientInteractionService)
                     .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
+            verify(agentAgendaRepository, times(1)).save(any(com.openroof.openroof.model.interaction.AgentAgenda.class));
         }
     }
 

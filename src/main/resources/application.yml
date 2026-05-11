@@ -85,12 +85,6 @@ application:
       property-alerts:
         cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
 
-openroof:
-  reservation:
-    ttl-hours: ${RESERVATION_TTL_HOURS:72}
-    default-percent: ${RESERVATION_DEFAULT_PERCENT:1.00}
-
-
 logging:
   level:
     root: INFO

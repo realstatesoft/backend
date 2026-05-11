@@ -32,6 +32,9 @@ class UserPreferenceControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private org.springframework.web.context.WebApplicationContext context;
+
     @MockitoBean
     private UserPreferenceService userPreferenceService;
 
@@ -55,6 +58,27 @@ class UserPreferenceControllerTest {
             chain.doFilter(request, response);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
+
+        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
     }
 
     @Test

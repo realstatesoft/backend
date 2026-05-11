@@ -63,6 +63,20 @@ class AgentSettingsControllerTest {
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(inv -> {
+            ((FilterChain) inv.getArgument(2)).doFilter(
+                    inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            ((FilterChain) inv.getArgument(2)).doFilter(
+                    inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
             ((jakarta.servlet.http.HttpServletResponse) inv.getArgument(1)).setStatus(401);
             return null;
         }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());

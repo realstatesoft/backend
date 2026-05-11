@@ -101,6 +101,25 @@ class AgentClientControllerTest {
                                 any(jakarta.servlet.ServletRequest.class), any(jakarta.servlet.ServletResponse.class), any(jakarta.servlet.FilterChain.class));
 
                 doAnswer(invocation -> {
+                        jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+                        jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+                        jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+                        chain.doFilter(req, res);
+                        return null;
+                }).when(propertyViewRateLimitingFilter).doFilter(
+                                any(jakarta.servlet.ServletRequest.class), any(jakarta.servlet.ServletResponse.class), any(jakarta.servlet.FilterChain.class));
+
+                doAnswer(invocation -> {
+                        jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+                        jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+                        jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+                        chain.doFilter(req, res);
+                        return null;
+                }).when(securityHeadersFilter).doFilter(
+                                any(jakarta.servlet.ServletRequest.class), any(jakarta.servlet.ServletResponse.class), any(jakarta.servlet.FilterChain.class));
+
+
+                doAnswer(invocation -> {
                         jakarta.servlet.http.HttpServletResponse response = invocation.getArgument(1);
                         response.setStatus(401);
                         response.setContentType(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);

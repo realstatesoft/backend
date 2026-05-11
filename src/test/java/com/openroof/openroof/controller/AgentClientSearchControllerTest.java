@@ -94,6 +94,22 @@ class AgentClientSearchControllerTest {
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
 
         doAnswer(invocation -> {
+            jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+            jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+            jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
             jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
             res.setStatus(401);
             res.getWriter().write("{\"success\":false,\"message\":\"No autorizado\"}");

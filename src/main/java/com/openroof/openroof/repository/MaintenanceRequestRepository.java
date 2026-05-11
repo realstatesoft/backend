@@ -23,8 +23,5 @@ public interface MaintenanceRequestRepository extends JpaRepository<MaintenanceR
 
     List<MaintenanceRequest> findByTenantIdAndStatusIn(Long tenantId, List<MaintenanceStatus> statuses);
 
-    @Query("SELECT COUNT(m) FROM MaintenanceRequest m WHERE m.tenant.id = :tenantId AND m.status IN ('OPEN', 'IN_PROGRESS', 'PENDING')")
-    long countOpenByTenantId(@Param("tenantId") Long tenantId);
-
     List<MaintenanceRequest> findTop5ByTenantIdOrderByCreatedAtDesc(Long tenantId);
 }

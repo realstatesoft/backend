@@ -36,6 +36,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     java.util.Optional<Payment> findFirstByUser_IdOrderByCreatedAtDesc(Long userId);
 
-    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.user.id = :userId AND p.status = 'COMPLETED' AND p.createdAt >= :since")
-    BigDecimal sumCompletedByUserSince(@Param("userId") Long userId, @Param("since") LocalDateTime since);
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.user.id = :userId AND p.status = :status AND p.createdAt >= :since")
+    BigDecimal sumCompletedByUserSince(@Param("userId") Long userId, @Param("status") PaymentStatus status, @Param("since") LocalDateTime since);
+
 }
