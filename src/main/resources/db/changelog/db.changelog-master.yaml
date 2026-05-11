@@ -188,4 +188,13 @@ databaseChangeLog:
   - include:
       file: changelogs/052-add-notes-to-tenant-screenings.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/053-add-message-occupants-to-rental-applications.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/054-add-paid-date-notes-to-rental-installments.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelogs/055-add-activated-at-to-leases.yaml
+      relativeToChangelogFile: true
 

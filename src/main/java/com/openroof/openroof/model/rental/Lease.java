@@ -134,6 +134,9 @@ public class Lease extends BaseEntity {
     @Column(name = "signature_token_expires_at")
     private LocalDateTime signatureTokenExpiresAt;
 
+    @Column(name = "activated_at")
+    private LocalDateTime activatedAt;
+
     @Column(name = "signed_by_landlord_at")
     private LocalDateTime signedByLandlordAt;
 

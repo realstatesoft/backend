@@ -67,6 +67,11 @@ springdoc:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
 
+openroof:
+  reservation:
+    ttl-hours: ${RESERVATION_TTL_HOURS:48}
+    default-percent: ${RESERVATION_DEFAULT_PERCENT:10.00}
+
 application:
   security:
     jwt:

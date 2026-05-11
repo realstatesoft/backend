@@ -85,6 +85,12 @@ public class RentalApplication extends BaseEntity {
     @Column(name = "has_pets")
     private Boolean hasPets;
 
+    @Column(columnDefinition = "TEXT")
+    private String message;
+
+    @Column(name = "number_of_occupants")
+    private Integer numberOfOccupants;
+
     @Column(name = "screening_consent")
     private Boolean screeningConsent;
 
