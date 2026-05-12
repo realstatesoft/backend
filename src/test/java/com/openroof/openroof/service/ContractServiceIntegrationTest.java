@@ -27,7 +27,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Prueba la lógica de negocio completa con BD real.
  */
 @SpringBootTest
-@ActiveProfiles("test")
 @Transactional
 class ContractServiceIntegrationTest {
 
@@ -73,6 +71,7 @@ class ContractServiceIntegrationTest {
     private User seller;
     private AgentProfile agentProfile;
     private Property property;
+    private Property propertyWithAgent;
 
     @BeforeEach
     void setUp() {
@@ -102,11 +101,20 @@ class ContractServiceIntegrationTest {
                 .build());
 
         property = propertyRepository.save(Property.builder()
-                .title("Test Property")
+                .title("Test Property Direct")
                 .address("123 Test St")
                 .price(new BigDecimal("150000"))
                 .propertyType(PropertyType.APARTMENT)
                 .owner(seller)
+                .build());
+
+        propertyWithAgent = propertyRepository.save(Property.builder()
+                .title("Test Property with Agent")
+                .address("456 Agent St")
+                .price(new BigDecimal("200000"))
+                .propertyType(PropertyType.APARTMENT)
+                .owner(seller)
+                .agent(agentProfile)
                 .build());
     }
 
@@ -159,7 +167,7 @@ class ContractServiceIntegrationTest {
     @DisplayName("Crear contrato con agente listador")
     void createWithListingAgent() {
         ContractRequest request = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), null,
                 ContractType.SALE,
                 new BigDecimal("200000"),
@@ -191,7 +199,7 @@ class ContractServiceIntegrationTest {
                 .build());
 
         ContractRequest request = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), agentProfile2.getId(),
                 ContractType.RENT,
                 new BigDecimal("1500"),
@@ -214,7 +222,7 @@ class ContractServiceIntegrationTest {
     @DisplayName("Validación: comisión total no coincide con suma de partes")
     void createWithInvalidCommissionSum() {
         ContractRequest request = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), null,
                 ContractType.SALE,
                 new BigDecimal("150000"),
@@ -233,7 +241,7 @@ class ContractServiceIntegrationTest {
     @DisplayName("Validación: comisión > 100%")
     void createWithInvalidPercentage() {
         ContractRequest request = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), null,
                 ContractType.SALE,
                 new BigDecimal("150000"),
@@ -338,7 +346,7 @@ class ContractServiceIntegrationTest {
     @DisplayName("Listar contratos como agente listador")
     void getAsListingAgent() {
         ContractRequest request = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), null,
                 ContractType.SALE,
                 new BigDecimal("200000"),
@@ -407,7 +415,7 @@ class ContractServiceIntegrationTest {
     @DisplayName("Cambiar estado DRAFT → SENT")
     void updateStatusDraftToSent() {
         ContractRequest createRequest = new ContractRequest(
-                property.getId(), buyer.getId(), seller.getId(),
+                propertyWithAgent.getId(), buyer.getId(), seller.getId(),
                 agentProfile.getId(), null,
                 ContractType.SALE,
                 new BigDecimal("150000"),

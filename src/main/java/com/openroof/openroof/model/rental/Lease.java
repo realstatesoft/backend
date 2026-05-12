@@ -154,4 +154,14 @@ public class Lease extends BaseEntity {
     public boolean isActive() {
         return LeaseStatus.ACTIVE == status;
     }
+
+    public String getSignatureAuditPdfUrl() {
+        if (signatureAuditTrail != null) {
+            Object auditUrl = signatureAuditTrail.get("auditPdfUrl");
+            if (auditUrl != null && !auditUrl.toString().isBlank()) {
+                return auditUrl.toString();
+            }
+        }
+        return null;
+    }
 }

@@ -197,4 +197,8 @@ databaseChangeLog:
   - include:
       file: changelogs/055-add-activated-at-to-leases.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/056-seed-tenant-dashboard-data.yaml
+      relativeToChangelogFile: true
+      contextFilter: dev,test
 

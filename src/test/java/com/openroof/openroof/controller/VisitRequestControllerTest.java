@@ -3,10 +3,12 @@ package com.openroof.openroof.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.visit.CreateVisitRequestRequest;
 import com.openroof.openroof.dto.visit.VisitRequestResponse;
 import com.openroof.openroof.model.enums.VisitRequestStatus;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.VisitRequestService;
 import jakarta.servlet.FilterChain;
@@ -59,6 +61,15 @@ class VisitRequestControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {

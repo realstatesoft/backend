@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.payment.PaymentRequest;
 import com.openroof.openroof.dto.payment.PaymentResponse;
 import com.openroof.openroof.exception.BadRequestException;
@@ -9,6 +10,7 @@ import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.PaymentService;
 import jakarta.servlet.FilterChain;
@@ -57,6 +59,8 @@ class PaymentControllerTest {
     @MockitoBean UserDetailsService userDetailsService;
     @MockitoBean com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     @MockitoBean com.openroof.openroof.security.PropertyViewRateLimiter propertyViewRateLimiter;
+    @MockitoBean PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
