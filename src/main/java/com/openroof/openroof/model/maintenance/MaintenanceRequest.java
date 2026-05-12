@@ -113,8 +113,17 @@ public class MaintenanceRequest extends BaseEntity {
     @Column(name = "acknowledged_at")
     private LocalDateTime acknowledgedAt;
 
+    @Column(name = "in_progress_at")
+    private LocalDateTime inProgressAt;
+
+    @Column(name = "on_hold_at")
+    private LocalDateTime onHoldAt;
+
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
 
     @Column(name = "closed_at")
     private LocalDateTime closedAt;

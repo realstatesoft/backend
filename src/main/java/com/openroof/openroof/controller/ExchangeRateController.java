@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Endpoint público para consultar cotizaciones PYG vs USD/BRL.
  */
 @RestController
-@RequestMapping("/api/exchange-rates")
+@RequestMapping("/exchange-rates")
 @RequiredArgsConstructor
 @Tag(name = "Exchange Rates", description = "Cotizaciones públicas de Cambios Chaco")
 public class ExchangeRateController {
