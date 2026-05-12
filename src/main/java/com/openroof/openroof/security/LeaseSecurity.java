@@ -37,10 +37,6 @@ public class LeaseSecurity {
             throw new AccessDeniedException("Lease id nulo");
         }
 
-        if (leaseId == null) {
-            throw new AccessDeniedException("Lease id nulo");
-        }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AccessDeniedException(
                         "Usuario " + userId + " no encontrado"));

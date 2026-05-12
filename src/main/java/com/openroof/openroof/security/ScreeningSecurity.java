@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 /**
  * Reglas de acceso para tenant screenings.
  *
@@ -71,18 +73,32 @@ public class ScreeningSecurity {
     }
 
     private boolean isOwnerOfApplication(RentalApplication application, User currentUser) {
-        Property property = application.getProperty();
-        if (property == null || property.getOwner() == null || property.getOwner().getId() == null) {
+        if (application == null || currentUser == null) {
             return false;
         }
-        return property.getOwner().getId().equals(currentUser.getId());
+        Property property = application.getProperty();
+        if (property == null) {
+            return false;
+        }
+        User owner = property.getOwner();
+        if (owner == null || owner.getId() == null) {
+            return false;
+        }
+        return Objects.equals(owner.getId(), currentUser.getId());
     }
 
     private boolean isAgentOfApplication(RentalApplication application, User currentUser) {
-        Property property = application.getProperty();
-        if (property == null || property.getAgent() == null || property.getAgent().getUser() == null) {
+        if (application == null || currentUser == null) {
             return false;
         }
-        return property.getAgent().getUser().getId().equals(currentUser.getId());
+        Property property = application.getProperty();
+        if (property == null || property.getAgent() == null) {
+            return false;
+        }
+        User agentUser = property.getAgent().getUser();
+        if (agentUser == null || agentUser.getId() == null) {
+            return false;
+        }
+        return Objects.equals(agentUser.getId(), currentUser.getId());
     }
 }

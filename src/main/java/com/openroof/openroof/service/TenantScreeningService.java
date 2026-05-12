@@ -16,6 +16,7 @@ import com.openroof.openroof.repository.RentalApplicationRepository;
 import com.openroof.openroof.repository.TenantScreeningRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +78,7 @@ public class TenantScreeningService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "RentalApplication", "id", applicationId));
 
+        // Fast-path check; la UNIQUE(application_id) en DB cubre la condición de carrera.
         if (screeningRepository.existsByApplicationId(applicationId)) {
             throw new BadRequestException(
                     "Screening already exists for application " + applicationId);
@@ -93,7 +95,15 @@ public class TenantScreeningService {
                 .expiresAt(now.plusDays(EXPIRATION_DAYS))
                 .build();
 
-        TenantScreening saved = screeningRepository.save(screening);
+        TenantScreening saved;
+        try {
+            saved = screeningRepository.saveAndFlush(screening);
+        } catch (DataIntegrityViolationException ex) {
+            // Insert concurrente gano la carrera; la UNIQUE(application_id) rebota.
+            log.debug("Concurrent screening insert for application={} rejected by UNIQUE constraint", applicationId);
+            throw new BadRequestException(
+                    "Screening already exists for application " + applicationId);
+        }
         log.info("Created internal screening id={} for application={}", saved.getId(), applicationId);
         return mapper.toResponse(saved);
     }

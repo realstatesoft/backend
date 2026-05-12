@@ -227,6 +227,26 @@ class TenantScreeningServiceTest {
     }
 
     @Test
+    void createScreening_concurrentRace_translatedToBadRequest() {
+        Long appId = 66L;
+        RentalApplication app = RentalApplication.builder().build();
+        app.setId(appId);
+        when(rentalApplicationRepository.findById(appId)).thenReturn(Optional.of(app));
+        when(screeningRepository.existsByApplicationId(appId)).thenReturn(false);
+        when(screeningRepository.saveAndFlush(any(TenantScreening.class)))
+                .thenThrow(new org.springframework.dao.DataIntegrityViolationException(
+                        "duplicate key value violates unique constraint"));
+
+        com.openroof.openroof.exception.BadRequestException ex = assertThrows(
+                com.openroof.openroof.exception.BadRequestException.class,
+                () -> service.createScreening(appId));
+
+        org.junit.jupiter.api.Assertions.assertTrue(
+                ex.getMessage().contains(String.valueOf(appId)),
+                "El mensaje debe incluir el applicationId");
+    }
+
+    @Test
     void createScreening_duplicate_throwsBadRequest() {
         Long appId = 55L;
         RentalApplication app = RentalApplication.builder().build();
@@ -270,7 +290,7 @@ class TenantScreeningServiceTest {
         app.setId(applicationId);
         when(rentalApplicationRepository.findById(applicationId)).thenReturn(Optional.of(app));
         when(screeningRepository.existsByApplicationId(applicationId)).thenReturn(false);
-        when(screeningRepository.save(any(TenantScreening.class)))
+        when(screeningRepository.saveAndFlush(any(TenantScreening.class)))
                 .thenAnswer(inv -> {
                     TenantScreening s = inv.getArgument(0);
                     s.setId(123L);
@@ -293,7 +313,7 @@ class TenantScreeningServiceTest {
         assertEquals(ScreeningRecommendation.REVIEW, res.recommendation());
 
         ArgumentCaptor<TenantScreening> captor = ArgumentCaptor.forClass(TenantScreening.class);
-        verify(screeningRepository).save(captor.capture());
+        verify(screeningRepository).saveAndFlush(captor.capture());
         TenantScreening saved = captor.getValue();
         assertNotNull(saved.getRunAt());
         assertNotNull(saved.getExpiresAt());
