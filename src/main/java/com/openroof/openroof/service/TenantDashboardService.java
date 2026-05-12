@@ -4,6 +4,10 @@ import com.openroof.openroof.dto.dashboard.TenantDashboardResponse;
 import com.openroof.openroof.dto.dashboard.TenantDashboardResponse.*;
 import com.openroof.openroof.dto.dashboard.TenantLeaseResponse;
 import com.openroof.openroof.dto.dashboard.TenantLeaseResponse.*;
+import com.openroof.openroof.dto.dashboard.TenantPaymentsResponse;
+import com.openroof.openroof.dto.dashboard.TenantInstallmentItem;
+import com.openroof.openroof.dto.dashboard.TenantMaintenanceResponse;
+import com.openroof.openroof.dto.dashboard.TenantMaintenanceTicketItem;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.InstallmentStatus;
 import com.openroof.openroof.model.enums.LeaseStatus;
@@ -27,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -40,6 +45,7 @@ public class TenantDashboardService {
     private final MaintenanceRequestRepository maintenanceRequestRepository;
     private final MessageRepository messageRepository;
     private final PaymentRepository paymentRepository;
+    private final LeasePaymentRepository leasePaymentRepository;
 
     public TenantDashboardResponse getDashboard(String email) {
         User tenant = userRepository.findByEmail(email)
@@ -110,7 +116,7 @@ public class TenantDashboardService {
                 .map(m -> new MaintenanceTicketInfo(
                         m.getId(),
                         m.getTitle(),
-                        m.getCategory().name(),
+                        m.getCategory() != null ? m.getCategory().name() : null,
                         m.getStatus().name(),
                         m.getCreatedAt().toLocalDate()))
                 .limit(2)
@@ -189,6 +195,110 @@ public class TenantDashboardService {
                 lease.getSignedByTenantAt(),
                 lease.getCreatedAt(),
                 lease.getUpdatedAt());
+    }
+
+    public TenantPaymentsResponse getPayments(String email, org.springframework.data.domain.Pageable pageable) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+
+        var installmentsPage = rentalInstallmentRepository.findByLeaseIdOrderByDueDateDesc(lease.getId(), pageable);
+
+        List<TenantInstallmentItem> items = installmentsPage.getContent().stream()
+                .map(i -> {
+                    List<TenantInstallmentItem.LeasePaymentInfo> payments = leasePaymentRepository.findByInstallmentId(i.getId())
+                            .stream()
+                            .map(p -> new TenantInstallmentItem.LeasePaymentInfo(
+                                    p.getMethod().name(),
+                                    p.getAmount(),
+                                    p.getPaidAt(),
+                                    p.getReceiptPdfUrl()))
+                            .toList();
+
+                    return new TenantInstallmentItem(
+                            i.getId(),
+                            i.getInstallmentNumber(),
+                            i.getPeriodStart() + " a " + i.getPeriodEnd(),
+                            i.getTotalAmount(),
+                            i.getPaidAmount(),
+                            i.getBalance(),
+                            i.getStatus().name(),
+                            i.getDueDate(),
+                            payments);
+                })
+                .toList();
+
+        // Summary header
+        BigDecimal totalPaidYear = paymentRepository.sumCompletedByUserSince(tenant.getId(), PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
+        if (totalPaidYear == null) totalPaidYear = BigDecimal.ZERO;
+
+        long onTime = rentalInstallmentRepository.countByLeaseIdAndStatus(lease.getId(), InstallmentStatus.PAID);
+        long late = rentalInstallmentRepository.countByLeaseIdAndStatus(lease.getId(), InstallmentStatus.OVERDUE);
+
+        NextInstallmentInfo nextPayment = buildNextInstallmentInfo(lease.getId(), LocalDate.now());
+
+        return new TenantPaymentsResponse(
+                totalPaidYear,
+                onTime,
+                late,
+                nextPayment,
+                items,
+                installmentsPage.getTotalElements(),
+                installmentsPage.getTotalPages(),
+                installmentsPage.getNumber());
+    }
+
+    public TenantMaintenanceResponse getMaintenance(String email) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+
+        List<MaintenanceRequest> requests = maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(lease.getId());
+
+        List<TenantMaintenanceTicketItem> items = requests.stream()
+                .map(m -> {
+                    TenantMaintenanceTicketItem.VendorContact vendorContact = null;
+                    if (m.getAssignedVendor() != null) {
+                        vendorContact = new TenantMaintenanceTicketItem.VendorContact(
+                                m.getAssignedVendor().getCompanyName(),
+                                m.getAssignedVendor().getPhone(),
+                                m.getAssignedVendor().getEmail());
+                    }
+
+                    List<TenantMaintenanceTicketItem.StatusHistoryItem> history = new ArrayList<>();
+                    history.add(new TenantMaintenanceTicketItem.StatusHistoryItem("SUBMITTED", m.getCreatedAt()));
+                    if (m.getAcknowledgedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem("ACKNOWLEDGED", m.getAcknowledgedAt()));
+                    }
+                    if (m.getResolvedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem("RESOLVED", m.getResolvedAt()));
+                    }
+                    if (m.getClosedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem("CLOSED", m.getClosedAt()));
+                    }
+
+                    return new TenantMaintenanceTicketItem(
+                            m.getId(),
+                            m.getTitle(),
+                            m.getDescription(),
+                            m.getCategory() != null ? m.getCategory().name() : null,
+                            m.getPriority().name(),
+                            m.getStatus().name(),
+                            vendorContact,
+                            history,
+                            m.getTenantSatisfactionRating(),
+                            m.getCreatedAt());
+                })
+                .toList();
+
+        Map<String, Long> countsByStatus = requests.stream()
+                .collect(java.util.stream.Collectors.groupingBy(m -> m.getStatus().name(), java.util.stream.Collectors.counting()));
+
+        return new TenantMaintenanceResponse(items, countsByStatus);
     }
 
     private List<LeaseDocument> buildLeaseDocuments(Lease lease) {

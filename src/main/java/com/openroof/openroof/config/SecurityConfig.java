@@ -56,13 +56,13 @@ public class SecurityConfig {
                         "/auth/register",
                         "/auth/register-agent",
                         "/auth/refresh-token",
-                        "/api/exchange-rates",
-                        "/api/exchange-rates/**",
+                        "/exchange-rates",
+                        "/exchange-rates/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
-                        "/api/test/**"
+                        "/test/**"
         };
 
         @Bean

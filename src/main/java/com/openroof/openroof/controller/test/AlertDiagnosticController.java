@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/test")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AlertDiagnosticController {
