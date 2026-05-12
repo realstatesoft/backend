@@ -133,6 +133,16 @@ public class BillingService {
                 BigDecimal otherChargesSum = sumActiveRecurringChargeAmounts(
                         charges, periodStart, periodEnd);
                 inst.setTotalAmount(proratedRent.add(otherChargesSum));
+            } else if (i == totalPeriods
+                    && lease.getLeaseType() == LeaseType.FIXED_TERM
+                    && isLastMonthPartial(lease.getEndDate())) {
+                BigDecimal lastMonthRent = calculateLastMonthProratedRent(
+                        lease.getMonthlyRent(), periodStart, lease.getEndDate());
+                inst.setBaseRent(lastMonthRent);
+
+                BigDecimal otherChargesSum = sumActiveRecurringChargeAmounts(
+                        charges, periodStart, periodEnd);
+                inst.setTotalAmount(lastMonthRent.add(otherChargesSum));
             }
 
             installments.add(inst);
@@ -265,6 +275,33 @@ public class BillingService {
                 BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP);
         return dailyRate.multiply(BigDecimal.valueOf(daysRemaining))
                 .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    boolean isLastMonthPartial(LocalDate endDate) {
+        return endDate.getDayOfMonth() != endDate.lengthOfMonth();
+    }
+
+    BigDecimal calculateLastMonthProratedRent(BigDecimal monthlyRent,
+                                               LocalDate periodStart,
+                                               LocalDate endDate) {
+        YearMonth finalMonth = YearMonth.from(endDate);
+        int daysInMonth = finalMonth.lengthOfMonth();
+        int daysRemaining = endDate.getDayOfMonth();
+
+        BigDecimal partialRent = monthlyRent
+                .divide(BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(daysRemaining))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        long fullMonthsInPeriod = java.time.temporal.ChronoUnit.MONTHS.between(
+                YearMonth.from(periodStart), finalMonth);
+        if (fullMonthsInPeriod > 0) {
+            BigDecimal fullMonthsRent = monthlyRent.multiply(
+                    BigDecimal.valueOf(fullMonthsInPeriod));
+            return fullMonthsRent.add(partialRent);
+        }
+
+        return partialRent;
     }
 
     private BigDecimal sumActiveRecurringChargeAmounts(List<RecurringCharge> charges,
