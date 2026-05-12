@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code @propertySecurity.canModify()} se cubre en los tests de integración.
  */
 @WebMvcTest(PropertyFloorPlanController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 @DisplayName("PropertyFloorPlanController")
 class PropertyFloorPlanControllerTest {
 

@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClientInteractionController.class)
-@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class, com.openroof.openroof.test.SliceSecurityBeans.class })
 class ClientInteractionControllerTest {
 
     @Autowired

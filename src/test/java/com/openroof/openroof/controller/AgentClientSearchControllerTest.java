@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, JacksonConfig.class, GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, JacksonConfig.class, GlobalExceptionHandler.class, com.openroof.openroof.test.SliceSecurityBeans.class })
 class AgentClientSearchControllerTest {
 
     @Autowired
