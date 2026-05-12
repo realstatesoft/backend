@@ -66,6 +66,9 @@ public class LeaseSecurity {
      * Versión boolean para {@code @PreAuthorize}. No lanza.
      */
     public boolean hasLeaseAccess(Long userId, Long leaseId) {
+        if (leaseId == null) {
+            return false;
+        }
         try {
             assertLeaseAccess(userId, leaseId);
             return true;

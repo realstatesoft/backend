@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 057-add-missing-maintenance-timestamps
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: maintenance_requests
+            columns:
+              - column:
+                  name: in_progress_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: on_hold_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: cancelled_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
