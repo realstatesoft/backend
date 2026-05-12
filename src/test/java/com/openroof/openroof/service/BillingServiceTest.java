@@ -223,6 +223,64 @@ class BillingServiceTest {
     }
 
     @Nested
+    @DisplayName("Prorateo del ultimo mes")
+    class ProratedLastMonth {
+
+        @Test
+        @DisplayName("Ultimo mes prorrateado si endDate no es fin de mes")
+        void proratesLastMonthWhenEndDateNotEndOfMonth() {
+            lease.setStartDate(LocalDate.of(2026, 6, 1));
+            lease.setEndDate(LocalDate.of(2026, 6, 15));
+            stubDefaultInstallmentGeneration();
+
+            List<RentalInstallment> result = billingService.generateInstallments(lease);
+
+            assertThat(result).hasSize(1);
+            RentalInstallment only = result.get(0);
+            assertThat(only.getPeriodStart()).isEqualTo(LocalDate.of(2026, 6, 1));
+            assertThat(only.getPeriodEnd()).isEqualTo(LocalDate.of(2026, 6, 15));
+            BigDecimal expected = new BigDecimal("75000.00");
+            assertThat(only.getBaseRent()).isEqualByComparingTo(expected);
+        }
+
+        @Test
+        @DisplayName("Sin prorateo en ultimo mes si endDate es fin de mes")
+        void noProrateWhenEndDateIsEndOfMonth() {
+            lease.setStartDate(LocalDate.of(2026, 6, 1));
+            lease.setEndDate(LocalDate.of(2026, 6, 30));
+            stubDefaultInstallmentGeneration();
+
+            List<RentalInstallment> result = billingService.generateInstallments(lease);
+
+            assertThat(result.get(0).getBaseRent()).isEqualByComparingTo(new BigDecimal("150000"));
+        }
+
+        @Test
+        @DisplayName("Prorateo ultimo mes con periodo de multiples meses suma fullMonths + partial")
+        void lastMonthProrateAddsFullMonthsRent() {
+            BigDecimal result = billingService.calculateLastMonthProratedRent(
+                    new BigDecimal("150000"),
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 8, 15));
+
+            BigDecimal expected = new BigDecimal("372580.65");
+            assertThat(result).isEqualByComparingTo(expected);
+        }
+
+        @Test
+        @DisplayName("Prorateo ultimo mes con solo mes parcial correcto")
+        void lastMonthProrateSinglePartialMonth() {
+            BigDecimal result = billingService.calculateLastMonthProratedRent(
+                    new BigDecimal("150000"),
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 6, 15));
+
+            BigDecimal expected = new BigDecimal("75000.00");
+            assertThat(result).isEqualByComparingTo(expected);
+        }
+    }
+
+    @Nested
     @DisplayName("Due date")
     class DueDate {
 
@@ -369,6 +427,32 @@ class BillingServiceTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("MONTH_TO_MONTH");
         }
+
+        @Test
+        @DisplayName("extendInstallments con additionalMonths=1 genera 1 sola cuota")
+        void extendByOneMonthGeneratesOneInstallment() {
+            lease.setLeaseType(LeaseType.MONTH_TO_MONTH);
+            RentalInstallment lastExisting = RentalInstallment.builder()
+                    .installmentNumber(12)
+                    .periodStart(LocalDate.of(2026, 5, 1))
+                    .periodEnd(LocalDate.of(2026, 5, 31))
+                    .dueDate(LocalDate.of(2026, 5, 5))
+                    .build();
+
+            when(installmentRepository.findByLeaseIdOrderByDueDateAsc(42L))
+                    .thenReturn(List.of(lastExisting));
+            when(recurringChargeRepository.findByLeaseIdAndIsActiveTrue(42L))
+                    .thenReturn(List.of());
+            when(installmentRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(ledgerEntryRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            List<RentalInstallment> result = billingService.extendInstallments(lease, 1);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getInstallmentNumber()).isEqualTo(13);
+            assertThat(result.get(0).getPeriodStart()).isEqualTo(LocalDate.of(2026, 6, 1));
+            assertThat(result.get(0).getPeriodEnd()).isEqualTo(LocalDate.of(2026, 6, 30));
+        }
     }
 
     @Nested
@@ -419,6 +503,48 @@ class BillingServiceTest {
             lease.setBillingFrequency(BillingFrequency.QUARTERLY);
             int periods = billingService.calculateTotalPeriods(lease);
             assertThat(periods).isEqualTo(4);
+        }
+    }
+
+    @Nested
+    @DisplayName("Montos con diferentes billingFrequency")
+    class BillingFrequencyAmounts {
+
+        @Test
+        @DisplayName("MONTHLY: 12 cuotas con baseRent = monthlyRent")
+        void monthlyBaseRentEqualsMonthlyRent() {
+            stubDefaultInstallmentGeneration();
+
+            List<RentalInstallment> result = billingService.generateInstallments(lease);
+
+            assertThat(result).hasSize(12);
+            for (RentalInstallment inst : result) {
+                assertThat(inst.getBaseRent()).isEqualByComparingTo(new BigDecimal("150000"));
+            }
+        }
+
+        @Test
+        @DisplayName("BIMONTHLY: 6 cuotas con baseRent = monthlyRent cada una")
+        void bimonthlyBaseRentCorrect() {
+            lease.setBillingFrequency(BillingFrequency.BIMONTHLY);
+            stubDefaultInstallmentGeneration();
+
+            List<RentalInstallment> result = billingService.generateInstallments(lease);
+
+            assertThat(result).hasSize(6);
+            assertThat(result.get(0).getBaseRent()).isEqualByComparingTo(new BigDecimal("150000"));
+        }
+
+        @Test
+        @DisplayName("QUARTERLY: 4 cuotas con baseRent = monthlyRent cada una")
+        void quarterlyBaseRentCorrect() {
+            lease.setBillingFrequency(BillingFrequency.QUARTERLY);
+            stubDefaultInstallmentGeneration();
+
+            List<RentalInstallment> result = billingService.generateInstallments(lease);
+
+            assertThat(result).hasSize(4);
+            assertThat(result.get(0).getBaseRent()).isEqualByComparingTo(new BigDecimal("150000"));
         }
     }
 
