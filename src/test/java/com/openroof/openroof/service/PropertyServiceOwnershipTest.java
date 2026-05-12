@@ -134,6 +134,9 @@ class PropertyServiceOwnershipTest {
 
     @Test
     void changeStatus_userThrowsForbidden() {
+        Property property = property(OWNER_ID);
+        when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+
         User user = User.builder().email("u@test.com").passwordHash("x").role(UserRole.USER).build();
         user.setId(5L);
         assertThrows(ForbiddenException.class,
@@ -163,6 +166,9 @@ class PropertyServiceOwnershipTest {
 
     @Test
     void changeStatus_agentThrowsForbidden() {
+        Property property = property(OWNER_ID);
+        when(propertyRepository.findById(PROPERTY_ID)).thenReturn(Optional.of(property));
+
         User agent = User.builder().email("a@test.com").passwordHash("x").role(UserRole.AGENT).build();
         agent.setId(6L);
         assertThrows(ForbiddenException.class,

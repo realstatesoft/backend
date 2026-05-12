@@ -2,10 +2,12 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.agent.AgentSpecialtyResponse;
 import com.openroof.openroof.dto.agent.CreateAgentSpecialtyRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentSpecialtyService;
 import jakarta.servlet.FilterChain;
@@ -55,6 +57,12 @@ class AgentSpecialtyControllerTest {
 
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     private static final String BASE = "/agents/specialties";
 

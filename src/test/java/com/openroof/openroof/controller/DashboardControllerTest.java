@@ -2,8 +2,10 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.ConversionFunnelService;
 import com.openroof.openroof.service.DashboardService;
@@ -62,6 +64,12 @@ class DashboardControllerTest {
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
+
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
         doAnswer(invocation -> {
@@ -74,6 +82,24 @@ class DashboardControllerTest {
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
             jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
             res.setStatus(401);
             res.setContentType(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
@@ -81,11 +107,11 @@ class DashboardControllerTest {
             return null;
         }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
 
-                // Ensure security filters are registered with MockMvc in this @WebMvcTest slice
-                mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                                .webAppContextSetup(context)
-                                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
-                                .build();
+        // Ensure security filters are registered with MockMvc in this @WebMvcTest slice
+        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                        .webAppContextSetup(context)
+                        .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                        .build();
     }
 
     @Test

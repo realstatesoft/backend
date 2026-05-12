@@ -65,7 +65,7 @@ springdoc:
   show-actuator: false
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://127.0.0.1:5173,https://*.vercel.app}
 
 openroof:
   reservation:
@@ -84,7 +84,6 @@ application:
     scheduler:
       property-alerts:
         cron: ${PROPERTY_ALERTS_CRON:0 0 * * * *} # Cada hora (minuto 0)
-
 
 logging:
   level:
@@ -136,11 +135,6 @@ trashcan:
 spring.servlet.multipart:
   max-file-size: 50MB
   max-request-size: 60MB
-
-openroof:
-  reservation:
-    ttl-hours: ${RESERVATION_TTL_HOURS:72}
-    default-percent: ${RESERVATION_DEFAULT_PERCENT:1.00}
 
 shedlock:
   defaults:
