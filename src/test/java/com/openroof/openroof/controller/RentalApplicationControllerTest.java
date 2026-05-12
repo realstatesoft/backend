@@ -274,6 +274,15 @@ class RentalApplicationControllerTest {
                             .with(user("owner@test.com").roles("USER")))
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("Rechazar con reason en blanco retorna 400")
+        void rejectWithBlankReasonReturns400() throws Exception {
+            mockMvc.perform(post("/rental-applications/1/reject")
+                            .param("reason", "   ")
+                            .with(user("owner@test.com").roles("USER")))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
