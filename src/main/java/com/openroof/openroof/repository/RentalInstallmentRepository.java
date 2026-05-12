@@ -15,6 +15,8 @@ import java.util.List;
 @Repository
 public interface RentalInstallmentRepository extends JpaRepository<RentalInstallment, Long> {
 
+    boolean existsByLeaseId(Long leaseId);
+
     List<RentalInstallment> findByLeaseIdOrderByDueDateAsc(Long leaseId);
 
     @Query("""
