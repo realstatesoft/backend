@@ -2,6 +2,8 @@ package com.openroof.openroof.repository;
 
 import com.openroof.openroof.model.enums.LeaseStatus;
 import com.openroof.openroof.model.rental.Lease;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,7 +19,17 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
 
     List<Lease> findByLandlordId(Long landlordId);
 
+    Page<Lease> findByLandlordId(Long landlordId, Pageable pageable);
+
+    Page<Lease> findByLandlordIdAndStatus(Long landlordId, LeaseStatus status, Pageable pageable);
+
     List<Lease> findByPrimaryTenantId(Long tenantId);
+
+    Page<Lease> findByPrimaryTenantId(Long tenantId, Pageable pageable);
+
+    Page<Lease> findByPrimaryTenantIdAndStatus(Long tenantId, LeaseStatus status, Pageable pageable);
+
+    Page<Lease> findByStatus(LeaseStatus status, Pageable pageable);
 
     @Query("SELECT l FROM Lease l WHERE l.primaryTenant.id = :tenantId AND l.status = :status AND l.startDate <= :now AND l.endDate >= :now")
     java.util.Optional<Lease> findActiveByTenantId(@Param("tenantId") Long tenantId, @Param("status") LeaseStatus status, @Param("now") LocalDate now);
