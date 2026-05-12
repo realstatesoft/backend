@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserPreferenceController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 @ActiveProfiles("test")
 class UserPreferenceControllerTest {
 

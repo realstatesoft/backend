@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserSettingsController.class)
-@Import({SecurityConfig.class, JacksonConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class UserSettingsControllerTest {
 
     @Autowired MockMvc mockMvc;

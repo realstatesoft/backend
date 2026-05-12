@@ -84,6 +84,12 @@ public class SecurityConfig {
                                                 .access((authentication, context) -> new AuthorizationDecision(true))
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
+                                                // Endpoints públicos de alquileres (catálogo)
+                                                .requestMatchers(HttpMethod.GET, "/leases/public/**").permitAll()
+                                                // Endpoints protegidos — autorización fina vía LeaseSecurity
+                                                .requestMatchers("/leases/**").authenticated()
+                                                .requestMatchers("/rentals/**").authenticated()
+                                                .requestMatchers("/lease-payments/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
