@@ -34,6 +34,10 @@ public class LeaseSecurity {
             throw new AccessDeniedException("Usuario no autenticado");
         }
 
+        if (leaseId == null) {
+            throw new AccessDeniedException("Lease id nulo");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AccessDeniedException(
                         "Usuario " + userId + " no encontrado"));
@@ -63,6 +67,9 @@ public class LeaseSecurity {
      * Versión boolean para {@code @PreAuthorize}. No lanza.
      */
     public boolean hasLeaseAccess(Long userId, Long leaseId) {
+        if (leaseId == null) {
+            return false;
+        }
         try {
             assertLeaseAccess(userId, leaseId);
             return true;
