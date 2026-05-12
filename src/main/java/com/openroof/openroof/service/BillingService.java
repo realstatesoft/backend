@@ -284,15 +284,24 @@ public class BillingService {
     BigDecimal calculateLastMonthProratedRent(BigDecimal monthlyRent,
                                                LocalDate periodStart,
                                                LocalDate endDate) {
-        YearMonth ym = YearMonth.from(periodStart);
-        int daysInMonth = ym.lengthOfMonth();
-        long daysInPeriod = java.time.temporal.ChronoUnit.DAYS.between(
-                periodStart, endDate) + 1;
+        YearMonth finalMonth = YearMonth.from(endDate);
+        int daysInMonth = finalMonth.lengthOfMonth();
+        int daysRemaining = endDate.getDayOfMonth();
 
-        BigDecimal dailyRate = monthlyRent.divide(
-                BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP);
-        return dailyRate.multiply(BigDecimal.valueOf(daysInPeriod))
+        BigDecimal partialRent = monthlyRent
+                .divide(BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(daysRemaining))
                 .setScale(2, RoundingMode.HALF_UP);
+
+        long fullMonthsInPeriod = java.time.temporal.ChronoUnit.MONTHS.between(
+                YearMonth.from(periodStart), finalMonth);
+        if (fullMonthsInPeriod > 0) {
+            BigDecimal fullMonthsRent = monthlyRent.multiply(
+                    BigDecimal.valueOf(fullMonthsInPeriod));
+            return fullMonthsRent.add(partialRent);
+        }
+
+        return partialRent;
     }
 
     private BigDecimal sumActiveRecurringChargeAmounts(List<RecurringCharge> charges,

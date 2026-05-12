@@ -254,6 +254,30 @@ class BillingServiceTest {
 
             assertThat(result.get(0).getBaseRent()).isEqualByComparingTo(new BigDecimal("150000"));
         }
+
+        @Test
+        @DisplayName("Prorateo ultimo mes con periodo de multiples meses suma fullMonths + partial")
+        void lastMonthProrateAddsFullMonthsRent() {
+            BigDecimal result = billingService.calculateLastMonthProratedRent(
+                    new BigDecimal("150000"),
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 8, 15));
+
+            BigDecimal expected = new BigDecimal("372580.65");
+            assertThat(result).isEqualByComparingTo(expected);
+        }
+
+        @Test
+        @DisplayName("Prorateo ultimo mes con solo mes parcial correcto")
+        void lastMonthProrateSinglePartialMonth() {
+            BigDecimal result = billingService.calculateLastMonthProratedRent(
+                    new BigDecimal("150000"),
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 6, 15));
+
+            BigDecimal expected = new BigDecimal("75000.00");
+            assertThat(result).isEqualByComparingTo(expected);
+        }
     }
 
     @Nested
