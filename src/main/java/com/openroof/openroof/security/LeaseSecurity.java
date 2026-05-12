@@ -33,6 +33,9 @@ public class LeaseSecurity {
         if (userId == null) {
             throw new AccessDeniedException("Usuario no autenticado");
         }
+        if (leaseId == null) {
+            throw new AccessDeniedException("Lease id nulo");
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AccessDeniedException(

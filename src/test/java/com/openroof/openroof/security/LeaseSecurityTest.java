@@ -132,6 +132,16 @@ class LeaseSecurityTest {
     }
 
     @Test
+    void assertLeaseAccess_nullLeaseId_throwsAccessDenied_withoutTouchingAnyRepo() {
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> leaseSecurity.assertLeaseAccess(LANDLORD_ID, null));
+
+        assertTrue(ex.getMessage().toLowerCase().contains("lease"));
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(leaseRepository);
+    }
+
+    @Test
     void assertLeaseAccess_landlordOnLeaseWithNullTenant_allowed() {
         when(userRepository.findById(LANDLORD_ID))
                 .thenReturn(Optional.of(user(LANDLORD_ID, UserRole.USER)));
@@ -178,6 +188,13 @@ class LeaseSecurityTest {
     @Test
     void hasLeaseAccess_nullUserId_returnsFalse() {
         assertFalse(leaseSecurity.hasLeaseAccess(null, LEASE_ID));
+        verifyNoInteractions(userRepository);
+        verifyNoInteractions(leaseRepository);
+    }
+
+    @Test
+    void hasLeaseAccess_nullLeaseId_returnsFalse() {
+        assertFalse(leaseSecurity.hasLeaseAccess(LANDLORD_ID, null));
         verifyNoInteractions(userRepository);
         verifyNoInteractions(leaseRepository);
     }

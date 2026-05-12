@@ -186,7 +186,7 @@ Notas:
 
 ### Plantilla de reporte de bug
 
-```
+```text
 Caso fallado: #
 Request:
   Método: GET/POST/PUT/DELETE
