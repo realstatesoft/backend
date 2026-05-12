@@ -6,8 +6,10 @@ import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.settings.UpdateUserSettingsRequest;
 import com.openroof.openroof.dto.settings.UserSettingsResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.model.enums.NotifyChannel;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.UserSettingsService;
 import jakarta.servlet.FilterChain;
@@ -46,6 +48,8 @@ class UserSettingsControllerTest {
     @MockitoBean JwtService jwtService;
     @MockitoBean UserDetailsService userDetailsService;
     @MockitoBean JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    @MockitoBean PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean SecurityHeadersFilter securityHeadersFilter;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String BASE = "/settings/user";

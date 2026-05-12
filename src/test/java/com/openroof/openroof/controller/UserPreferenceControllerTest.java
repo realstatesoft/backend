@@ -14,7 +14,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,11 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UserPreferenceController.class)
 @Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
-@ActiveProfiles("test")
 class UserPreferenceControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private org.springframework.web.context.WebApplicationContext context;
 
     @MockitoBean
     private UserPreferenceService userPreferenceService;
@@ -42,6 +43,8 @@ class UserPreferenceControllerTest {
     @MockitoBean private com.openroof.openroof.security.JwtService jwtService;
     @MockitoBean private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
     @MockitoBean private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    @MockitoBean private com.openroof.openroof.security.PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean private com.openroof.openroof.config.SecurityHeadersFilter securityHeadersFilter;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -55,6 +58,27 @@ class UserPreferenceControllerTest {
             chain.doFilter(request, response);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
+
+        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
     }
 
     @Test
