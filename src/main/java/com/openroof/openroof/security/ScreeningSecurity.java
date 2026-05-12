@@ -11,10 +11,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 /**
- * Reglas de acceso de lectura para tenant screenings.
- * Escritura se controla con hasRole('ADMIN') directamente en el controller.
- * ADMIN ⇒ acceso total. AGENT ⇒ solo si está asignado a la property de la application.
+ * Reglas de acceso para tenant screenings.
+ *
+ * Lectura por id (legacy): ADMIN o AGENT asignado a la property de la application.
+ * Lectura por applicationId: ADMIN, owner de la property o AGENT asignado.
+ * Escritura por applicationId: ADMIN, owner de la property o AGENT asignado.
  */
 @Component("screeningSecurity")
 @RequiredArgsConstructor
@@ -48,19 +52,53 @@ public class ScreeningSecurity {
         if (currentUser.getRole() == UserRole.ADMIN) {
             return true;
         }
-        if (currentUser.getRole() != UserRole.AGENT) {
-            return false;
-        }
         return rentalApplicationRepository.findById(applicationId)
-                .map(application -> isAgentOfApplication(application, currentUser))
+                .map(app -> isOwnerOfApplication(app, currentUser)
+                        || isAgentOfApplication(app, currentUser))
                 .orElse(false);
     }
 
-    private boolean isAgentOfApplication(RentalApplication application, User currentUser) {
-        Property property = application.getProperty();
-        if (property == null || property.getAgent() == null || property.getAgent().getUser() == null) {
+    @Transactional(readOnly = true)
+    public boolean canManageByApplication(Long applicationId, User currentUser) {
+        if (currentUser == null) {
             return false;
         }
-        return property.getAgent().getUser().getId().equals(currentUser.getId());
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+        return rentalApplicationRepository.findById(applicationId)
+                .map(app -> isOwnerOfApplication(app, currentUser)
+                        || isAgentOfApplication(app, currentUser))
+                .orElse(false);
+    }
+
+    private boolean isOwnerOfApplication(RentalApplication application, User currentUser) {
+        if (application == null || currentUser == null) {
+            return false;
+        }
+        Property property = application.getProperty();
+        if (property == null) {
+            return false;
+        }
+        User owner = property.getOwner();
+        if (owner == null || owner.getId() == null) {
+            return false;
+        }
+        return Objects.equals(owner.getId(), currentUser.getId());
+    }
+
+    private boolean isAgentOfApplication(RentalApplication application, User currentUser) {
+        if (application == null || currentUser == null) {
+            return false;
+        }
+        Property property = application.getProperty();
+        if (property == null || property.getAgent() == null) {
+            return false;
+        }
+        User agentUser = property.getAgent().getUser();
+        if (agentUser == null || agentUser.getId() == null) {
+            return false;
+        }
+        return Objects.equals(agentUser.getId(), currentUser.getId());
     }
 }

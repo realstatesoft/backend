@@ -58,6 +58,14 @@ public class TenantScreeningService {
     // ─── Creación ──────────────────────────────────────────────────────────────
 
     /**
+     * Overload path-only: crea un screening a partir del applicationId.
+     */
+    @Transactional
+    public TenantScreeningResponse createScreening(Long applicationId) {
+        return createScreening(new CreateScreeningRequest(applicationId));
+    }
+
+    /**
      * Crea un screening interno para la rental application indicada.
      * Setea provider=INTERNAL, recommendation=REVIEW (placeholder hasta carga manual),
      * runAt=now y expiresAt=now+90d.
@@ -92,6 +100,7 @@ public class TenantScreeningService {
             saved = screeningRepository.saveAndFlush(screening);
         } catch (DataIntegrityViolationException ex) {
             // Insert concurrente gano la carrera; la UNIQUE(application_id) rebota.
+            log.debug("Concurrent screening insert for application={} rejected by UNIQUE constraint", applicationId);
             throw new BadRequestException(
                     "Screening already exists for application " + applicationId);
         }
@@ -106,6 +115,17 @@ public class TenantScreeningService {
      * la recalcula automáticamente con las reglas de negocio.
      * No modifica expiresAt (fijo desde la creación).
      */
+    /**
+     * Aplica resultados manuales resolviendo el screening por applicationId.
+     */
+    @Transactional
+    public TenantScreeningResponse updateScreeningResultsByApplication(Long applicationId, UpdateScreeningRequest dto) {
+        TenantScreening s = screeningRepository.findByApplicationId(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "TenantScreening", "applicationId", applicationId));
+        return updateScreeningResults(s.getId(), dto);
+    }
+
     @Transactional
     public TenantScreeningResponse updateScreeningResults(Long id, UpdateScreeningRequest dto) {
         TenantScreening screening = findScreening(id);
