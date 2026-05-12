@@ -133,6 +133,16 @@ public class BillingService {
                 BigDecimal otherChargesSum = sumActiveRecurringChargeAmounts(
                         charges, periodStart, periodEnd);
                 inst.setTotalAmount(proratedRent.add(otherChargesSum));
+            } else if (i == totalPeriods
+                    && lease.getLeaseType() == LeaseType.FIXED_TERM
+                    && isLastMonthPartial(lease.getEndDate())) {
+                BigDecimal lastMonthRent = calculateLastMonthProratedRent(
+                        lease.getMonthlyRent(), periodStart, lease.getEndDate());
+                inst.setBaseRent(lastMonthRent);
+
+                BigDecimal otherChargesSum = sumActiveRecurringChargeAmounts(
+                        charges, periodStart, periodEnd);
+                inst.setTotalAmount(lastMonthRent.add(otherChargesSum));
             }
 
             installments.add(inst);
@@ -264,6 +274,24 @@ public class BillingService {
         BigDecimal dailyRate = monthlyRent.divide(
                 BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP);
         return dailyRate.multiply(BigDecimal.valueOf(daysRemaining))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    boolean isLastMonthPartial(LocalDate endDate) {
+        return endDate.getDayOfMonth() != endDate.lengthOfMonth();
+    }
+
+    BigDecimal calculateLastMonthProratedRent(BigDecimal monthlyRent,
+                                               LocalDate periodStart,
+                                               LocalDate endDate) {
+        YearMonth ym = YearMonth.from(periodStart);
+        int daysInMonth = ym.lengthOfMonth();
+        long daysInPeriod = java.time.temporal.ChronoUnit.DAYS.between(
+                periodStart, endDate) + 1;
+
+        BigDecimal dailyRate = monthlyRent.divide(
+                BigDecimal.valueOf(daysInMonth), 10, RoundingMode.HALF_UP);
+        return dailyRate.multiply(BigDecimal.valueOf(daysInPeriod))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
