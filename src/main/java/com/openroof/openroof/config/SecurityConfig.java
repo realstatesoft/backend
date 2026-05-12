@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:5174,https://*.vercel.app}")
+        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}")
         private String allowedOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;

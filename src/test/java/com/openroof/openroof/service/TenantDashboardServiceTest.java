@@ -174,7 +174,8 @@ class TenantDashboardServiceTest {
 
         org.springframework.data.domain.Page<com.openroof.openroof.model.rental.RentalInstallment> page = new org.springframework.data.domain.PageImpl<>(List.of(installment));
         when(rentalInstallmentRepository.findByLeaseIdOrderByDueDateDesc(eq(100L), any())).thenReturn(page);
-        when(leasePaymentRepository.findByInstallmentId(200L)).thenReturn(List.of());
+        when(leasePaymentRepository.findByInstallmentIdIn(any())).thenReturn(List.of());
+        when(rentalInstallmentRepository.findByLeaseIdOrderByDueDateAsc(100L)).thenReturn(List.of(installment));
 
         var response = tenantDashboardService.getPayments(testEmail, org.springframework.data.domain.PageRequest.of(0, 10));
 
@@ -199,9 +200,10 @@ class TenantDashboardServiceTest {
         request.setId(300L);
         request.setCreatedAt(java.time.LocalDateTime.now());
 
-        when(maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(100L)).thenReturn(List.of(request));
+        org.springframework.data.domain.Page<com.openroof.openroof.model.maintenance.MaintenanceRequest> page = new org.springframework.data.domain.PageImpl<>(List.of(request));
+        when(maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(eq(100L), any())).thenReturn(page);
 
-        var response = tenantDashboardService.getMaintenance(testEmail);
+        var response = tenantDashboardService.getMaintenance(testEmail, org.springframework.data.domain.PageRequest.of(0, 10));
 
         assertThat(response.tickets()).hasSize(1);
         assertThat(response.tickets().get(0).title()).isEqualTo("Fuga de agua");

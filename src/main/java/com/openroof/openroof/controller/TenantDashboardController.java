@@ -55,8 +55,10 @@ public class TenantDashboardController {
     @GetMapping("/maintenance")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Tickets de mantenimiento del tenant")
-    public ResponseEntity<ApiResponse<TenantMaintenanceResponse>> getTenantMaintenance(Authentication auth) {
+    public ResponseEntity<ApiResponse<TenantMaintenanceResponse>> getTenantMaintenance(
+            Authentication auth,
+            @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(
-                tenantDashboardService.getMaintenance(auth.getName())));
+                tenantDashboardService.getMaintenance(auth.getName(), pageable)));
     }
 }

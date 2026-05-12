@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface LeasePaymentRepository extends JpaRepository<LeasePayment, Long> {
     List<LeasePayment> findByInstallmentId(Long installmentId);
+
+    List<LeasePayment> findByInstallmentIdIn(java.util.Collection<Long> installmentIds);
 }
