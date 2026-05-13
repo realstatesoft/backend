@@ -44,4 +44,35 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
     List<Lease> findByStatusAndEndDateBefore(
             @Param("status") LeaseStatus status,
             @Param("before") LocalDate before);
+
+    @Query("""
+            SELECT l FROM Lease l
+            WHERE (:status IS NULL OR l.status = :status)
+              AND (:propertyId IS NULL OR l.property.id = :propertyId)
+            """)
+    Page<Lease> findAllFiltered(@Param("status") LeaseStatus status,
+                                @Param("propertyId") Long propertyId,
+                                Pageable pageable);
+
+    @Query("""
+            SELECT l FROM Lease l
+            WHERE l.landlord.id = :landlordId
+              AND (:status IS NULL OR l.status = :status)
+              AND (:propertyId IS NULL OR l.property.id = :propertyId)
+            """)
+    Page<Lease> findByLandlordFiltered(@Param("landlordId") Long landlordId,
+                                       @Param("status") LeaseStatus status,
+                                       @Param("propertyId") Long propertyId,
+                                       Pageable pageable);
+
+    @Query("""
+            SELECT l FROM Lease l
+            WHERE l.primaryTenant.id = :tenantId
+              AND (:status IS NULL OR l.status = :status)
+              AND (:propertyId IS NULL OR l.property.id = :propertyId)
+            """)
+    Page<Lease> findByTenantFiltered(@Param("tenantId") Long tenantId,
+                                     @Param("status") LeaseStatus status,
+                                     @Param("propertyId") Long propertyId,
+                                     Pageable pageable);
 }

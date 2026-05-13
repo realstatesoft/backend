@@ -62,22 +62,31 @@ public class LeaseService {
     }
 
     public Page<LeaseSummaryResponse> listLeases(Long userId, UserRole role,
-                                                  LeaseStatus status, Pageable pageable) {
+                                                  LeaseStatus status, Long propertyId,
+                                                  Pageable pageable) {
         Page<Lease> page;
         if (role == UserRole.ADMIN) {
-            page = status != null
-                    ? leaseRepository.findByStatus(status, pageable)
-                    : leaseRepository.findAll(pageable);
+            page = leaseRepository.findAllFiltered(status, propertyId, pageable);
         } else if (role == UserRole.AGENT) {
-            page = status != null
-                    ? leaseRepository.findByLandlordIdAndStatus(userId, status, pageable)
-                    : leaseRepository.findByLandlordId(userId, pageable);
+            page = leaseRepository.findByLandlordFiltered(userId, status, propertyId, pageable);
         } else {
-            page = status != null
-                    ? leaseRepository.findByPrimaryTenantIdAndStatus(userId, status, pageable)
-                    : leaseRepository.findByPrimaryTenantId(userId, pageable);
+            page = leaseRepository.findByTenantFiltered(userId, status, propertyId, pageable);
         }
         return page.map(leaseMapper::toSummaryResponse);
+    }
+
+    @Transactional
+    public LeaseResponse terminateLease(Long leaseId) {
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lease", "id", leaseId));
+        if (lease.getStatus() != LeaseStatus.ACTIVE
+                && lease.getStatus() != LeaseStatus.EXPIRING_SOON) {
+            throw new BadRequestException("Only ACTIVE or EXPIRING_SOON leases can be terminated");
+        }
+        lease.setStatus(LeaseStatus.TERMINATED);
+        leaseRepository.save(lease);
+        log.info("Lease id={} terminated", leaseId);
+        return leaseMapper.toResponse(lease);
     }
 
     @Transactional
