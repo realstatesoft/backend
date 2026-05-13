@@ -205,11 +205,19 @@ public class RentalApplicationService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    action.run();
+                    safeRun(action);
                 }
             });
         } else {
+            safeRun(action);
+        }
+    }
+
+    private void safeRun(Runnable action) {
+        try {
             action.run();
+        } catch (Throwable t) {
+            log.error("Post-commit notification callback failed; transaction already committed", t);
         }
     }
 }

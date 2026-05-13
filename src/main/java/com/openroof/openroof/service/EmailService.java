@@ -377,8 +377,8 @@ public class EmailService {
         vars.put("monthlyIncome", monthlyIncome != null ? monthlyIncome : BigDecimal.ZERO);
         vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
 
-        String body = renderTemplate("email/application-submitted", vars);
-        send(landlordEmail, "Nueva solicitud de alquiler — " + nullSafe(propertyTitle), body);
+        sendRendered("email/application-submitted", vars, landlordEmail,
+                "Nueva solicitud de alquiler — " + nullSafe(propertyTitle));
     }
 
     @Async("emailTaskExecutor")
@@ -388,11 +388,11 @@ public class EmailService {
         Map<String, Object> vars = new HashMap<>();
         vars.put("applicantName", nullSafe(applicantName));
         vars.put("propertyTitle", nullSafe(propertyTitle));
-        vars.put("nextSteps", nextSteps == null ? "" : nextSteps);
+        vars.put("nextSteps", blankToEmpty(nextSteps));
         vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
 
-        String body = renderTemplate("email/application-approved", vars);
-        send(applicantEmail, "Tu solicitud fue aprobada — " + nullSafe(propertyTitle), body);
+        sendRendered("email/application-approved", vars, applicantEmail,
+                "Tu solicitud fue aprobada — " + nullSafe(propertyTitle));
     }
 
     @Async("emailTaskExecutor")
@@ -402,11 +402,22 @@ public class EmailService {
         Map<String, Object> vars = new HashMap<>();
         vars.put("applicantName", nullSafe(applicantName));
         vars.put("propertyTitle", nullSafe(propertyTitle));
-        vars.put("publicReason", publicReason == null ? "" : publicReason);
+        vars.put("publicReason", blankToEmpty(publicReason));
         vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
 
-        String body = renderTemplate("email/application-rejected", vars);
-        send(applicantEmail, "Tu solicitud no fue aprobada — " + nullSafe(propertyTitle), body);
+        sendRendered("email/application-rejected", vars, applicantEmail,
+                "Tu solicitud no fue aprobada — " + nullSafe(propertyTitle));
+    }
+
+    private void sendRendered(String templateName, Map<String, Object> vars,
+                              String toEmail, String subject) {
+        String body = renderTemplate(templateName, vars);
+        if (body == null || body.isBlank()) {
+            log.warn("Render vacío — email omitido. template={} destinatario={}",
+                    templateName, maskEmail(toEmail));
+            return;
+        }
+        send(toEmail, subject, body);
     }
 
     String renderTemplate(String templateName, Map<String, Object> variables) {
@@ -421,6 +432,12 @@ public class EmailService {
 
     private static String nullSafe(String s) {
         return s == null ? "" : s;
+    }
+
+    private static String blankToEmpty(String s) {
+        if (s == null) return "";
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? "" : trimmed;
     }
 
     // ─── Core sender ──────────────────────────────────────────────────────────
