@@ -6,27 +6,26 @@ import com.openroof.openroof.dto.screening.UpdateScreeningRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.TenantScreeningMapper;
-import com.openroof.openroof.model.enums.BackgroundCheckStatus;
-import com.openroof.openroof.model.enums.ScreeningProvider;
-import com.openroof.openroof.model.enums.ScreeningRecommendation;
-import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.rental.RentalApplication;
 import com.openroof.openroof.model.screening.TenantScreening;
 import com.openroof.openroof.repository.RentalApplicationRepository;
 import com.openroof.openroof.repository.TenantScreeningRepository;
+import com.openroof.openroof.screening.adapter.InternalScreeningAdapter;
+import com.openroof.openroof.screening.adapter.ScreeningAdapterFactory;
+import com.openroof.openroof.screening.adapter.ScreeningProviderAdapter;
+import com.openroof.openroof.screening.adapter.ScreeningResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 /**
- * Servicio de tenant screening para el provider INTERNAL (carga manual del admin).
- * Aplica reglas de negocio para recomendar APPROVE/REVIEW/REJECT.
+ * Servicio de tenant screening. Delega la corrida al adapter resuelto por
+ * {@link ScreeningAdapterFactory}. El recálculo manual usa siempre el adapter
+ * INTERNAL (reglas de negocio sobre los datos cargados por el admin).
  */
 @Service
 @RequiredArgsConstructor
@@ -34,11 +33,12 @@ import java.time.LocalDateTime;
 public class TenantScreeningService {
 
     private static final int EXPIRATION_DAYS = 90;
-    private static final BigDecimal MIN_INCOME_TO_RENT_RATIO = new BigDecimal("3");
 
     private final TenantScreeningRepository screeningRepository;
     private final RentalApplicationRepository rentalApplicationRepository;
     private final TenantScreeningMapper mapper;
+    private final ScreeningAdapterFactory adapterFactory;
+    private final InternalScreeningAdapter internalAdapter;
 
     // ─── Lectura ───────────────────────────────────────────────────────────────
 
@@ -57,19 +57,11 @@ public class TenantScreeningService {
 
     // ─── Creación ──────────────────────────────────────────────────────────────
 
-    /**
-     * Overload path-only: crea un screening a partir del applicationId.
-     */
     @Transactional
     public TenantScreeningResponse createScreening(Long applicationId) {
         return createScreening(new CreateScreeningRequest(applicationId));
     }
 
-    /**
-     * Crea un screening interno para la rental application indicada.
-     * Setea provider=INTERNAL, recommendation=REVIEW (placeholder hasta carga manual),
-     * runAt=now y expiresAt=now+90d.
-     */
     @Transactional
     public TenantScreeningResponse createScreening(CreateScreeningRequest req) {
         Long applicationId = req.applicationId();
@@ -78,19 +70,25 @@ public class TenantScreeningService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "RentalApplication", "id", applicationId));
 
-        // Fast-path check; la UNIQUE(application_id) en DB cubre la condición de carrera.
         if (screeningRepository.existsByApplicationId(applicationId)) {
             throw new BadRequestException(
                     "Screening already exists for application " + applicationId);
         }
 
+        ScreeningProviderAdapter adapter = adapterFactory.resolveDefault();
+        ScreeningResult result = adapter.runScreening(application);
+
         LocalDateTime now = LocalDateTime.now();
         TenantScreening screening = TenantScreening.builder()
                 .application(application)
-                .provider(ScreeningProvider.INTERNAL)
-                .incomeVerified(false)
-                .identityVerified(false)
-                .recommendation(ScreeningRecommendation.REVIEW)
+                .provider(result.provider())
+                .creditScore(result.creditScore())
+                .backgroundCheckStatus(result.backgroundCheckStatus())
+                .evictionHistory(result.evictionHistory())
+                .criminalRecords(result.criminalRecords())
+                .incomeVerified(Boolean.TRUE.equals(result.incomeVerified()))
+                .identityVerified(Boolean.TRUE.equals(result.identityVerified()))
+                .recommendation(result.recommendation())
                 .runAt(now)
                 .expiresAt(now.plusDays(EXPIRATION_DAYS))
                 .build();
@@ -99,25 +97,17 @@ public class TenantScreeningService {
         try {
             saved = screeningRepository.saveAndFlush(screening);
         } catch (DataIntegrityViolationException ex) {
-            // Insert concurrente gano la carrera; la UNIQUE(application_id) rebota.
             log.debug("Concurrent screening insert for application={} rejected by UNIQUE constraint", applicationId);
             throw new BadRequestException(
                     "Screening already exists for application " + applicationId);
         }
-        log.info("Created internal screening id={} for application={}", saved.getId(), applicationId);
+        log.info("Created screening id={} provider={} for application={}",
+                saved.getId(), saved.getProvider(), applicationId);
         return mapper.toResponse(saved);
     }
 
     // ─── Actualización manual ──────────────────────────────────────────────────
 
-    /**
-     * Aplica resultados manuales del admin. Si el DTO no trae recommendation,
-     * la recalcula automáticamente con las reglas de negocio.
-     * No modifica expiresAt (fijo desde la creación).
-     */
-    /**
-     * Aplica resultados manuales resolviendo el screening por applicationId.
-     */
     @Transactional
     public TenantScreeningResponse updateScreeningResultsByApplication(Long applicationId, UpdateScreeningRequest dto) {
         TenantScreening s = screeningRepository.findByApplicationId(applicationId)
@@ -133,7 +123,7 @@ public class TenantScreeningService {
         mapper.updateEntity(dto, screening);
 
         if (dto.recommendation() == null) {
-            applyRules(screening);
+            screening.setRecommendation(internalAdapter.applyRules(screening));
         }
 
         screening.setRunAt(LocalDateTime.now());
@@ -145,16 +135,10 @@ public class TenantScreeningService {
 
     // ─── Recálculo explícito ───────────────────────────────────────────────────
 
-    /**
-     * Recalcula y persiste la recomendación según las reglas de negocio:
-     *  1. evictions presentes ⇒ REJECT
-     *  2. ratio>=3 y background=CLEAR ⇒ APPROVE
-     *  3. resto ⇒ REVIEW
-     */
     @Transactional
     public TenantScreeningResponse calculateRecommendation(Long id) {
         TenantScreening screening = findScreening(id);
-        applyRules(screening);
+        screening.setRecommendation(internalAdapter.applyRules(screening));
         TenantScreening saved = screeningRepository.save(screening);
         return mapper.toResponse(saved);
     }
@@ -164,50 +148,5 @@ public class TenantScreeningService {
     private TenantScreening findScreening(Long id) {
         return screeningRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("TenantScreening", "id", id));
-    }
-
-    /**
-     * Aplica las reglas de negocio sobre la entidad sin persistir.
-     */
-    void applyRules(TenantScreening screening) {
-        if (hasEvictions(screening)) {
-            screening.setRecommendation(ScreeningRecommendation.REJECT);
-            return;
-        }
-
-        BigDecimal ratio = resolveIncomeToRentRatio(screening.getApplication());
-        boolean ratioOk = ratio != null && ratio.compareTo(MIN_INCOME_TO_RENT_RATIO) >= 0;
-        boolean backgroundClear = screening.getBackgroundCheckStatus() == BackgroundCheckStatus.CLEAR;
-
-        if (ratioOk && backgroundClear) {
-            screening.setRecommendation(ScreeningRecommendation.APPROVE);
-        } else {
-            screening.setRecommendation(ScreeningRecommendation.REVIEW);
-        }
-    }
-
-    private boolean hasEvictions(TenantScreening screening) {
-        return screening.getEvictionHistory() != null
-                && !screening.getEvictionHistory().isEmpty();
-    }
-
-    /**
-     * Usa el ratio precomputado en la application; si está null, lo calcula desde
-     * monthlyIncome y property.rentAmount. Devuelve null si faltan datos.
-     */
-    private BigDecimal resolveIncomeToRentRatio(RentalApplication application) {
-        if (application == null) {
-            return null;
-        }
-        if (application.getIncomeToRentRatio() != null) {
-            return application.getIncomeToRentRatio();
-        }
-        BigDecimal income = application.getMonthlyIncome();
-        Property property = application.getProperty();
-        BigDecimal rent = property != null ? property.getRentAmount() : null;
-        if (income == null || rent == null || rent.signum() <= 0) {
-            return null;
-        }
-        return income.divide(rent, 2, RoundingMode.HALF_UP);
     }
 }

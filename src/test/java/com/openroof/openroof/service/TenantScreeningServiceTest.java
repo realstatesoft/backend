@@ -12,6 +12,8 @@ import com.openroof.openroof.model.rental.RentalApplication;
 import com.openroof.openroof.model.screening.TenantScreening;
 import com.openroof.openroof.repository.RentalApplicationRepository;
 import com.openroof.openroof.repository.TenantScreeningRepository;
+import com.openroof.openroof.screening.adapter.InternalScreeningAdapter;
+import com.openroof.openroof.screening.adapter.ScreeningAdapterFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,148 +42,18 @@ class TenantScreeningServiceTest {
     private RentalApplicationRepository rentalApplicationRepository;
     @Mock
     private TenantScreeningMapper mapper;
+    @Mock
+    private ScreeningAdapterFactory adapterFactory;
+
+    private final InternalScreeningAdapter internalAdapter = new InternalScreeningAdapter();
 
     private TenantScreeningService service;
 
     @BeforeEach
     void setUp() {
-        service = new TenantScreeningService(screeningRepository, rentalApplicationRepository, mapper);
-    }
-
-    // ─── REJECT: evictions presentes ───────────────────────────────────────────
-
-    @Test
-    void applyRules_withEvictions_returnsReject() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("5"), null, null),
-                BackgroundCheckStatus.CLEAR);
-        s.setEvictionHistory(List.of(Map.of("year", 2022)));
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REJECT, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_withEvictions_overridesGoodRatioAndClear() {
-        // Aunque ratio>=3 y background CLEAR, evictions fuerzan REJECT
-        TenantScreening s = screening(buildApplication(new BigDecimal("4"), null, null),
-                BackgroundCheckStatus.CLEAR);
-        s.setEvictionHistory(List.of(Map.of("court", "X")));
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REJECT, s.getRecommendation());
-    }
-
-    // ─── APPROVE: ratio>=3 AND CLEAR ───────────────────────────────────────────
-
-    @Test
-    void applyRules_ratioExactly3AndClear_returnsApprove() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("3"), null, null),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.APPROVE, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_ratioAbove3AndClear_returnsApprove() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("5.5"), null, null),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.APPROVE, s.getRecommendation());
-    }
-
-    // ─── REVIEW: cualquier otra cosa ───────────────────────────────────────────
-
-    @Test
-    void applyRules_ratioBelow3AndClear_returnsReview() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("2.99"), null, null),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_ratioOkButFlagged_returnsReview() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("4"), null, null),
-                BackgroundCheckStatus.FLAGGED);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_ratioOkButFailed_returnsReview() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("4"), null, null),
-                BackgroundCheckStatus.FAILED);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_ratioOkButBackgroundNull_returnsReview() {
-        TenantScreening s = screening(buildApplication(new BigDecimal("4"), null, null), null);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_nullRatioAndNoIncome_returnsReview() {
-        // No precomputado, no monthlyIncome ni rent: incompleto ⇒ REVIEW
-        TenantScreening s = screening(buildApplication(null, null, null),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    // ─── Fallback: ratio computado desde income/rent ──────────────────────────
-
-    @Test
-    void applyRules_nullRatio_computesFromIncomeAndRent_approve() {
-        // income=3000, rent=1000 ⇒ ratio=3 ⇒ APPROVE
-        TenantScreening s = screening(
-                buildApplication(null, new BigDecimal("3000"), new BigDecimal("1000")),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.APPROVE, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_nullRatio_computesFromIncomeAndRent_review() {
-        // income=1500, rent=1000 ⇒ ratio=1.5 ⇒ REVIEW
-        TenantScreening s = screening(
-                buildApplication(null, new BigDecimal("1500"), new BigDecimal("1000")),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
-    }
-
-    @Test
-    void applyRules_rentZero_falsifiesRatio_returnsReview() {
-        TenantScreening s = screening(
-                buildApplication(null, new BigDecimal("3000"), BigDecimal.ZERO),
-                BackgroundCheckStatus.CLEAR);
-
-        service.applyRules(s);
-
-        assertEquals(ScreeningRecommendation.REVIEW, s.getRecommendation());
+        service = new TenantScreeningService(
+                screeningRepository, rentalApplicationRepository, mapper,
+                adapterFactory, internalAdapter);
     }
 
     // ─── Lectura ──────────────────────────────────────────────────────────────
@@ -233,6 +103,7 @@ class TenantScreeningServiceTest {
         app.setId(appId);
         when(rentalApplicationRepository.findById(appId)).thenReturn(Optional.of(app));
         when(screeningRepository.existsByApplicationId(appId)).thenReturn(false);
+        when(adapterFactory.resolveDefault()).thenReturn(internalAdapter);
         when(screeningRepository.saveAndFlush(any(TenantScreening.class)))
                 .thenThrow(new org.springframework.dao.DataIntegrityViolationException(
                         "duplicate key value violates unique constraint"));
@@ -290,6 +161,7 @@ class TenantScreeningServiceTest {
         app.setId(applicationId);
         when(rentalApplicationRepository.findById(applicationId)).thenReturn(Optional.of(app));
         when(screeningRepository.existsByApplicationId(applicationId)).thenReturn(false);
+        when(adapterFactory.resolveDefault()).thenReturn(internalAdapter);
         when(screeningRepository.saveAndFlush(any(TenantScreening.class)))
                 .thenAnswer(inv -> {
                     TenantScreening s = inv.getArgument(0);
@@ -317,7 +189,6 @@ class TenantScreeningServiceTest {
         TenantScreening saved = captor.getValue();
         assertNotNull(saved.getRunAt());
         assertNotNull(saved.getExpiresAt());
-        // expiresAt = runAt + 90 days
         assertEquals(saved.getRunAt().plusDays(90).toLocalDate(),
                 saved.getExpiresAt().toLocalDate());
     }
@@ -359,7 +230,6 @@ class TenantScreeningServiceTest {
         verify(screeningRepository).findByApplicationId(applicationId);
         verify(mapper).updateEntity(req, existing);
         verify(screeningRepository).save(existing);
-        // runAt fue refrescado al ejecutar la actualización
         assertNotEquals(originalRunAt, existing.getRunAt());
     }
 
@@ -376,13 +246,6 @@ class TenantScreeningServiceTest {
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
-
-    private TenantScreening screening(RentalApplication application, BackgroundCheckStatus bg) {
-        return TenantScreening.builder()
-                .application(application)
-                .backgroundCheckStatus(bg)
-                .build();
-    }
 
     private RentalApplication buildApplication(BigDecimal ratio, BigDecimal monthlyIncome, BigDecimal rentAmount) {
         Property property = null;

@@ -144,3 +144,6 @@ shedlock:
 mail:
   from-name: OpenRoof
   base-url: ${FRONTEND_URL:http://localhost:5173}
+
+screening:
+  provider: ${SCREENING_PROVIDER:INTERNAL}
