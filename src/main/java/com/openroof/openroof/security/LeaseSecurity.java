@@ -1,14 +1,19 @@
 package com.openroof.openroof.security;
 
+import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.LeaseRepository;
+import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -23,6 +28,8 @@ public class LeaseSecurity {
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
     private final PropertySecurity propertySecurity;
+    private final AgentProfileRepository agentProfileRepository;
+    private final PropertyAssignmentRepository propertyAssignmentRepository;
 
     /**
      * Verifica que el usuario sea ADMIN, landlord o primary tenant del lease.
@@ -74,6 +81,50 @@ public class LeaseSecurity {
         }
         try {
             assertLeaseAccess(userId, leaseId);
+            return true;
+        } catch (AccessDeniedException ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Verifica que el usuario pueda leer las cuotas de un lease.
+     * Aplica a: ADMIN, landlord, primary tenant, o agente con assignment ACCEPTED sobre la propiedad.
+     */
+    public void assertInstallmentAccess(Long userId, Long leaseId) {
+        if (userId == null) throw new AccessDeniedException("Usuario no autenticado");
+        if (leaseId == null) throw new AccessDeniedException("Lease id nulo");
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AccessDeniedException("Usuario " + userId + " no encontrado"));
+
+        if (user.getRole() == UserRole.ADMIN) return;
+
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new AccessDeniedException("Lease " + leaseId + " no encontrado o sin acceso"));
+
+        if (lease.getLandlord() != null && userId.equals(lease.getLandlord().getId())) return;
+
+        if (lease.getPrimaryTenant() != null && userId.equals(lease.getPrimaryTenant().getId())) return;
+
+        if (user.getRole() == UserRole.AGENT && lease.getProperty() != null) {
+            Optional<AgentProfile> profile = agentProfileRepository.findByUser_Id(userId);
+            if (profile.isPresent()) {
+                boolean assigned = propertyAssignmentRepository.findActiveByPropertyAndAgent(
+                        lease.getProperty().getId(),
+                        profile.get().getId(),
+                        List.of(AssignmentStatus.ACCEPTED)
+                ).isPresent();
+                if (assigned) return;
+            }
+        }
+
+        throw new AccessDeniedException("Usuario " + userId + " no tiene acceso al lease " + leaseId);
+    }
+
+    public boolean hasInstallmentAccess(Long userId, Long leaseId) {
+        try {
+            assertInstallmentAccess(userId, leaseId);
             return true;
         } catch (AccessDeniedException ex) {
             return false;
