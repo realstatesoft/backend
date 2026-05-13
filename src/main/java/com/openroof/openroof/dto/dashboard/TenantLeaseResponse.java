@@ -44,6 +44,11 @@ public record TenantLeaseResponse(
         Integer renewalNoticeDays,
         long daysRemaining,
 
+        // ─── Información Adicional ──────────────────────────────
+        String pets,
+        String includedServices,
+        String emergencyContact,
+
         // ─── Documentos ──────────────────────────────────────────
         List<LeaseDocument> documents,
 

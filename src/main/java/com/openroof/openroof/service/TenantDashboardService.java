@@ -193,6 +193,9 @@ public class TenantDashboardService {
                 lease.getAutoRenew(),
                 lease.getRenewalNoticeDays(),
                 daysRemaining,
+                lease.getProperty().getPetPolicy() != null ? lease.getProperty().getPetPolicy().name() : null,
+                lease.getProperty().getUtilitiesIncluded() != null ? String.join(", ", lease.getProperty().getUtilitiesIncluded()) : null,
+                null, // emergencyContact not yet in DB
                 documents,
                 lease.isSigned(),
                 lease.getSignedByLandlordAt(),
