@@ -41,12 +41,15 @@ public class LeaseService {
 
     @Transactional
     public LeaseResponse createLease(Long landlordId, CreateLeaseRequest dto) {
-        User landlord = userRepository.findById(landlordId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", landlordId));
-        User tenant = userRepository.findById(dto.tenantId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.tenantId()));
         Property property = propertyRepository.findById(dto.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property", "id", dto.propertyId()));
+        User landlord = property.getOwner();
+        User tenant = userRepository.findById(dto.tenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.tenantId()));
+
+        if (tenant.getId().equals(landlord.getId())) {
+            throw new BadRequestException("Tenant cannot be the same as the property owner");
+        }
 
         Lease lease = leaseMapper.toEntity(dto, property, tenant, landlord);
         lease = leaseRepository.save(lease);

@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.liquibase.enabled=false",
-        "application.security.jwt.secret-key=aGVsbG8td29ybGQtdGVzdC1zZWNyZXQta2V5LTI1Ni1iaXQtbG9uZy1lbm91Z2gtZm9yLXRlc3Rpbmc=",
+        "application.security.jwt.secret-key=${TEST_JWT_SECRET:test-integration-jwt-secret-key-long-enough-for-256bit}",
         "supabase.url=http://localhost:54321",
         "supabase.service-role-key=dummy-key",
         "supabase.storage.bucket=test-bucket",
@@ -256,7 +256,7 @@ class LeaseServiceIntegrationTest {
             Page<LeaseSummaryResponse> page = leaseService.listLeases(
                     admin.getId(), UserRole.ADMIN, null, null, pageable);
 
-            assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(2);
+            assertThat(page.getTotalElements()).isEqualTo(2);
         }
     }
 

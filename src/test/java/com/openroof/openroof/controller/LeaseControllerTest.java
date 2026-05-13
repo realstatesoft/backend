@@ -59,8 +59,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -281,7 +281,7 @@ class LeaseControllerTest {
             when(leaseService.updateLease(eq(10L), any(CreateLeaseRequest.class)))
                     .thenReturn(sampleLeaseResponse(10L, LeaseStatus.DRAFT));
 
-            mockMvc.perform(patch("/api/leases/10")
+            mockMvc.perform(put("/api/leases/10")
                             .with(authentication(agentAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(VALID_DTO)))
@@ -295,7 +295,7 @@ class LeaseControllerTest {
         void updateForbiddenReturns403() throws Exception {
             when(leaseSecurity.canManageLease(eq(10L), any())).thenReturn(false);
 
-            mockMvc.perform(patch("/api/leases/10")
+            mockMvc.perform(put("/api/leases/10")
                             .with(authentication(tenantAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(VALID_DTO)))
@@ -309,7 +309,7 @@ class LeaseControllerTest {
             when(leaseService.updateLease(eq(10L), any()))
                     .thenThrow(new BadRequestException("Lease can only be updated in DRAFT status"));
 
-            mockMvc.perform(patch("/api/leases/10")
+            mockMvc.perform(put("/api/leases/10")
                             .with(authentication(agentAuth()))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(VALID_DTO)))
