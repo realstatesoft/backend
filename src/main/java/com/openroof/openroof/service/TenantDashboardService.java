@@ -4,6 +4,10 @@ import com.openroof.openroof.dto.dashboard.TenantDashboardResponse;
 import com.openroof.openroof.dto.dashboard.TenantDashboardResponse.*;
 import com.openroof.openroof.dto.dashboard.TenantLeaseResponse;
 import com.openroof.openroof.dto.dashboard.TenantLeaseResponse.*;
+import com.openroof.openroof.dto.dashboard.TenantPaymentsResponse;
+import com.openroof.openroof.dto.dashboard.TenantInstallmentItem;
+import com.openroof.openroof.dto.dashboard.TenantMaintenanceResponse;
+import com.openroof.openroof.dto.dashboard.TenantMaintenanceTicketItem;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.InstallmentStatus;
 import com.openroof.openroof.model.enums.LeaseStatus;
@@ -16,7 +20,9 @@ import com.openroof.openroof.model.rental.RentalInstallment;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +32,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +49,7 @@ public class TenantDashboardService {
     private final MaintenanceRequestRepository maintenanceRequestRepository;
     private final MessageRepository messageRepository;
     private final PaymentRepository paymentRepository;
+    private final LeasePaymentRepository leasePaymentRepository;
 
     public TenantDashboardResponse getDashboard(String email) {
         User tenant = userRepository.findByEmail(email)
@@ -110,7 +120,7 @@ public class TenantDashboardService {
                 .map(m -> new MaintenanceTicketInfo(
                         m.getId(),
                         m.getTitle(),
-                        m.getCategory().name(),
+                        m.getCategory() != null ? m.getCategory().name() : null,
                         m.getStatus().name(),
                         m.getCreatedAt().toLocalDate()))
                 .limit(2)
@@ -183,12 +193,146 @@ public class TenantDashboardService {
                 lease.getAutoRenew(),
                 lease.getRenewalNoticeDays(),
                 daysRemaining,
+                lease.getProperty().getPetPolicy() != null ? lease.getProperty().getPetPolicy().name() : null,
+                lease.getProperty().getUtilitiesIncluded() != null ? String.join(", ", lease.getProperty().getUtilitiesIncluded()) : null,
+                null, // emergencyContact not yet in DB
                 documents,
                 lease.isSigned(),
                 lease.getSignedByLandlordAt(),
                 lease.getSignedByTenantAt(),
                 lease.getCreatedAt(),
                 lease.getUpdatedAt());
+    }
+
+    public TenantPaymentsResponse getPayments(String email, Pageable pageable) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+
+        Page<RentalInstallment> installmentsPage = rentalInstallmentRepository.findByLeaseIdOrderByDueDateDesc(lease.getId(), pageable);
+
+        // Fix N+1: Fetch all payments for the installments in the current page in one go
+        List<Long> installmentIds = installmentsPage.getContent().stream().map(RentalInstallment::getId).toList();
+        Map<Long, List<TenantInstallmentItem.LeasePaymentInfo>> paymentsByInstallment = leasePaymentRepository.findByInstallmentIdIn(installmentIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getInstallment().getId(),
+                        Collectors.mapping(p -> new TenantInstallmentItem.LeasePaymentInfo(
+                                p.getMethod().name(),
+                                p.getAmount(),
+                                p.getPaidAt(),
+                                p.getReceiptPdfUrl()), Collectors.toList())
+                ));
+
+        List<TenantInstallmentItem> items = installmentsPage.getContent().stream()
+                .map(i -> {
+                    List<TenantInstallmentItem.LeasePaymentInfo> payments = paymentsByInstallment.getOrDefault(i.getId(), List.of());
+
+                    return new TenantInstallmentItem(
+                            i.getId(),
+                            i.getInstallmentNumber(),
+                            i.getPeriodStart() + " a " + i.getPeriodEnd(),
+                            i.getTotalAmount(),
+                            i.getPaidAmount(),
+                            i.getBalance(),
+                            i.getStatus().name(),
+                            i.getDueDate(),
+                            payments);
+                })
+                .toList();
+
+        // Summary header - Corrected "on time" vs "late" logic
+        BigDecimal totalPaidYear = paymentRepository.sumCompletedByUserSince(tenant.getId(), PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
+        if (totalPaidYear == null) totalPaidYear = BigDecimal.ZERO;
+
+        List<RentalInstallment> allInstallments = rentalInstallmentRepository.findByLeaseIdOrderByDueDateAsc(lease.getId());
+        int graceDays = lease.getGracePeriodDays() != null ? lease.getGracePeriodDays() : 0;
+
+        long onTime = allInstallments.stream()
+                .filter(i -> i.getStatus() == InstallmentStatus.PAID)
+                .filter(i -> i.getPaidDate() != null && !i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays)))
+                .count();
+
+        long late = allInstallments.stream()
+                .filter(i -> i.getStatus() == InstallmentStatus.OVERDUE ||
+                        (i.getStatus() == InstallmentStatus.PAID && i.getPaidDate() != null && i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays))))
+                .count();
+
+        NextInstallmentInfo nextPayment = buildNextInstallmentInfo(lease.getId(), LocalDate.now());
+
+        return new TenantPaymentsResponse(
+                totalPaidYear,
+                onTime,
+                late,
+                nextPayment,
+                items,
+                installmentsPage.getTotalElements(),
+                installmentsPage.getTotalPages(),
+                installmentsPage.getNumber());
+    }
+
+    public TenantMaintenanceResponse getMaintenance(String email, Pageable pageable) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+
+        Page<MaintenanceRequest> requestsPage = maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(lease.getId(), pageable);
+
+        List<TenantMaintenanceTicketItem> items = requestsPage.getContent().stream()
+                .map(m -> {
+                    TenantMaintenanceTicketItem.VendorContact vendorContact = null;
+                    if (m.getAssignedVendor() != null) {
+                        vendorContact = new TenantMaintenanceTicketItem.VendorContact(
+                                m.getAssignedVendor().getCompanyName(),
+                                m.getAssignedVendor().getPhone(),
+                                m.getAssignedVendor().getEmail());
+                    }
+
+                    List<TenantMaintenanceTicketItem.StatusHistoryItem> history = new ArrayList<>();
+                    history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.SUBMITTED.name(), m.getCreatedAt()));
+                    if (m.getAcknowledgedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.ACKNOWLEDGED.name(), m.getAcknowledgedAt()));
+                    }
+                    if (m.getInProgressAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.IN_PROGRESS.name(), m.getInProgressAt()));
+                    }
+                    if (m.getOnHoldAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.ON_HOLD.name(), m.getOnHoldAt()));
+                    }
+                    if (m.getResolvedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.COMPLETED.name(), m.getResolvedAt()));
+                    }
+                    if (m.getCancelledAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.CANCELLED.name(), m.getCancelledAt()));
+                    }
+                    if (m.getClosedAt() != null) {
+                        history.add(new TenantMaintenanceTicketItem.StatusHistoryItem("CLOSED", m.getClosedAt()));
+                    }
+
+                    return new TenantMaintenanceTicketItem(
+                            m.getId(),
+                            m.getTitle(),
+                            m.getDescription(),
+                            m.getCategory() != null ? m.getCategory().name() : null,
+                            m.getPriority().name(),
+                            m.getStatus().name(),
+                            vendorContact,
+                            history,
+                            m.getTenantSatisfactionRating(),
+                            m.getCreatedAt());
+                })
+                .toList();
+
+        // Get counts by status from all tickets for this lease (not just the page)
+        List<MaintenanceRequest> allRequests = maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(lease.getId(), Pageable.unpaged()).getContent();
+        Map<String, Long> countsByStatus = allRequests.stream()
+                .collect(Collectors.groupingBy(m -> m.getStatus().name(), Collectors.counting()));
+
+        return new TenantMaintenanceResponse(items, countsByStatus);
     }
 
     private List<LeaseDocument> buildLeaseDocuments(Lease lease) {

@@ -33,6 +33,7 @@ class TenantDashboardServiceTest {
     @Mock private MaintenanceRequestRepository maintenanceRequestRepository;
     @Mock private MessageRepository messageRepository;
     @Mock private PaymentRepository paymentRepository;
+    @Mock private LeasePaymentRepository leasePaymentRepository;
 
     @InjectMocks
     private TenantDashboardService tenantDashboardService;
@@ -150,5 +151,62 @@ class TenantDashboardServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> tenantDashboardService.getLease(testEmail))
                 .isInstanceOf(com.openroof.openroof.exception.ResourceNotFoundException.class)
                 .hasMessageContaining("No tenes un lease activo actualmente");
+    }
+
+    @Test
+    @DisplayName("getPayments() - Retorna historial de cuotas paginado")
+    void getPayments_returnsPaginatedInstallments() {
+        when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+        Lease lease = Lease.builder().status(LeaseStatus.ACTIVE).build();
+        lease.setId(100L);
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
+
+        com.openroof.openroof.model.rental.RentalInstallment installment = com.openroof.openroof.model.rental.RentalInstallment.builder()
+                .installmentNumber(1)
+                .periodStart(LocalDate.now())
+                .periodEnd(LocalDate.now().plusMonths(1))
+                .totalAmount(new BigDecimal("1000"))
+                .paidAmount(new BigDecimal("1000"))
+                .status(com.openroof.openroof.model.enums.InstallmentStatus.PAID)
+                .dueDate(LocalDate.now().plusDays(5))
+                .build();
+        installment.setId(200L);
+
+        org.springframework.data.domain.Page<com.openroof.openroof.model.rental.RentalInstallment> page = new org.springframework.data.domain.PageImpl<>(List.of(installment));
+        when(rentalInstallmentRepository.findByLeaseIdOrderByDueDateDesc(eq(100L), any())).thenReturn(page);
+        when(leasePaymentRepository.findByInstallmentIdIn(any())).thenReturn(List.of());
+        when(rentalInstallmentRepository.findByLeaseIdOrderByDueDateAsc(100L)).thenReturn(List.of(installment));
+
+        var response = tenantDashboardService.getPayments(testEmail, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(response.installments()).hasSize(1);
+        assertThat(response.installments().get(0).installmentNumber()).isEqualTo(1);
+        assertThat(response.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("getMaintenance() - Retorna tickets del lease activo")
+    void getMaintenance_returnsTickets() {
+        when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
+        Lease lease = Lease.builder().status(LeaseStatus.ACTIVE).build();
+        lease.setId(100L);
+        when(leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(Optional.of(lease));
+
+        com.openroof.openroof.model.maintenance.MaintenanceRequest request = com.openroof.openroof.model.maintenance.MaintenanceRequest.builder()
+                .title("Fuga de agua")
+                .status(com.openroof.openroof.model.enums.MaintenanceStatus.SUBMITTED)
+                .priority(com.openroof.openroof.model.enums.MaintenancePriority.HIGH)
+                .build();
+        request.setId(300L);
+        request.setCreatedAt(java.time.LocalDateTime.now());
+
+        org.springframework.data.domain.Page<com.openroof.openroof.model.maintenance.MaintenanceRequest> page = new org.springframework.data.domain.PageImpl<>(List.of(request));
+        when(maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(eq(100L), any())).thenReturn(page);
+
+        var response = tenantDashboardService.getMaintenance(testEmail, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(response.tickets()).hasSize(1);
+        assertThat(response.tickets().get(0).title()).isEqualTo("Fuga de agua");
+        assertThat(response.countsByStatus()).containsEntry("SUBMITTED", 1L);
     }
 }

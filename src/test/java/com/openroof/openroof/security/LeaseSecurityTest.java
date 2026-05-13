@@ -195,7 +195,7 @@ class LeaseSecurityTest {
     }
 
     @Test
-    void hasLeaseAccess_nullLeaseId_returnsFalse() {
+    void hasLeaseAccess_nullLeaseId_returnsFalse_withoutTouchingAnyRepo() {
         assertFalse(leaseSecurity.hasLeaseAccess(LANDLORD_ID, null));
         verifyNoInteractions(userRepository);
         verifyNoInteractions(leaseRepository);

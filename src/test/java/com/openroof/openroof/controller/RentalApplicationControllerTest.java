@@ -89,7 +89,8 @@ class RentalApplicationControllerTest {
         private final CreateRentalApplicationRequest request = new CreateRentalApplicationRequest(
                 100L, "Me interesa el apartamento",
                 new BigDecimal("3000.00"), EmploymentStatus.EMPLOYED,
-                "Empresa SA", 2, false, true);
+                "Empresa SA", java.util.List.of("ref1@x.com", "ref2@x.com"),
+                2, false, true);
 
         @Test
         @DisplayName("Usuario autenticado envía solicitud y recibe 201")

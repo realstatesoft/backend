@@ -211,7 +211,9 @@ class RentalApplicationServiceIntegrationTest {
         void rejectsUnknownProperty() {
             CreateRentalApplicationRequest dto = new CreateRentalApplicationRequest(
                     999999L, "mensaje", new BigDecimal("3000.00"),
-                    EmploymentStatus.EMPLOYED, "Empresa", 2, false, true);
+                    EmploymentStatus.EMPLOYED, "Empresa",
+                    java.util.List.of("ref1@x.com", "ref2@x.com"),
+                    2, false, true);
 
             assertThatThrownBy(() -> rentalApplicationService.submitApplication(dto, applicant.getEmail()))
                     .isInstanceOf(ResourceNotFoundException.class);
@@ -582,6 +584,7 @@ class RentalApplicationServiceIntegrationTest {
                 new BigDecimal("3000.00"),
                 EmploymentStatus.EMPLOYED,
                 "Empresa SA",
+                java.util.List.of("ref1@x.com", "ref2@x.com"),
                 2,
                 false,
                 true);

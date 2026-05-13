@@ -9,9 +9,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -22,6 +27,9 @@ public class EmailService {
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
+
+    @Autowired(required = false)
+    private SpringTemplateEngine templateEngine;
 
     @Value("${spring.mail.username:}")
     private String fromEmail;
@@ -354,6 +362,160 @@ public class EmailService {
             baseUrl + "/messages"
         );
         send(toEmail, subject, body);
+    }
+
+    // ─── APLICACIONES DE ALQUILER (Thymeleaf) ─────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationSubmittedEmail(String landlordEmail, String landlordName,
+                                              String applicantName, String propertyTitle,
+                                              BigDecimal monthlyIncome, Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("landlordName", nullSafe(landlordName));
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyIncome", monthlyIncome != null ? monthlyIncome : BigDecimal.ZERO);
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-submitted", vars, landlordEmail,
+                "Nueva solicitud de alquiler — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationApprovedEmail(String applicantEmail, String applicantName,
+                                             String propertyTitle, String nextSteps,
+                                             Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("nextSteps", blankToEmpty(nextSteps));
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-approved", vars, applicantEmail,
+                "Tu solicitud fue aprobada — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationRejectedEmail(String applicantEmail, String applicantName,
+                                             String propertyTitle, String publicReason,
+                                             Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("publicReason", blankToEmpty(publicReason));
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-rejected", vars, applicantEmail,
+                "Tu solicitud no fue aprobada — " + nullSafe(propertyTitle));
+    }
+
+    // ─── LEASE (Thymeleaf) ────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseSentForSignatureEmail(String toEmail, String recipientName,
+                                                String propertyTitle, String signatureLink,
+                                                LocalDateTime expiresAt) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("recipientName", nullSafe(recipientName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("signatureLink", nullSafe(signatureLink));
+        vars.put("expiresAt", expiresAt != null ? format(expiresAt) : null);
+
+        sendRendered("email/lease-sent-for-signature", vars, toEmail,
+                "Contrato listo para firmar — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseSignedEmail(String toEmail, String recipientName,
+                                      String signerName, String propertyTitle,
+                                      String pendingMessage, Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("recipientName", nullSafe(recipientName));
+        vars.put("signerName", nullSafe(signerName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("pendingMessage", blankToEmpty(pendingMessage));
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-signed", vars, toEmail,
+                "Contrato firmado — " + nullSafe(propertyTitle));
+    }
+
+    public record LeaseSummary(
+            java.math.BigDecimal monthlyRent,
+            java.time.LocalDate startDate,
+            java.time.LocalDate endDate,
+            java.time.LocalDate firstInstallmentDueDate) {}
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseActivatedTenantEmail(String toEmail, String tenantName,
+                                               String propertyTitle, LeaseSummary summary,
+                                               Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("tenantName", nullSafe(tenantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyRent", summary != null && summary.monthlyRent() != null
+                ? summary.monthlyRent() : java.math.BigDecimal.ZERO);
+        vars.put("startDate", summary != null && summary.startDate() != null
+                ? summary.startDate().toString() : "--");
+        vars.put("endDate", summary != null && summary.endDate() != null
+                ? summary.endDate().toString() : "--");
+        vars.put("firstInstallmentDueDate", summary != null && summary.firstInstallmentDueDate() != null
+                ? summary.firstInstallmentDueDate().toString() : null);
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-activated-tenant", vars, toEmail,
+                "¡Bienvenido a tu nuevo hogar! — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseActivatedLandlordEmail(String toEmail, String landlordName,
+                                                 String tenantName, String propertyTitle,
+                                                 LeaseSummary summary, Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("landlordName", nullSafe(landlordName));
+        vars.put("tenantName", nullSafe(tenantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyRent", summary != null && summary.monthlyRent() != null
+                ? summary.monthlyRent() : java.math.BigDecimal.ZERO);
+        vars.put("startDate", summary != null && summary.startDate() != null
+                ? summary.startDate().toString() : "--");
+        vars.put("endDate", summary != null && summary.endDate() != null
+                ? summary.endDate().toString() : "--");
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-activated-landlord", vars, toEmail,
+                "Contrato activado — " + nullSafe(propertyTitle));
+    }
+
+    private void sendRendered(String templateName, Map<String, Object> vars,
+                              String toEmail, String subject) {
+        String body = renderTemplate(templateName, vars);
+        if (body == null || body.isBlank()) {
+            log.warn("Render vacío — email omitido. template={} destinatario={}",
+                    templateName, maskEmail(toEmail));
+            return;
+        }
+        send(toEmail, subject, body);
+    }
+
+    String renderTemplate(String templateName, Map<String, Object> variables) {
+        if (templateEngine == null) {
+            log.warn("SpringTemplateEngine no disponible — render omitido para template={}", templateName);
+            return "";
+        }
+        Context context = new Context();
+        context.setVariables(variables);
+        return templateEngine.process(templateName, context);
+    }
+
+    private static String nullSafe(String s) {
+        return s == null ? "" : s;
+    }
+
+    private static String blankToEmpty(String s) {
+        if (s == null) return "";
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? "" : trimmed;
     }
 
     // ─── Core sender ──────────────────────────────────────────────────────────
