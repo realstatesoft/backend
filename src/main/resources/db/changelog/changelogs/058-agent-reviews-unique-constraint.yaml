@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 058-agent-reviews-unique-constraint
+      author: OR-213
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: >
+              SELECT COUNT(*) FROM (
+                SELECT agent_id, user_id FROM agent_reviews
+                WHERE deleted_at IS NULL
+                GROUP BY agent_id, user_id
+                HAVING COUNT(*) > 1
+              ) duplicates
+      changes:
+        - addUniqueConstraint:
+            tableName: agent_reviews
+            columnNames: agent_id, user_id
+            constraintName: uq_agent_reviews_agent_user
+      rollback:
+        - dropUniqueConstraint:
+            tableName: agent_reviews
+            constraintName: uq_agent_reviews_agent_user
