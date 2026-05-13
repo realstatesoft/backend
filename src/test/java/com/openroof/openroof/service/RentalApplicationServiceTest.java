@@ -1,6 +1,5 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.rental.CreateLeaseRequest;
 import com.openroof.openroof.dto.rental.CreateRentalApplicationRequest;
 import com.openroof.openroof.dto.rental.LeaseResponse;
@@ -127,6 +126,7 @@ class RentalApplicationServiceTest {
             assertThat(entity.getIncomeToRentRatio()).isEqualByComparingTo("3.00");
             assertThat(result.status()).isEqualTo(RentalApplicationStatus.SUBMITTED);
             verify(applicationRepository).saveAndFlush(entity);
+            verify(notificationService).notifyApplicationSubmitted(entity);
         }
 
         @Test
@@ -338,7 +338,7 @@ class RentalApplicationServiceTest {
             assertThat(app.getStatus()).isEqualTo(RentalApplicationStatus.APPROVED);
             assertThat(app.getDecidedAt()).isNotNull();
             assertThat(result.status()).isEqualTo(RentalApplicationStatus.APPROVED);
-            verify(notificationService).create(any(CreateNotificationRequest.class), eq("tenant@test.com"));
+            verify(notificationService).notifyApplicationApproved(app);
         }
 
         @Test
@@ -397,8 +397,8 @@ class RentalApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("La notificación enviada contiene el applicationId y propertyId correctos")
-        void notificationContainsCorrectMetadata() {
+        @DisplayName("La notificación se dispara con la aplicación correcta")
+        void notificationDispatchedWithApplication() {
             RentalApplication app = baseApplication(RentalApplicationStatus.SUBMITTED);
             app.setId(1L);
             when(applicationRepository.findById(1L)).thenReturn(Optional.of(app));
@@ -409,11 +409,7 @@ class RentalApplicationServiceTest {
 
             service.approveApplication(1L, "owner@test.com");
 
-            ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
-            verify(notificationService).create(captor.capture(), eq("tenant@test.com"));
-            assertThat(captor.getValue().userId()).isEqualTo(applicant.getId());
-            assertThat(captor.getValue().data()).containsKey("applicationId");
-            assertThat(captor.getValue().data()).containsKey("propertyId");
+            verify(notificationService).notifyApplicationApproved(app);
         }
     }
 
@@ -441,7 +437,7 @@ class RentalApplicationServiceTest {
             assertThat(app.getRejectionReason()).isEqualTo("Historial insuficiente");
             assertThat(app.getDecidedAt()).isNotNull();
             assertThat(result.status()).isEqualTo(RentalApplicationStatus.REJECTED);
-            verify(notificationService).create(any(CreateNotificationRequest.class), eq("tenant@test.com"));
+            verify(notificationService).notifyApplicationRejected(app, "Historial insuficiente");
         }
 
         @Test
@@ -516,7 +512,6 @@ class RentalApplicationServiceTest {
 
             assertThat(result.id()).isEqualTo(50L);
             verify(leaseRepository).saveAndFlush(lease);
-            verify(notificationService).create(any(CreateNotificationRequest.class), eq("tenant@test.com"));
         }
 
         @Test

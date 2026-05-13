@@ -1,6 +1,5 @@
 package com.openroof.openroof.service;
 
-import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.rental.CreateLeaseRequest;
 import com.openroof.openroof.dto.rental.CreateRentalApplicationRequest;
 import com.openroof.openroof.dto.rental.LeaseResponse;
@@ -10,7 +9,6 @@ import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.LeaseMapper;
 import com.openroof.openroof.mapper.RentalApplicationMapper;
-import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.enums.RentalApplicationStatus;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.rental.Lease;
@@ -27,12 +25,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -83,6 +82,9 @@ public class RentalApplicationService {
 
         RentalApplication saved = applicationRepository.saveAndFlush(application);
         log.info("RentalApplication {} submitted by user {}", saved.getId(), applicant.getId());
+
+        runAfterCommit(() -> notificationService.notifyApplicationSubmitted(saved));
+
         return applicationMapper.toResponse(saved);
     }
 
@@ -128,8 +130,7 @@ public class RentalApplicationService {
         application.setDecidedAt(LocalDateTime.now());
         RentalApplication saved = applicationRepository.saveAndFlush(application);
 
-        notifyApplicant(saved, "Aplicación aprobada",
-                String.format("Tu aplicación para '%s' fue aprobada.", application.getProperty().getTitle()));
+        runAfterCommit(() -> notificationService.notifyApplicationApproved(saved));
 
         log.info("RentalApplication {} approved by manager {}", id, manager.getId());
         return applicationMapper.toResponse(saved);
@@ -153,8 +154,7 @@ public class RentalApplicationService {
         application.setDecidedAt(LocalDateTime.now());
         RentalApplication saved = applicationRepository.saveAndFlush(application);
 
-        notifyApplicant(saved, "Aplicación rechazada",
-                String.format("Tu aplicación para '%s' fue rechazada.", application.getProperty().getTitle()));
+        runAfterCommit(() -> notificationService.notifyApplicationRejected(saved, reason));
 
         log.info("RentalApplication {} rejected by manager {}", id, manager.getId());
         return applicationMapper.toResponse(saved);
@@ -179,9 +179,6 @@ public class RentalApplicationService {
         Lease lease = leaseMapper.toEntity(leaseDto, property, tenant, landlord);
         Lease savedLease = leaseRepository.saveAndFlush(lease);
 
-        notifyApplicant(application, "Contrato de arrendamiento creado",
-                String.format("Se generó un contrato para '%s'. Revisa y firma para activarlo.", property.getTitle()));
-
         log.info("Lease {} created from RentalApplication {} by manager {}", savedLease.getId(), id, manager.getId());
         return leaseMapper.toResponse(savedLease);
     }
@@ -203,18 +200,16 @@ public class RentalApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + email));
     }
 
-    private void notifyApplicant(RentalApplication application, String title, String message) {
-        User applicant = application.getApplicant();
-        notificationService.create(
-                new CreateNotificationRequest(
-                        applicant.getId(),
-                        NotificationType.SYSTEM,
-                        title,
-                        message,
-                        Map.of("applicationId", application.getId(), "propertyId", application.getProperty().getId()),
-                        "/rental-applications/" + application.getId()
-                ),
-                applicant.getEmail()
-        );
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

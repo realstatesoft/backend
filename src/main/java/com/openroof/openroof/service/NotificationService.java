@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.openroof.openroof.model.property.Property;
+import com.openroof.openroof.model.rental.RentalApplication;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     public NotificationResponse create(CreateNotificationRequest request, String currentUserEmail) {
         User currentUser = getUserByEmail(currentUserEmail);
@@ -125,7 +128,96 @@ public class NotificationService {
         }
     }
 
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    // ─── Rental application notifications (OR-237) ────────────────────────────
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyApplicationSubmitted(RentalApplication application) {
+        Property property = application.getProperty();
+        User landlord = property != null ? property.getOwner() : null;
+        User applicant = application.getApplicant();
+        if (landlord == null || applicant == null) {
+            return;
+        }
+
+        Notification notif = Notification.builder()
+                .user(landlord)
+                .type(NotificationType.SYSTEM)
+                .title("Nueva solicitud de alquiler")
+                .message(String.format("%s envió una solicitud para '%s'.",
+                        applicant.getName(), property.getTitle()))
+                .data(Map.of(
+                        "applicationId", application.getId(),
+                        "propertyId", property.getId()))
+                .actionUrl("/rental-applications/" + application.getId())
+                .build();
+        notificationRepository.save(notif);
+
+        emailService.sendApplicationSubmittedEmail(
+                landlord.getEmail(),
+                landlord.getName(),
+                applicant.getName(),
+                property.getTitle(),
+                application.getMonthlyIncome(),
+                application.getId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyApplicationApproved(RentalApplication application) {
+        User applicant = application.getApplicant();
+        Property property = application.getProperty();
+        if (applicant == null || property == null) {
+            return;
+        }
+
+        Notification notif = Notification.builder()
+                .user(applicant)
+                .type(NotificationType.SYSTEM)
+                .title("Aplicación aprobada")
+                .message(String.format("Tu solicitud para '%s' fue aprobada.", property.getTitle()))
+                .data(Map.of(
+                        "applicationId", application.getId(),
+                        "propertyId", property.getId()))
+                .actionUrl("/rental-applications/" + application.getId())
+                .build();
+        notificationRepository.save(notif);
+
+        emailService.sendApplicationApprovedEmail(
+                applicant.getEmail(),
+                applicant.getName(),
+                property.getTitle(),
+                null,
+                application.getId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyApplicationRejected(RentalApplication application, String publicReason) {
+        User applicant = application.getApplicant();
+        Property property = application.getProperty();
+        if (applicant == null || property == null) {
+            return;
+        }
+
+        Notification notif = Notification.builder()
+                .user(applicant)
+                .type(NotificationType.SYSTEM)
+                .title("Aplicación rechazada")
+                .message(String.format("Tu solicitud para '%s' fue rechazada.", property.getTitle()))
+                .data(Map.of(
+                        "applicationId", application.getId(),
+                        "propertyId", property.getId()))
+                .actionUrl("/rental-applications/" + application.getId())
+                .build();
+        notificationRepository.save(notif);
+
+        emailService.sendApplicationRejectedEmail(
+                applicant.getEmail(),
+                applicant.getName(),
+                property.getTitle(),
+                publicReason,
+                application.getId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createPropertyPendingNotification(Property property) {
         List<User> admins = userRepository.findByRole(UserRole.ADMIN);
 
