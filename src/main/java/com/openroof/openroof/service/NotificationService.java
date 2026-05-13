@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.openroof.openroof.model.property.Property;
+import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.rental.RentalApplication;
 
 @Service
@@ -215,6 +216,111 @@ public class NotificationService {
                 property.getTitle(),
                 publicReason,
                 application.getId());
+    }
+
+    // ─── Lease notifications (OR-238) ─────────────────────────────────────────
+
+    public enum SignerSide { LANDLORD, TENANT }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyLeaseSentForSignature(Lease lease) {
+        Property property = lease.getProperty();
+        User landlord = lease.getLandlord();
+        User tenant = lease.getPrimaryTenant();
+        if (property == null || landlord == null || tenant == null) {
+            return;
+        }
+        String title = property.getTitle();
+        LocalDateTime expiresAt = lease.getSignatureTokenExpiresAt();
+
+        if (landlord.getEmail() != null) {
+            notificationRepository.save(buildLeaseNotif(landlord, lease,
+                    "Contrato listo para firmar",
+                    String.format("El contrato para '%s' está listo para tu firma.", title)));
+            emailService.sendLeaseSentForSignatureEmail(
+                    landlord.getEmail(), landlord.getName(), title,
+                    signatureLink(lease.getId(), lease.getSignatureTokenLandlord()), expiresAt);
+        }
+        if (tenant.getEmail() != null) {
+            notificationRepository.save(buildLeaseNotif(tenant, lease,
+                    "Contrato listo para firmar",
+                    String.format("El contrato para '%s' está listo para tu firma.", title)));
+            emailService.sendLeaseSentForSignatureEmail(
+                    tenant.getEmail(), tenant.getName(), title,
+                    signatureLink(lease.getId(), lease.getSignatureTokenTenant()), expiresAt);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyLeaseSigned(Lease lease, SignerSide signerSide) {
+        Property property = lease.getProperty();
+        User landlord = lease.getLandlord();
+        User tenant = lease.getPrimaryTenant();
+        if (property == null || landlord == null || tenant == null) {
+            return;
+        }
+        boolean signedByLandlord = signerSide == SignerSide.LANDLORD;
+        User signer = signedByLandlord ? landlord : tenant;
+        User recipient = signedByLandlord ? tenant : landlord;
+        String title = property.getTitle();
+        String pendingMessage = lease.isSigned()
+                ? "Ambas partes ya firmaron. El contrato podrá activarse."
+                : "Falta tu firma para activar el contrato.";
+
+        notificationRepository.save(buildLeaseNotif(recipient, lease,
+                "Contrato firmado",
+                String.format("%s firmó el contrato para '%s'.", signer.getName(), title)));
+
+        emailService.sendLeaseSignedEmail(
+                recipient.getEmail(), recipient.getName(), signer.getName(),
+                title, pendingMessage, lease.getId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyLeaseActivated(Lease lease, java.time.LocalDate firstInstallmentDueDate) {
+        Property property = lease.getProperty();
+        User landlord = lease.getLandlord();
+        User tenant = lease.getPrimaryTenant();
+        if (property == null || landlord == null || tenant == null) {
+            return;
+        }
+        String title = property.getTitle();
+        EmailService.LeaseSummary summary = new EmailService.LeaseSummary(
+                lease.getMonthlyRent(), lease.getStartDate(), lease.getEndDate(),
+                firstInstallmentDueDate);
+
+        notificationRepository.save(buildLeaseNotif(tenant, lease,
+                "Contrato activo",
+                String.format("Tu contrato para '%s' está activo.", title)));
+        emailService.sendLeaseActivatedTenantEmail(
+                tenant.getEmail(), tenant.getName(), title, summary, lease.getId());
+
+        notificationRepository.save(buildLeaseNotif(landlord, lease,
+                "Contrato activo",
+                String.format("El contrato para '%s' fue activado.", title)));
+        emailService.sendLeaseActivatedLandlordEmail(
+                landlord.getEmail(), landlord.getName(), tenant.getName(),
+                title, summary, lease.getId());
+    }
+
+    private Notification buildLeaseNotif(User user, Lease lease, String title, String message) {
+        return Notification.builder()
+                .user(user)
+                .type(NotificationType.SYSTEM)
+                .title(title)
+                .message(message)
+                .data(Map.of(
+                        "leaseId", lease.getId(),
+                        "propertyId", lease.getProperty().getId()))
+                .actionUrl("/leases/" + lease.getId())
+                .build();
+    }
+
+    private String signatureLink(Long leaseId, java.util.UUID token) {
+        if (token == null) {
+            return "/leases/" + leaseId;
+        }
+        return "/leases/" + leaseId + "/sign?token=" + token;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
