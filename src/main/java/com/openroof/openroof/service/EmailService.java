@@ -409,6 +409,84 @@ public class EmailService {
                 "Tu solicitud no fue aprobada — " + nullSafe(propertyTitle));
     }
 
+    // ─── LEASE (Thymeleaf) ────────────────────────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseSentForSignatureEmail(String toEmail, String recipientName,
+                                                String propertyTitle, String signatureLink,
+                                                LocalDateTime expiresAt) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("recipientName", nullSafe(recipientName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("signatureLink", nullSafe(signatureLink));
+        vars.put("expiresAt", expiresAt != null ? format(expiresAt) : null);
+
+        sendRendered("email/lease-sent-for-signature", vars, toEmail,
+                "Contrato listo para firmar — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseSignedEmail(String toEmail, String recipientName,
+                                      String signerName, String propertyTitle,
+                                      String pendingMessage, Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("recipientName", nullSafe(recipientName));
+        vars.put("signerName", nullSafe(signerName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("pendingMessage", blankToEmpty(pendingMessage));
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-signed", vars, toEmail,
+                "Contrato firmado — " + nullSafe(propertyTitle));
+    }
+
+    public record LeaseSummary(
+            java.math.BigDecimal monthlyRent,
+            java.time.LocalDate startDate,
+            java.time.LocalDate endDate,
+            java.time.LocalDate firstInstallmentDueDate) {}
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseActivatedTenantEmail(String toEmail, String tenantName,
+                                               String propertyTitle, LeaseSummary summary,
+                                               Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("tenantName", nullSafe(tenantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyRent", summary != null && summary.monthlyRent() != null
+                ? summary.monthlyRent() : java.math.BigDecimal.ZERO);
+        vars.put("startDate", summary != null && summary.startDate() != null
+                ? summary.startDate().toString() : "--");
+        vars.put("endDate", summary != null && summary.endDate() != null
+                ? summary.endDate().toString() : "--");
+        vars.put("firstInstallmentDueDate", summary != null && summary.firstInstallmentDueDate() != null
+                ? summary.firstInstallmentDueDate().toString() : null);
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-activated-tenant", vars, toEmail,
+                "¡Bienvenido a tu nuevo hogar! — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendLeaseActivatedLandlordEmail(String toEmail, String landlordName,
+                                                 String tenantName, String propertyTitle,
+                                                 LeaseSummary summary, Long leaseId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("landlordName", nullSafe(landlordName));
+        vars.put("tenantName", nullSafe(tenantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyRent", summary != null && summary.monthlyRent() != null
+                ? summary.monthlyRent() : java.math.BigDecimal.ZERO);
+        vars.put("startDate", summary != null && summary.startDate() != null
+                ? summary.startDate().toString() : "--");
+        vars.put("endDate", summary != null && summary.endDate() != null
+                ? summary.endDate().toString() : "--");
+        vars.put("actionUrl", baseUrl + "/leases/" + leaseId);
+
+        sendRendered("email/lease-activated-landlord", vars, toEmail,
+                "Contrato activado — " + nullSafe(propertyTitle));
+    }
+
     private void sendRendered(String templateName, Map<String, Object> vars,
                               String toEmail, String subject) {
         String body = renderTemplate(templateName, vars);
