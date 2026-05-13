@@ -204,4 +204,7 @@ databaseChangeLog:
   - include:
       file: changelogs/057-add-missing-maintenance-timestamps.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/058-agent-reviews-unique-constraint.yaml
+      relativeToChangelogFile: true
 
