@@ -9,9 +9,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -22,6 +27,9 @@ public class EmailService {
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
+
+    @Autowired(required = false)
+    private SpringTemplateEngine templateEngine;
 
     @Value("${spring.mail.username:}")
     private String fromEmail;
@@ -354,6 +362,82 @@ public class EmailService {
             baseUrl + "/messages"
         );
         send(toEmail, subject, body);
+    }
+
+    // ─── APLICACIONES DE ALQUILER (Thymeleaf) ─────────────────────────────────
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationSubmittedEmail(String landlordEmail, String landlordName,
+                                              String applicantName, String propertyTitle,
+                                              BigDecimal monthlyIncome, Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("landlordName", nullSafe(landlordName));
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("monthlyIncome", monthlyIncome != null ? monthlyIncome : BigDecimal.ZERO);
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-submitted", vars, landlordEmail,
+                "Nueva solicitud de alquiler — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationApprovedEmail(String applicantEmail, String applicantName,
+                                             String propertyTitle, String nextSteps,
+                                             Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("nextSteps", blankToEmpty(nextSteps));
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-approved", vars, applicantEmail,
+                "Tu solicitud fue aprobada — " + nullSafe(propertyTitle));
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendApplicationRejectedEmail(String applicantEmail, String applicantName,
+                                             String propertyTitle, String publicReason,
+                                             Long applicationId) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("applicantName", nullSafe(applicantName));
+        vars.put("propertyTitle", nullSafe(propertyTitle));
+        vars.put("publicReason", blankToEmpty(publicReason));
+        vars.put("actionUrl", baseUrl + "/rental-applications/" + applicationId);
+
+        sendRendered("email/application-rejected", vars, applicantEmail,
+                "Tu solicitud no fue aprobada — " + nullSafe(propertyTitle));
+    }
+
+    private void sendRendered(String templateName, Map<String, Object> vars,
+                              String toEmail, String subject) {
+        String body = renderTemplate(templateName, vars);
+        if (body == null || body.isBlank()) {
+            log.warn("Render vacío — email omitido. template={} destinatario={}",
+                    templateName, maskEmail(toEmail));
+            return;
+        }
+        send(toEmail, subject, body);
+    }
+
+    String renderTemplate(String templateName, Map<String, Object> variables) {
+        if (templateEngine == null) {
+            log.warn("SpringTemplateEngine no disponible — render omitido para template={}", templateName);
+            return "";
+        }
+        Context context = new Context();
+        context.setVariables(variables);
+        return templateEngine.process(templateName, context);
+    }
+
+    private static String nullSafe(String s) {
+        return s == null ? "" : s;
+    }
+
+    private static String blankToEmpty(String s) {
+        if (s == null) return "";
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? "" : trimmed;
     }
 
     // ─── Core sender ──────────────────────────────────────────────────────────

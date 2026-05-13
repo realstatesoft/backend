@@ -10,6 +10,8 @@ import com.openroof.openroof.model.user.User;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class RentalApplicationMapper {
@@ -54,9 +56,19 @@ public class RentalApplicationMapper {
                 .message(dto.message())
                 .numberOfOccupants(dto.numberOfOccupants())
                 .hasPets(dto.hasPets())
-                .screeningConsent(dto.acceptsTerms())
-                .screeningConsentAt(Boolean.TRUE.equals(dto.acceptsTerms()) ? LocalDateTime.now() : null)
+                .screeningConsent(dto.screeningConsent())
+                .screeningConsentAt(Boolean.TRUE.equals(dto.screeningConsent()) ? LocalDateTime.now() : null)
+                .tenantReferences(toReferenceMaps(dto.references()))
                 .submittedAt(LocalDateTime.now())
                 .build();
+    }
+
+    private List<Map<String, Object>> toReferenceMaps(List<String> references) {
+        if (references == null) {
+            return null;
+        }
+        return references.stream()
+                .map(r -> Map.<String, Object>of("contact", r))
+                .toList();
     }
 }
