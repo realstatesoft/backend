@@ -14,6 +14,8 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_property_views_user", columnList = "user_id"),
         @Index(name = "idx_property_views_date", columnList = "created_at"),
         @Index(name = "idx_property_views_property_date", columnList = "property_id, created_at")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_property_views_user_property", columnNames = {"user_id", "property_id"})
 })
 @SQLRestriction("deleted_at IS NULL")
 @Getter

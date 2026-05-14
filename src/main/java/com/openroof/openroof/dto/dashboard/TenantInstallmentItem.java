@@ -17,9 +17,11 @@ public record TenantInstallmentItem(
     List<LeasePaymentInfo> payments
 ) {
     public record LeasePaymentInfo(
+        Long id,
         String method,
         BigDecimal amount,
         LocalDateTime date,
         String receiptUrl
     ) {}
+
 }

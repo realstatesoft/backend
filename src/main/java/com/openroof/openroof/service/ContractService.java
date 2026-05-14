@@ -8,12 +8,9 @@ import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
-import com.openroof.openroof.model.enums.ContractStatus;
-import com.openroof.openroof.model.enums.ContractType;
-import com.openroof.openroof.model.enums.PropertyStatus;
-import com.openroof.openroof.model.enums.SignatureRole;
-import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.enums.*;
 import com.openroof.openroof.model.property.Property;
+import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.ContractRepository;
 import com.openroof.openroof.repository.ContractSignatureRepository;
@@ -21,6 +18,7 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.ContractTemplateRepository;
+import com.openroof.openroof.repository.LeaseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,6 +52,8 @@ public class ContractService {
     private final AgentProfileRepository agentProfileRepository;
     private final PropertyRepository propertyRepository;
     private final ContractTemplateRepository contractTemplateRepository;
+    private final LeaseRepository leaseRepository;
+    private final BillingService billingService;
     private final ContractMapper contractMapper;
     private final EmailService emailService;
     private final AuditService auditService;
@@ -399,19 +399,100 @@ public class ContractService {
                     Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
                     Map.of("status", PropertyStatus.SOLD.name()));
         } else if (contract.getContractType() == ContractType.RENT) {
-            // Opcional: Manejar alquileres también para consistencia
-            PropertyStatus oldStatus = property.getStatus();
-            property.setStatus(PropertyStatus.RENTED);
-            property.setTenant(contract.getBuyer());
-            propertyRepository.save(property);
-
-            log.info("Trigger: Propiedad {} marcada como RENTED por contrato de alquiler {}", 
-                property.getId(), contract.getId());
-
-            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
-                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
-                    Map.of("status", PropertyStatus.RENTED.name()));
+            createLeaseFromContract(contract, actor);
         }
+    }
+
+    @Transactional
+    public void createLeaseFromContract(Contract contract, User actor) {
+        Property property = contract.getProperty();
+        if (property == null) return;
+
+        if (property.getActiveLeaseId() != null) {
+            log.warn("Propiedad {} ya tiene un lease activo ({}). Omitiendo creación duplicada.",
+                    property.getId(), property.getActiveLeaseId());
+            return;
+        }
+
+        PropertyStatus oldStatus = property.getStatus();
+        property.setStatus(PropertyStatus.RENTED);
+        property.setTenant(contract.getBuyer());
+
+        List<ContractSignature> sigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(contract.getId());
+        LocalDateTime signedByLandlordAt = sigs.stream()
+                .filter(s -> s.getRole() == SignatureRole.SELLER && s.getSignedAt() != null)
+                .findFirst()
+                .map(ContractSignature::getSignedAt)
+                .orElse(null);
+        LocalDateTime signedByTenantAt = sigs.stream()
+                .filter(s -> s.getRole() == SignatureRole.BUYER && s.getSignedAt() != null)
+                .findFirst()
+                .map(ContractSignature::getSignedAt)
+                .orElse(null);
+
+        Lease lease = Lease.builder()
+                .property(property)
+                .landlord(contract.getSeller())
+                .primaryTenant(contract.getBuyer())
+                .status(LeaseStatus.ACTIVE)
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .leaseType(LeaseType.FIXED_TERM)
+                .monthlyRent(contract.getAmount() != null ? contract.getAmount() : property.getRentAmount() != null ? property.getRentAmount() : BigDecimal.ZERO)
+                .currency(property.getRentCurrency() != null ? property.getRentCurrency() : "USD")
+                .billingFrequency(BillingFrequency.MONTHLY)
+                .dueDay(contract.getStartDate() != null ? contract.getStartDate().getDayOfMonth() : 1)
+                .gracePeriodDays(5)
+                .lateFeeType(LateFeeType.PERCENTAGE)
+                .lateFeeValue(BigDecimal.valueOf(5))
+                .securityDeposit(property.getRentAmount() != null ? property.getRentAmount() : BigDecimal.ZERO)
+                .depositStatus(DepositStatus.HELD)
+                .moveInDate(contract.getStartDate())
+                .autoRenew(false)
+                .signedByLandlordAt(signedByLandlordAt)
+                .signedByTenantAt(signedByTenantAt)
+                .activatedAt(LocalDateTime.now())
+                .build();
+
+        leaseRepository.save(lease);
+        property.setActiveLeaseId(lease.getId());
+        propertyRepository.save(property);
+
+        billingService.generateInstallments(lease);
+
+        log.info("Trigger: Propiedad {} marcada como RENTED y lease {} creado por contrato de alquiler {}",
+            property.getId(), lease.getId(), contract.getId());
+
+        auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                Map.of("status", PropertyStatus.RENTED.name()));
+    }
+
+    @Transactional
+    public void activateLeaseFromContract(Long contractId, String requesterEmail) {
+        Contract contract = findOrThrow(contractId);
+        User requester = findUserByEmail(requesterEmail);
+
+        if (!canManageContract(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para activar el lease de este contrato");
+        }
+        if (contract.getContractType() != ContractType.RENT) {
+            throw new BadRequestException("Solo los contratos de alquiler pueden activar un lease");
+        }
+        if (contract.getStatus() != ContractStatus.SIGNED) {
+            throw new BadRequestException("El contrato debe estar firmado (SIGNED) para activar el lease");
+        }
+        
+        if (contract.getProperty() != null) {
+            Property property = propertyRepository.findByIdForUpdate(contract.getProperty().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
+            if (property.getActiveLeaseId() != null) {
+                log.info("Property {} already has active lease {}, ignoring.", property.getId(), property.getActiveLeaseId());
+                return;
+            }
+        }
+
+        createLeaseFromContract(contract, requester);
     }
 
     /**
@@ -488,6 +569,9 @@ public class ContractService {
 
         if (request.status() == ContractStatus.SIGNED) {
             throw new BadRequestException("No se puede establecer manualmente el estado como SIGNED. Use el flujo de firmas.");
+        }
+        if (request.status() == ContractStatus.PARTIALLY_SIGNED) {
+            throw new BadRequestException("No se puede establecer manualmente el estado como PARTIALLY_SIGNED. Use el flujo de firmas.");
         }
 
         contract.setStatus(request.status());
