@@ -45,6 +45,7 @@ public record TenantDashboardResponse(
 
         public record ActiveLeaseInfo(
                 Long leaseId,
+                Long propertyId,
                 String propertyTitle,
                 String propertyAddress,
                 String landlordName,

@@ -481,6 +481,7 @@ public class TenantDashboardService {
         User landlord = lease.getLandlord();
         return new ActiveLeaseInfo(
                 lease.getId(),
+                lease.getProperty().getId(),
                 lease.getProperty().getTitle(),
                 lease.getProperty().getAddress(),
                 landlord.getName(),
