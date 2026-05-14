@@ -93,7 +93,7 @@ class TenantDashboardServiceTest {
         when(paymentRepository.findByUser_IdAndStatus(eq(testUser.getId()), any(), any())).thenReturn(paymentPage);
 
         // Listas vacías para simplificar el mock de repositorios de installments y maintenance
-        when(rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateDesc(100L)).thenReturn(List.of());
+        when(rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateAsc(100L)).thenReturn(List.of());
         when(maintenanceRequestRepository.findTop5ByTenantIdOrderByCreatedAtDesc(testUser.getId())).thenReturn(List.of());
 
         TenantDashboardResponse response = tenantDashboardService.getDashboard(testEmail);
@@ -130,12 +130,12 @@ class TenantDashboardServiceTest {
                 .build();
         lease.setId(100L);
 
-        when(leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(List.of(lease));
+        when(leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(eq(testUser.getId()), eq(LeaseStatus.ACTIVE), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(lease)));
 
-        List<com.openroof.openroof.dto.dashboard.TenantLeaseResponse> responses = tenantDashboardService.getLeases(testEmail);
+        org.springframework.data.domain.Page<com.openroof.openroof.dto.dashboard.TenantLeaseResponse> responses = tenantDashboardService.getLeases(testEmail, org.springframework.data.domain.Pageable.unpaged());
 
-        assertThat(responses).hasSize(1);
-        com.openroof.openroof.dto.dashboard.TenantLeaseResponse response = responses.get(0);
+        assertThat(responses.getContent()).hasSize(1);
+        com.openroof.openroof.dto.dashboard.TenantLeaseResponse response = responses.getContent().get(0);
         assertThat(response.daysRemaining()).isEqualTo(15);
         assertThat(response.landlord().userId()).isEqualTo(55L);
         assertThat(response.landlord().name()).isEqualTo("Landlord Test");
@@ -149,11 +149,11 @@ class TenantDashboardServiceTest {
     @DisplayName("getLeases() - No existe lease activo → retorna lista vacía")
     void getLeases_noActiveLease_returnsEmptyList() {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-        when(leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(List.of());
+        when(leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(eq(testUser.getId()), eq(LeaseStatus.ACTIVE), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
 
-        List<com.openroof.openroof.dto.dashboard.TenantLeaseResponse> responses = tenantDashboardService.getLeases(testEmail);
+        org.springframework.data.domain.Page<com.openroof.openroof.dto.dashboard.TenantLeaseResponse> responses = tenantDashboardService.getLeases(testEmail, org.springframework.data.domain.Pageable.unpaged());
 
-        assertThat(responses).isEmpty();
+        assertThat(responses.getContent()).isEmpty();
     }
 
     @Test

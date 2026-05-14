@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record CreateMaintenanceRequest(
+    @NotNull Long leaseId,
     @NotBlank String title,
     @NotBlank String description,
     @NotNull MaintenanceCategory category,

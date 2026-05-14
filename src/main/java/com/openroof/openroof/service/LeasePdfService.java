@@ -3,6 +3,7 @@ package com.openroof.openroof.service;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
@@ -65,7 +66,7 @@ public class LeasePdfService {
         boolean isTenant = lease.getPrimaryTenant() != null && lease.getPrimaryTenant().getId().equals(requester.getId());
         boolean isLandlord = lease.getLandlord() != null && lease.getLandlord().getId().equals(requester.getId());
         if (!isTenant && !isLandlord) {
-            throw new BadRequestException("No tiene permiso para descargar este contrato");
+            throw new ForbiddenException("No tiene permiso para descargar este contrato");
         }
     }
 

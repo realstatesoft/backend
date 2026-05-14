@@ -387,8 +387,12 @@ public class TenantDashboardService {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+        Lease lease = leaseRepository.findById(request.leaseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
+                
+        if (lease.getPrimaryTenant() == null || !lease.getPrimaryTenant().getId().equals(tenant.getId())) {
+            throw new ResourceNotFoundException("No tenes permiso para este contrato o el contrato no te pertenece");
+        }
 
         MaintenanceRequest mr = MaintenanceRequest.builder()
                 .tenant(tenant)

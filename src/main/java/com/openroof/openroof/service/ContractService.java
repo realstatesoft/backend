@@ -482,9 +482,14 @@ public class ContractService {
         if (contract.getStatus() != ContractStatus.SIGNED) {
             throw new BadRequestException("El contrato debe estar firmado (SIGNED) para activar el lease");
         }
-        Property property = contract.getProperty();
-        if (property != null && property.getActiveLeaseId() != null) {
-            throw new BadRequestException("Esta propiedad ya tiene un lease activo");
+        
+        if (contract.getProperty() != null) {
+            Property property = propertyRepository.findByIdForUpdate(contract.getProperty().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Property not found"));
+            if (property.getActiveLeaseId() != null) {
+                log.info("Property {} already has active lease {}, ignoring.", property.getId(), property.getActiveLeaseId());
+                return;
+            }
         }
 
         createLeaseFromContract(contract, requester);

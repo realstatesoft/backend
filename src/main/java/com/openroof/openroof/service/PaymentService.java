@@ -77,7 +77,10 @@ public class PaymentService {
         User user = getUserByEmail(currentUserEmail);
         validateMetadata(request.type(), request.metadata());
         if (idempotencyKey != null) {
-            log.info("Registrando pago con idempotencyKey={}", idempotencyKey);
+            String masked = idempotencyKey.length() > 4
+                    ? "..." + idempotencyKey.substring(idempotencyKey.length() - 4)
+                    : "****";
+            log.info("Registrando pago con idempotencyKey={}", masked);
             // TODO: validar idempotencyKey contra pagos previos cuando exista soporte en el modelo
         }
 

@@ -14,6 +14,11 @@ import java.util.Optional;
 @Repository
 public interface PropertyViewRepository extends JpaRepository<PropertyView, Long> {
 
+    /**
+     * Deletes property views for the given user and property.
+     * <p>Must be invoked from within a {@code @Transactional} context.</p>
+     */
+    @org.springframework.transaction.annotation.Transactional
     @org.springframework.data.jpa.repository.Modifying
     @Query("DELETE FROM PropertyView pv WHERE pv.user.id = :userId AND pv.property.id = :propertyId")
     void deleteByUserIdAndPropertyId(@Param("userId") Long userId, @Param("propertyId") Long propertyId);
