@@ -408,9 +408,27 @@ public class ContractService {
         Property property = contract.getProperty();
         if (property == null) return;
 
+        if (property.getActiveLeaseId() != null) {
+            log.warn("Propiedad {} ya tiene un lease activo ({}). Omitiendo creación duplicada.",
+                    property.getId(), property.getActiveLeaseId());
+            return;
+        }
+
         PropertyStatus oldStatus = property.getStatus();
         property.setStatus(PropertyStatus.RENTED);
         property.setTenant(contract.getBuyer());
+
+        List<ContractSignature> sigs = contractSignatureRepository.findByContractIdAndDeletedAtIsNull(contract.getId());
+        LocalDateTime signedByLandlordAt = sigs.stream()
+                .filter(s -> s.getRole() == SignatureRole.SELLER && s.getSignedAt() != null)
+                .findFirst()
+                .map(ContractSignature::getSignedAt)
+                .orElse(null);
+        LocalDateTime signedByTenantAt = sigs.stream()
+                .filter(s -> s.getRole() == SignatureRole.BUYER && s.getSignedAt() != null)
+                .findFirst()
+                .map(ContractSignature::getSignedAt)
+                .orElse(null);
 
         Lease lease = Lease.builder()
                 .property(property)
@@ -431,8 +449,8 @@ public class ContractService {
                 .depositStatus(DepositStatus.HELD)
                 .moveInDate(contract.getStartDate())
                 .autoRenew(false)
-                .signedByLandlordAt(LocalDateTime.now())
-                .signedByTenantAt(LocalDateTime.now())
+                .signedByLandlordAt(signedByLandlordAt)
+                .signedByTenantAt(signedByTenantAt)
                 .activatedAt(LocalDateTime.now())
                 .build();
 
@@ -546,6 +564,9 @@ public class ContractService {
 
         if (request.status() == ContractStatus.SIGNED) {
             throw new BadRequestException("No se puede establecer manualmente el estado como SIGNED. Use el flujo de firmas.");
+        }
+        if (request.status() == ContractStatus.PARTIALLY_SIGNED) {
+            throw new BadRequestException("No se puede establecer manualmente el estado como PARTIALLY_SIGNED. Use el flujo de firmas.");
         }
 
         contract.setStatus(request.status());

@@ -25,6 +25,7 @@ public interface MaintenanceRequestRepository extends JpaRepository<MaintenanceR
 
     List<MaintenanceRequest> findTop5ByTenantIdOrderByCreatedAtDesc(Long tenantId);
 
+    @Deprecated(forRemoval = true)
     org.springframework.data.domain.Page<MaintenanceRequest> findByLeaseIdOrderByCreatedAtDesc(Long leaseId, org.springframework.data.domain.Pageable pageable);
 
     org.springframework.data.domain.Page<MaintenanceRequest> findByTenantIdOrderByCreatedAtDesc(Long tenantId, org.springframework.data.domain.Pageable pageable);

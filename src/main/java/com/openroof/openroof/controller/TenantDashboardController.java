@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
@@ -39,9 +40,11 @@ public class TenantDashboardController {
     @GetMapping("/lease")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Leases activos del tenant con documentos y contacto del landlord")
-    public ResponseEntity<ApiResponse<List<TenantLeaseResponse>>> getTenantLeases(Authentication auth) {
+    public ResponseEntity<ApiResponse<Page<TenantLeaseResponse>>> getTenantLeases(
+            Authentication auth,
+            @PageableDefault(size = 5, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(
-                tenantDashboardService.getLeases(auth.getName())));
+                tenantDashboardService.getLeases(auth.getName(), pageable)));
     }
 
     @GetMapping("/lease/{id}")

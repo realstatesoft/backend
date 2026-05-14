@@ -104,9 +104,10 @@ public class TenantDashboardService {
         BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(tenantId, PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidLastYear == null) totalPaidLastYear = BigDecimal.ZERO;
 
-        // 9. Listas de resumen (Top 2 de todos los leases)
+        // 9. Listas de resumen (Próximas cuotas a pagar)
         List<NextInstallmentInfo> recentInstallments = activeLeases.stream()
-                .flatMap(lease -> rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateDesc(lease.getId()).stream())
+                .flatMap(lease -> rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateAsc(lease.getId()).stream())
+                .filter(i -> i.getStatus() != InstallmentStatus.PAID) // Solo mostrar los no pagados o pendientes en el dashboard
                 .map(i -> {
                     long due = ChronoUnit.DAYS.between(today, i.getDueDate());
                     return new NextInstallmentInfo(
@@ -120,7 +121,7 @@ public class TenantDashboardService {
                         due < 0 ? 0 : due);
                 })
                 .sorted(Comparator.comparing(NextInstallmentInfo::dueDate))
-                .limit(2)
+                .limit(4)
                 .toList();
 
         List<MaintenanceTicketInfo> recentMaintenance = maintenanceRequestRepository
@@ -149,12 +150,12 @@ public class TenantDashboardService {
                 recentMaintenance);
     }
 
-    public List<TenantLeaseResponse> getLeases(String email) {
+    public Page<TenantLeaseResponse> getLeases(String email, Pageable pageable) {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        List<Lease> leases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE);
-        return leases.stream().map(this::buildTenantLeaseResponse).toList();
+        Page<Lease> leases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE, pageable);
+        return leases.map(this::buildTenantLeaseResponse);
     }
 
     public TenantLeaseResponse getLeaseById(String email, Long leaseId) {

@@ -52,9 +52,12 @@ public class LeasePdfService {
 
         try {
             return buildPdf(lease);
+        } catch (com.lowagie.text.DocumentException | java.io.IOException e) {
+            log.error("Error generando PDF para lease {}: {}", leaseId, e.getMessage(), e);
+            throw new BadRequestException("No se pudo generar el PDF del contrato.");
         } catch (Exception e) {
             log.error("Error inesperado generando PDF para lease {}: {}", leaseId, e.getMessage(), e);
-            throw new BadRequestException("No se pudo generar el PDF del contrato: " + e.getMessage());
+            throw new BadRequestException("No se pudo generar el PDF del contrato.");
         }
     }
 
@@ -401,6 +404,7 @@ public class LeasePdfService {
     }
 
     private String resolveLeaseTypeLabel(com.openroof.openroof.model.enums.LeaseType type) {
+        if (type == null) return "N/A";
         return switch (type) {
             case FIXED_TERM -> "Plazo fijo";
             case MONTH_TO_MONTH -> "Mes a mes";
@@ -409,6 +413,7 @@ public class LeasePdfService {
     }
 
     private String resolveLateFeeTypeLabel(com.openroof.openroof.model.enums.LateFeeType type) {
+        if (type == null) return "N/A";
         return switch (type) {
             case PERCENTAGE -> "%";
             case FIXED_AMOUNT -> "(monto fijo)";

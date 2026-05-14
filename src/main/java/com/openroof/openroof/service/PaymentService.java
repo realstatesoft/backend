@@ -14,6 +14,7 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -67,8 +69,17 @@ public class PaymentService {
     // Crear un pago nuevo en estado PENDING
     @Transactional
     public PaymentResponse create(PaymentRequest request, String currentUserEmail) {
+        return create(request, currentUserEmail, null);
+    }
+
+    @Transactional
+    public PaymentResponse create(PaymentRequest request, String currentUserEmail, String idempotencyKey) {
         User user = getUserByEmail(currentUserEmail);
         validateMetadata(request.type(), request.metadata());
+        if (idempotencyKey != null) {
+            log.info("Registrando pago con idempotencyKey={}", idempotencyKey);
+            // TODO: validar idempotencyKey contra pagos previos cuando exista soporte en el modelo
+        }
 
         Payment payment = Payment.builder()
                 .user(user)

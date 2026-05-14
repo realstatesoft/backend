@@ -42,6 +42,7 @@ public interface RentalInstallmentRepository extends JpaRepository<RentalInstall
 
     java.util.Optional<RentalInstallment> findFirstByLeaseIdAndStatusInOrderByDueDateAsc(Long leaseId, Collection<InstallmentStatus> statuses);
     List<RentalInstallment> findTop5ByLeaseIdOrderByDueDateDesc(Long leaseId);
+    List<RentalInstallment> findTop5ByLeaseIdOrderByDueDateAsc(Long leaseId);
 
     org.springframework.data.domain.Page<RentalInstallment> findByLeaseIdOrderByDueDateDesc(Long leaseId, org.springframework.data.domain.Pageable pageable);
 
