@@ -24,6 +24,8 @@ public interface LeaseRepository extends JpaRepository<Lease, Long> {
 
     java.util.Optional<Lease> findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(Long tenantId, LeaseStatus status);
 
+    List<Lease> findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(Long tenantId, LeaseStatus status);
+
     @Query("""
            SELECT l FROM Lease l
            WHERE l.status = :status

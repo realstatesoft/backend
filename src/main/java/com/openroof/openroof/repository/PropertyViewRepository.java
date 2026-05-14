@@ -14,6 +14,10 @@ import java.util.Optional;
 @Repository
 public interface PropertyViewRepository extends JpaRepository<PropertyView, Long> {
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM PropertyView pv WHERE pv.user.id = :userId AND pv.property.id = :propertyId")
+    void deleteByUserIdAndPropertyId(@Param("userId") Long userId, @Param("propertyId") Long propertyId);
+
     long countByProperty_Id(Long propertyId);
 
     Optional<PropertyView> findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(Long userId, Long propertyId);

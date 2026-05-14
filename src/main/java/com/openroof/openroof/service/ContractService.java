@@ -8,12 +8,9 @@ import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.contract.Contract;
 import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.contract.ContractTemplate;
-import com.openroof.openroof.model.enums.ContractStatus;
-import com.openroof.openroof.model.enums.ContractType;
-import com.openroof.openroof.model.enums.PropertyStatus;
-import com.openroof.openroof.model.enums.SignatureRole;
-import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.enums.*;
 import com.openroof.openroof.model.property.Property;
+import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.ContractRepository;
 import com.openroof.openroof.repository.ContractSignatureRepository;
@@ -21,6 +18,7 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.ContractTemplateRepository;
+import com.openroof.openroof.repository.LeaseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,6 +52,8 @@ public class ContractService {
     private final AgentProfileRepository agentProfileRepository;
     private final PropertyRepository propertyRepository;
     private final ContractTemplateRepository contractTemplateRepository;
+    private final LeaseRepository leaseRepository;
+    private final BillingService billingService;
     private final ContractMapper contractMapper;
     private final EmailService emailService;
     private final AuditService auditService;
@@ -399,19 +399,77 @@ public class ContractService {
                     Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
                     Map.of("status", PropertyStatus.SOLD.name()));
         } else if (contract.getContractType() == ContractType.RENT) {
-            // Opcional: Manejar alquileres también para consistencia
-            PropertyStatus oldStatus = property.getStatus();
-            property.setStatus(PropertyStatus.RENTED);
-            property.setTenant(contract.getBuyer());
-            propertyRepository.save(property);
-
-            log.info("Trigger: Propiedad {} marcada como RENTED por contrato de alquiler {}", 
-                property.getId(), contract.getId());
-
-            auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
-                    Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
-                    Map.of("status", PropertyStatus.RENTED.name()));
+            createLeaseFromContract(contract, actor);
         }
+    }
+
+    @Transactional
+    public void createLeaseFromContract(Contract contract, User actor) {
+        Property property = contract.getProperty();
+        if (property == null) return;
+
+        PropertyStatus oldStatus = property.getStatus();
+        property.setStatus(PropertyStatus.RENTED);
+        property.setTenant(contract.getBuyer());
+
+        Lease lease = Lease.builder()
+                .property(property)
+                .landlord(contract.getSeller())
+                .primaryTenant(contract.getBuyer())
+                .status(LeaseStatus.ACTIVE)
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .leaseType(LeaseType.FIXED_TERM)
+                .monthlyRent(contract.getAmount() != null ? contract.getAmount() : property.getRentAmount() != null ? property.getRentAmount() : BigDecimal.ZERO)
+                .currency(property.getRentCurrency() != null ? property.getRentCurrency() : "USD")
+                .billingFrequency(BillingFrequency.MONTHLY)
+                .dueDay(contract.getStartDate() != null ? contract.getStartDate().getDayOfMonth() : 1)
+                .gracePeriodDays(5)
+                .lateFeeType(LateFeeType.PERCENTAGE)
+                .lateFeeValue(BigDecimal.valueOf(5))
+                .securityDeposit(property.getRentAmount() != null ? property.getRentAmount() : BigDecimal.ZERO)
+                .depositStatus(DepositStatus.HELD)
+                .moveInDate(contract.getStartDate())
+                .autoRenew(false)
+                .signedByLandlordAt(LocalDateTime.now())
+                .signedByTenantAt(LocalDateTime.now())
+                .activatedAt(LocalDateTime.now())
+                .build();
+
+        leaseRepository.save(lease);
+        property.setActiveLeaseId(lease.getId());
+        propertyRepository.save(property);
+
+        billingService.generateInstallments(lease);
+
+        log.info("Trigger: Propiedad {} marcada como RENTED y lease {} creado por contrato de alquiler {}",
+            property.getId(), lease.getId(), contract.getId());
+
+        auditService.log(actor, AuditEntityType.PROPERTY, property.getId(), AuditAction.STATUS_CHANGE,
+                Map.of("status", oldStatus.name(), "trigger", "contract_signed"),
+                Map.of("status", PropertyStatus.RENTED.name()));
+    }
+
+    @Transactional
+    public void activateLeaseFromContract(Long contractId, String requesterEmail) {
+        Contract contract = findOrThrow(contractId);
+        User requester = findUserByEmail(requesterEmail);
+
+        if (!canManageContract(contract, requester)) {
+            throw new BadRequestException("No tiene permiso para activar el lease de este contrato");
+        }
+        if (contract.getContractType() != ContractType.RENT) {
+            throw new BadRequestException("Solo los contratos de alquiler pueden activar un lease");
+        }
+        if (contract.getStatus() != ContractStatus.SIGNED) {
+            throw new BadRequestException("El contrato debe estar firmado (SIGNED) para activar el lease");
+        }
+        Property property = contract.getProperty();
+        if (property != null && property.getActiveLeaseId() != null) {
+            throw new BadRequestException("Esta propiedad ya tiene un lease activo");
+        }
+
+        createLeaseFromContract(contract, requester);
     }
 
     /**

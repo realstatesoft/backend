@@ -75,7 +75,7 @@ openroof:
 application:
   security:
     jwt:
-      # Inject JWT_SECRET from environment variables or vault. 
+      # Inject JWT_SECRET from environment variables or vault.
       # Fast fail if missing: use explicit reference without default.
       # To rotate: update environment variable and restart application. Do NOT commit secrets.
       secret-key: ${JWT_SECRET}
@@ -92,18 +92,6 @@ logging:
     org.springframework.security: INFO
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
-
----
-# Developer profile: activate with -Dspring.profiles.active=dev
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 # ==================== SUPABASE STORAGE ====================
 # Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -147,3 +135,15 @@ mail:
 
 screening:
   provider: ${SCREENING_PROVIDER:INTERNAL}
+
+---
+# Developer profile: activate with -Dspring.profiles.active=dev
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -10,8 +10,8 @@ public record TenantDashboardResponse(
         TenantStatus status,
         String statusMessage,
 
-        // Lease activo
-        ActiveLeaseInfo activeLease,
+        // Leases activos
+        java.util.List<ActiveLeaseInfo> activeLeases,
 
         // Próxima cuota
         NextInstallmentInfo nextInstallment,

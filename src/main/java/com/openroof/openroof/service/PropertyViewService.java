@@ -33,8 +33,9 @@ public class PropertyViewService {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
 
-        propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(user.getId(), propertyId)
-                .ifPresent(propertyViewRepository::delete);
+        // Eliminar vistas previas de este usuario para esta propiedad para evitar duplicados
+        // y prevenir ObjectOptimisticLockingFailureException en accesos concurrentes.
+        propertyViewRepository.deleteByUserIdAndPropertyId(user.getId(), propertyId);
 
         PropertyView view = PropertyView.builder()
                 .property(property)

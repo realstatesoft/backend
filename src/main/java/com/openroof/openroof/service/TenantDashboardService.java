@@ -9,10 +9,9 @@ import com.openroof.openroof.dto.dashboard.TenantInstallmentItem;
 import com.openroof.openroof.dto.dashboard.TenantMaintenanceResponse;
 import com.openroof.openroof.dto.dashboard.TenantMaintenanceTicketItem;
 import com.openroof.openroof.exception.ResourceNotFoundException;
-import com.openroof.openroof.model.enums.InstallmentStatus;
-import com.openroof.openroof.model.enums.LeaseStatus;
-import com.openroof.openroof.model.enums.MaintenanceStatus;
-import com.openroof.openroof.model.enums.PaymentStatus;
+import com.openroof.openroof.dto.dashboard.CreateMaintenanceRequest;
+import com.openroof.openroof.dto.dashboard.RateMaintenanceRequest;
+import com.openroof.openroof.model.enums.*;
 import com.openroof.openroof.model.maintenance.MaintenanceRequest;
 import com.openroof.openroof.model.payment.Payment;
 import com.openroof.openroof.model.rental.Lease;
@@ -33,8 +32,10 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -57,26 +58,34 @@ public class TenantDashboardService {
 
         Long tenantId = tenant.getId();
 
-        // Buscar lease activo del tenant
-        Optional<Lease> activeLeaseOpt = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenantId, LeaseStatus.ACTIVE);
+        // Buscar leases activos del tenant
+        List<Lease> activeLeases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenantId, LeaseStatus.ACTIVE);
 
-        if (activeLeaseOpt.isEmpty()) {
+        if (activeLeases.isEmpty()) {
             return buildInactiveResponse(messageRepository.countUnreadByUserId(tenantId));
         }
 
-        Lease lease = activeLeaseOpt.get();
         LocalDate today = LocalDate.now();
 
-        // Información del lease activo
-        ActiveLeaseInfo leaseInfo = buildActiveLeaseInfo(lease, today);
+        // Información de los leases activos
+        List<ActiveLeaseInfo> leaseInfos = activeLeases.stream()
+                .map(lease -> buildActiveLeaseInfo(lease, today))
+                .toList();
 
-        // Próxima cuota (installment pendiente más próxima)
-        NextInstallmentInfo nextInstallment = buildNextInstallmentInfo(lease.getId(), today);
+        // Próxima cuota (installment pendiente más próxima entre todos los leases)
+        NextInstallmentInfo nextInstallment = activeLeases.stream()
+                .map(lease -> buildNextInstallmentInfo(lease.getId(), today))
+                .filter(Objects::nonNull)
+                .min(Comparator.comparing(NextInstallmentInfo::dueDate))
+                .orElse(null);
 
         // Balance pendiente total
-        BigDecimal pendingBalance = rentalInstallmentRepository.sumPendingBalanceByLeaseId(
-                lease.getId(),
-                List.of(InstallmentStatus.PENDING, InstallmentStatus.PARTIAL, InstallmentStatus.OVERDUE));
+        BigDecimal pendingBalance = activeLeases.stream()
+                .map(lease -> rentalInstallmentRepository.sumPendingBalanceByLeaseId(
+                        lease.getId(),
+                        List.of(InstallmentStatus.PENDING, InstallmentStatus.PARTIAL, InstallmentStatus.OVERDUE)))
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Tickets de mantenimiento OPEN/IN_PROGRESS
         List<MaintenanceStatus> activeTicketStatuses = List.of(
@@ -95,10 +104,9 @@ public class TenantDashboardService {
         BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(tenantId, PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidLastYear == null) totalPaidLastYear = BigDecimal.ZERO;
 
-        // 9. Listas de resumen (Top 2)
-        List<NextInstallmentInfo> recentInstallments = rentalInstallmentRepository
-                .findTop5ByLeaseIdOrderByDueDateDesc(lease.getId())
-                .stream()
+        // 9. Listas de resumen (Top 2 de todos los leases)
+        List<NextInstallmentInfo> recentInstallments = activeLeases.stream()
+                .flatMap(lease -> rentalInstallmentRepository.findTop5ByLeaseIdOrderByDueDateDesc(lease.getId()).stream())
                 .map(i -> {
                     long due = ChronoUnit.DAYS.between(today, i.getDueDate());
                     return new NextInstallmentInfo(
@@ -111,6 +119,7 @@ public class TenantDashboardService {
                         i.getStatus().name(),
                         due < 0 ? 0 : due);
                 })
+                .sorted(Comparator.comparing(NextInstallmentInfo::dueDate))
                 .limit(2)
                 .toList();
 
@@ -129,7 +138,7 @@ public class TenantDashboardService {
         return new TenantDashboardResponse(
                 TenantStatus.ACTIVE,
                 null,
-                leaseInfo,
+                leaseInfos,
                 nextInstallment,
                 pendingBalance,
                 openTickets,
@@ -140,13 +149,29 @@ public class TenantDashboardService {
                 recentMaintenance);
     }
 
-    public TenantLeaseResponse getLease(String email) {
+    public List<TenantLeaseResponse> getLeases(String email) {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+        List<Lease> leases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE);
+        return leases.stream().map(this::buildTenantLeaseResponse).toList();
+    }
 
+    public TenantLeaseResponse getLeaseById(String email, Long leaseId) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
+
+        if (lease.getPrimaryTenant() == null || !lease.getPrimaryTenant().getId().equals(tenant.getId())) {
+            throw new ResourceNotFoundException("No tenes permiso para ver este contrato");
+        }
+
+        return buildTenantLeaseResponse(lease);
+    }
+
+    private TenantLeaseResponse buildTenantLeaseResponse(Lease lease) {
         LocalDate today = LocalDate.now();
         long daysRemaining = ChronoUnit.DAYS.between(today, lease.getEndDate());
         if (daysRemaining < 0) daysRemaining = 0;
@@ -208,10 +233,16 @@ public class TenantDashboardService {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+        List<Lease> activeLeases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE);
+        if (activeLeases.isEmpty()) {
+            return new TenantPaymentsResponse(
+                    BigDecimal.ZERO, 0, 0, null,
+                    List.of(), 0, 0, 0);
+        }
 
-        Page<RentalInstallment> installmentsPage = rentalInstallmentRepository.findByLeaseIdOrderByDueDateDesc(lease.getId(), pageable);
+        List<Long> leaseIds = activeLeases.stream().map(Lease::getId).toList();
+
+        Page<RentalInstallment> installmentsPage = rentalInstallmentRepository.findByLeaseIdsOrderByDueDateDesc(leaseIds, pageable);
 
         // Fix N+1: Fetch all payments for the installments in the current page in one go
         List<Long> installmentIds = installmentsPage.getContent().stream().map(RentalInstallment::getId).toList();
@@ -220,6 +251,7 @@ public class TenantDashboardService {
                 .collect(Collectors.groupingBy(
                         p -> p.getInstallment().getId(),
                         Collectors.mapping(p -> new TenantInstallmentItem.LeasePaymentInfo(
+                                p.getId(),
                                 p.getMethod().name(),
                                 p.getAmount(),
                                 p.getPaidAt(),
@@ -243,24 +275,36 @@ public class TenantDashboardService {
                 })
                 .toList();
 
-        // Summary header - Corrected "on time" vs "late" logic
+        // Summary header - Corrected "on time" vs "late" logic (across all leases)
         BigDecimal totalPaidYear = paymentRepository.sumCompletedByUserSince(tenant.getId(), PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidYear == null) totalPaidYear = BigDecimal.ZERO;
 
-        List<RentalInstallment> allInstallments = rentalInstallmentRepository.findByLeaseIdOrderByDueDateAsc(lease.getId());
-        int graceDays = lease.getGracePeriodDays() != null ? lease.getGracePeriodDays() : 0;
+        List<RentalInstallment> allInstallments = rentalInstallmentRepository.findByLeaseIdsOrderByDueDateAsc(leaseIds);
 
         long onTime = allInstallments.stream()
                 .filter(i -> i.getStatus() == InstallmentStatus.PAID)
-                .filter(i -> i.getPaidDate() != null && !i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays)))
+                .filter(i -> {
+                    int graceDays = i.getLease() != null && i.getLease().getGracePeriodDays() != null
+                            ? i.getLease().getGracePeriodDays() : 0;
+                    return i.getPaidDate() != null && !i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays));
+                })
                 .count();
 
         long late = allInstallments.stream()
-                .filter(i -> i.getStatus() == InstallmentStatus.OVERDUE ||
-                        (i.getStatus() == InstallmentStatus.PAID && i.getPaidDate() != null && i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays))))
+                .filter(i -> {
+                    if (i.getStatus() == InstallmentStatus.OVERDUE) return true;
+                    if (i.getStatus() != InstallmentStatus.PAID || i.getPaidDate() == null) return false;
+                    int graceDays = i.getLease() != null && i.getLease().getGracePeriodDays() != null
+                            ? i.getLease().getGracePeriodDays() : 0;
+                    return i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays));
+                })
                 .count();
 
-        NextInstallmentInfo nextPayment = buildNextInstallmentInfo(lease.getId(), LocalDate.now());
+        NextInstallmentInfo nextPayment = activeLeases.stream()
+                .map(lease -> buildNextInstallmentInfo(lease.getId(), LocalDate.now()))
+                .filter(Objects::nonNull)
+                .min(Comparator.comparing(NextInstallmentInfo::dueDate))
+                .orElse(null);
 
         return new TenantPaymentsResponse(
                 totalPaidYear,
@@ -277,10 +321,12 @@ public class TenantDashboardService {
         User tenant = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+        List<Lease> activeLeases = leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE);
+        if (activeLeases.isEmpty()) {
+            throw new ResourceNotFoundException("No tenes un lease activo actualmente");
+        }
 
-        Page<MaintenanceRequest> requestsPage = maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(lease.getId(), pageable);
+        Page<MaintenanceRequest> requestsPage = maintenanceRequestRepository.findByTenantIdOrderByCreatedAtDesc(tenant.getId(), pageable);
 
         List<TenantMaintenanceTicketItem> items = requestsPage.getContent().stream()
                 .map(m -> {
@@ -327,13 +373,69 @@ public class TenantDashboardService {
                 })
                 .toList();
 
-        // Get counts by status from all tickets for this lease (not just the page)
-        List<MaintenanceRequest> allRequests = maintenanceRequestRepository.findByLeaseIdOrderByCreatedAtDesc(lease.getId(), Pageable.unpaged()).getContent();
+        // Get counts by status from all tickets for this tenant (not just the page)
+        List<MaintenanceRequest> allRequests = maintenanceRequestRepository.findByTenantIdOrderByCreatedAtDesc(tenant.getId(), Pageable.unpaged()).getContent();
         Map<String, Long> countsByStatus = allRequests.stream()
                 .collect(Collectors.groupingBy(m -> m.getStatus().name(), Collectors.counting()));
 
         return new TenantMaintenanceResponse(items, countsByStatus);
     }
+
+    @Transactional
+    public TenantMaintenanceTicketItem createMaintenanceRequest(String email, CreateMaintenanceRequest request) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Lease lease = leaseRepository.findFirstByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(tenant.getId(), LeaseStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No tenes un lease activo actualmente"));
+
+        MaintenanceRequest mr = MaintenanceRequest.builder()
+                .tenant(tenant)
+                .lease(lease)
+                .property(lease.getProperty())
+                .title(request.title())
+                .description(request.description())
+                .category(request.category())
+                .priority(request.priority())
+                .images(request.images())
+                .permissionToEnter(request.permissionToEnter())
+                .status(MaintenanceStatus.SUBMITTED)
+                .build();
+
+        mr = maintenanceRequestRepository.save(mr);
+
+        List<TenantMaintenanceTicketItem.StatusHistoryItem> history = List.of(
+                new TenantMaintenanceTicketItem.StatusHistoryItem(MaintenanceStatus.SUBMITTED.name(), mr.getCreatedAt()));
+
+        return new TenantMaintenanceTicketItem(
+                mr.getId(),
+                mr.getTitle(),
+                mr.getDescription(),
+                mr.getCategory() != null ? mr.getCategory().name() : null,
+                mr.getPriority().name(),
+                mr.getStatus().name(),
+                null,
+                history,
+                null,
+                mr.getCreatedAt());
+    }
+
+    @Transactional
+    public void rateMaintenanceRequest(String email, Long id, RateMaintenanceRequest request) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        MaintenanceRequest mr = maintenanceRequestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+
+        if (!mr.getTenant().getId().equals(tenant.getId())) {
+            throw new ResourceNotFoundException("No tenes permiso para calificar esta solicitud");
+        }
+
+        mr.setTenantSatisfactionRating(request.rating());
+        maintenanceRequestRepository.save(mr);
+    }
+
 
     private List<LeaseDocument> buildLeaseDocuments(Lease lease) {
         List<LeaseDocument> docs = new ArrayList<>();
@@ -361,7 +463,7 @@ public class TenantDashboardService {
         return new TenantDashboardResponse(
                 TenantStatus.INACTIVE,
                 "No tienes un arriendo activo en este momento. Explora nuestras propiedades disponibles para encontrar tu próximo hogar.",
-                null,
+                List.of(),
                 null,
                 BigDecimal.ZERO,
                 0,
