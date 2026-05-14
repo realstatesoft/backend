@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -33,6 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/rentals")
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Tag(name = "Rentals", description = "Endpoints para la gestión de cuotas y pagos de contratos")
 public class RentalController {
 
@@ -78,6 +80,7 @@ public class RentalController {
     @PostMapping("/installments/{id}/payments")
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'PROPERTY_MANAGER')")
     @Operation(summary = "Registrar un pago manual para una cuota")
+    @Transactional
     public ResponseEntity<ApiResponse<PaymentResponse>> registerManualPayment(
             @PathVariable Long id,
             @Valid @RequestBody PaymentRequest request,
@@ -95,8 +98,8 @@ public class RentalController {
 
     @GetMapping("/installments/{id}/invoice.pdf")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Descargar factura de una cuota")
-    public ResponseEntity<?> downloadInvoice(@PathVariable Long id, Principal principal) {
+    @Operation(summary = "Obtener URL de la factura de una cuota")
+    public ResponseEntity<ApiResponse<String>> downloadInvoice(@PathVariable Long id, Principal principal) {
         RentalInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
         verifyLeaseAccess(installment.getLease(), principal.getName());
@@ -105,15 +108,13 @@ public class RentalController {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.ok(null, "La factura aún no se ha generado"));
         }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create(installment.getInvoicePdfUrl()));
-        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        return ResponseEntity.ok(ApiResponse.ok(installment.getInvoicePdfUrl(), "URL de la factura obtenida"));
     }
 
     @GetMapping("/payments/{id}/receipt.pdf")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Descargar recibo de un pago")
-    public ResponseEntity<?> downloadReceipt(@PathVariable Long id, Principal principal) {
+    @Operation(summary = "Obtener URL del recibo de un pago")
+    public ResponseEntity<ApiResponse<String>> downloadReceipt(@PathVariable Long id, Principal principal) {
         LeasePayment payment = leasePaymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
         verifyLeaseAccess(payment.getLease(), principal.getName());
@@ -122,8 +123,6 @@ public class RentalController {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.ok(null, "El recibo aún no se ha generado"));
         }
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create(payment.getReceiptPdfUrl()));
-        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        return ResponseEntity.ok(ApiResponse.ok(payment.getReceiptPdfUrl(), "URL del recibo obtenida"));
     }
 }
