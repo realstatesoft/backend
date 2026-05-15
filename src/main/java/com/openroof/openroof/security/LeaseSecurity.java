@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * Componente de seguridad para validar acceso a recursos de leases.
  * Usado vía {@code @PreAuthorize("@leaseSecurity.hasLeaseAccess(...)")} o
@@ -20,6 +22,7 @@ public class LeaseSecurity {
 
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
+    private final PropertySecurity propertySecurity;
 
     /**
      * Verifica que el usuario sea ADMIN, landlord o primary tenant del lease.
@@ -75,5 +78,35 @@ public class LeaseSecurity {
         } catch (AccessDeniedException ex) {
             return false;
         }
+    }
+
+    /**
+     * Verifica que el usuario pueda gestionar (editar/activar/terminar) un lease,
+     * es decir, que sea ADMIN, el owner de la propiedad, o el agente asignado a ella.
+     * Acepta {@code Object} para compatibilidad con SpEL ({@code principal} tiene tipo
+     * declarado {@code Object} en {@code SecurityExpressionRoot}).
+     */
+    public boolean canManageLease(Long leaseId, Object principalObj) {
+        if (leaseId == null) return false;
+        if (!(principalObj instanceof User currentUser)) return false;
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+        Optional<Lease> lease = leaseRepository.findById(leaseId);
+        if (lease.isEmpty() || lease.get().getProperty() == null) {
+            return false;
+        }
+        return propertySecurity.canModify(lease.get().getProperty().getId(), currentUser);
+    }
+
+    /**
+     * Verifica que el usuario pueda crear un lease sobre una propiedad.
+     * Delega en {@link PropertySecurity#canModify}; acepta {@code Object} por la misma
+     * razón que {@link #canManageLease}.
+     */
+    public boolean canCreateLease(Long propertyId, Object principalObj) {
+        if (propertyId == null) return false;
+        if (!(principalObj instanceof User currentUser)) return false;
+        return propertySecurity.canModify(propertyId, currentUser);
     }
 }
