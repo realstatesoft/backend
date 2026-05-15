@@ -28,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +44,8 @@ class PropertyAssignmentServiceTest {
     private AgentProfileRepository agentProfileRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private PropertyAssignmentService propertyAssignmentService;
@@ -112,6 +115,14 @@ class PropertyAssignmentServiceTest {
             assertThat(response.propertyId()).isEqualTo(property.getId());
             assertThat(response.agentProfileId()).isEqualTo(assignedAgentProfile.getId());
             assertThat(response.agentUserId()).isEqualTo(assignedAgentUser.getId());
+
+            org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(1))
+                    .sendPropertyAssignmentEmail(
+                            org.mockito.ArgumentMatchers.eq(assignedAgentUser.getEmail()),
+                            org.mockito.ArgumentMatchers.eq(assignedAgentUser.getName()),
+                            org.mockito.ArgumentMatchers.eq(property.getTitle()),
+                            org.mockito.ArgumentMatchers.eq(ownerUser.getName())
+                    );
         }
 
         @Test
@@ -160,13 +171,22 @@ class PropertyAssignmentServiceTest {
 
             when(userRepository.findByEmail("agent@openroof.com")).thenReturn(Optional.of(assignedAgentUser));
             when(assignmentRepository.findById(333L)).thenReturn(Optional.of(assignment));
-            when(propertyRepository.findById(40L)).thenReturn(Optional.of(property));
+            when(propertyRepository.findByIdForUpdate(property.getId())).thenReturn(Optional.of(property));
             when(assignmentRepository.save(any(PropertyAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             PropertyAssignmentResponse response = propertyAssignmentService.accept(333L, "agent@openroof.com");
 
             assertThat(response.status()).isEqualTo(AssignmentStatus.ACCEPTED);
             assertThat(response.id()).isEqualTo(333L);
+
+            org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(1))
+                    .sendPropertyAssignmentResponseEmail(
+                            org.mockito.ArgumentMatchers.eq(ownerUser.getEmail()),
+                            org.mockito.ArgumentMatchers.eq(ownerUser.getName()),
+                            org.mockito.ArgumentMatchers.eq(property.getTitle()),
+                            org.mockito.ArgumentMatchers.eq(assignedAgentUser.getName()),
+                            org.mockito.ArgumentMatchers.eq("ACCEPTED")
+                    );
         }
     }
 

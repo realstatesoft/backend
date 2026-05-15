@@ -28,7 +28,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
-import com.openroof.openroof.config.SecurityHeadersFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:5174,https://*.vercel.app}")
+        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}")
         private String allowedOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
@@ -57,13 +56,13 @@ public class SecurityConfig {
                         "/auth/register",
                         "/auth/register-agent",
                         "/auth/refresh-token",
-                        "/api/exchange-rates",
-                        "/api/exchange-rates/**",
+                        "/exchange-rates",
+                        "/exchange-rates/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
-                        "/api/test/**"
+                        "/test/**"
         };
 
         @Bean
@@ -85,6 +84,12 @@ public class SecurityConfig {
                                                 .access((authentication, context) -> new AuthorizationDecision(true))
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
+                                                // Endpoints públicos de alquileres (catálogo)
+                                                .requestMatchers(HttpMethod.GET, "/leases/public/**").permitAll()
+                                                // Endpoints protegidos — autorización fina vía LeaseSecurity
+                                                .requestMatchers("/leases/**").authenticated()
+                                                .requestMatchers("/rentals/**").authenticated()
+                                                .requestMatchers("/lease-payments/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

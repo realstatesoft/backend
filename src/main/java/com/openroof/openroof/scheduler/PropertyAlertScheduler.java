@@ -1,9 +1,7 @@
 package com.openroof.openroof.scheduler;
 
 import com.openroof.openroof.model.enums.AlertType;
-import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyStatus;
-import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.Visibility;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.search.Alert;

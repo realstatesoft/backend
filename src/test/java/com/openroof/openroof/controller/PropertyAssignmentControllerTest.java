@@ -2,10 +2,12 @@ package com.openroof.openroof.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.property.AssignPropertyRequest;
 import com.openroof.openroof.dto.property.PropertyAssignmentResponse;
 import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.PropertyAssignmentService;
 import jakarta.servlet.FilterChain;
@@ -39,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PropertyAssignmentController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class PropertyAssignmentControllerTest {
 
     @Autowired
@@ -58,6 +60,15 @@ class PropertyAssignmentControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+
+    @MockitoBean
+    private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {

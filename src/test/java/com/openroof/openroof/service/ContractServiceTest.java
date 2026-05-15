@@ -6,6 +6,7 @@ import com.openroof.openroof.model.contract.ContractSignature;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.enums.*;
+import com.openroof.openroof.mapper.ContractMapper;
 import com.openroof.openroof.repository.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,10 @@ class ContractServiceTest {
     private PropertyRepository propertyRepository;
     @Mock
     private AuditService auditService;
+    @Mock
+    private EmailService emailService;
+    @Mock
+    private ContractMapper contractMapper;
 
     @InjectMocks
     private ContractService contractService;

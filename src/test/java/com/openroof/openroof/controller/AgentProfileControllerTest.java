@@ -3,10 +3,12 @@ package com.openroof.openroof.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentProfileService;
 import jakarta.servlet.FilterChain;
@@ -42,7 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentProfileController.class)
-@Import({SecurityConfig.class, JacksonConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class AgentProfileControllerTest {
 
     @Autowired
@@ -64,6 +66,12 @@ class AgentProfileControllerTest {
 
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     private static final String API_BASE = "/agents";
 

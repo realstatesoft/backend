@@ -14,6 +14,7 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -67,8 +69,20 @@ public class PaymentService {
     // Crear un pago nuevo en estado PENDING
     @Transactional
     public PaymentResponse create(PaymentRequest request, String currentUserEmail) {
+        return create(request, currentUserEmail, null);
+    }
+
+    @Transactional
+    public PaymentResponse create(PaymentRequest request, String currentUserEmail, String idempotencyKey) {
         User user = getUserByEmail(currentUserEmail);
         validateMetadata(request.type(), request.metadata());
+        if (idempotencyKey != null) {
+            String masked = idempotencyKey.length() > 4
+                    ? "..." + idempotencyKey.substring(idempotencyKey.length() - 4)
+                    : "****";
+            log.info("Registrando pago con idempotencyKey={}", masked);
+            // TODO: validar idempotencyKey contra pagos previos cuando exista soporte en el modelo
+        }
 
         Payment payment = Payment.builder()
                 .user(user)
@@ -111,6 +125,14 @@ public class PaymentService {
         return toResponse(paymentRepository.save(payment));
     }
 
+    @Transactional
+    public PaymentResponse completePayment(Long id) {
+        Payment payment = getPaymentOrThrow(id);
+        validateTransition(payment.getStatus(), PaymentStatus.COMPLETED);
+        payment.setStatus(PaymentStatus.COMPLETED);
+        return toResponse(paymentRepository.save(payment));
+    }
+
     private void validateMetadata(PaymentType type, PaymentMetadata metadata) {
         if (type == PaymentType.PROPERTY_HIGHLIGHT) {
             if (metadata == null || metadata.getPropertyId() == null || metadata.getHighlightDays() == null) {
@@ -125,7 +147,8 @@ public class PaymentService {
     private void validateTransition(PaymentStatus current, PaymentStatus next) {
         boolean valid = switch (current) {
             case PENDING -> next == PaymentStatus.APPROVED || next == PaymentStatus.REJECTED;
-            case APPROVED, REJECTED -> false;
+            case APPROVED -> next == PaymentStatus.COMPLETED;
+            case COMPLETED, REJECTED -> false;
         };
         if (!valid) {
             throw new BadRequestException("Transición de estado no permitida: " + current + " → " + next);

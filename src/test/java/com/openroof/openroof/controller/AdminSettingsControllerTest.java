@@ -10,7 +10,9 @@ import com.openroof.openroof.dto.settings.UpdateAdminReservationsRequest;
 import com.openroof.openroof.dto.settings.UpdateAdminSystemRequest;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.service.AdminSettingsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
@@ -39,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminSettingsController.class)
-@Import({SecurityConfig.class, JacksonConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class AdminSettingsControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -49,6 +51,8 @@ class AdminSettingsControllerTest {
     @MockitoBean JwtService jwtService;
     @MockitoBean UserDetailsService userDetailsService;
     @MockitoBean JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    @MockitoBean PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean SecurityHeadersFilter securityHeadersFilter;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String BASE = "/settings/admin";

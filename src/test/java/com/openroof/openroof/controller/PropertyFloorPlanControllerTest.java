@@ -1,9 +1,11 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.property.PropertyMediaResponse;
 import com.openroof.openroof.model.enums.MediaType;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.PropertyFloorPlanService;
 import jakarta.servlet.FilterChain;
@@ -38,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code @propertySecurity.canModify()} se cubre en los tests de integración.
  */
 @WebMvcTest(PropertyFloorPlanController.class)
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 @DisplayName("PropertyFloorPlanController")
 class PropertyFloorPlanControllerTest {
 
@@ -49,6 +51,8 @@ class PropertyFloorPlanControllerTest {
     @MockitoBean private JwtService                       jwtService;
     @MockitoBean private UserDetailsService               userDetailsService;
     @MockitoBean private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtEntryPoint;
+    @MockitoBean private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+    @MockitoBean private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
     void setupJwtPassThrough() throws Exception {
@@ -57,6 +61,20 @@ class PropertyFloorPlanControllerTest {
             chain.doFilter(inv.getArgument(0), inv.getArgument(1));
             return null;
         }).when(jwtAuthFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            FilterChain chain = inv.getArgument(2);
+            chain.doFilter(inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            FilterChain chain = inv.getArgument(2);
+            chain.doFilter(inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 

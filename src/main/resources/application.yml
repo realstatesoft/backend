@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASS}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 4
@@ -65,12 +65,17 @@ springdoc:
   show-actuator: false
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,https://*.vercel.app}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}
+
+openroof:
+  reservation:
+    ttl-hours: ${RESERVATION_TTL_HOURS:48}
+    default-percent: ${RESERVATION_DEFAULT_PERCENT:10.00}
 
 application:
   security:
     jwt:
-      # Inject JWT_SECRET from environment variables or vault. 
+      # Inject JWT_SECRET from environment variables or vault.
       # Fast fail if missing: use explicit reference without default.
       # To rotate: update environment variable and restart application. Do NOT commit secrets.
       secret-key: ${JWT_SECRET}
@@ -83,16 +88,19 @@ application:
 logging:
   level:
     root: INFO
-    com.openroof: INFO
+    com.openroof: DEBUG
     org.springframework.security: INFO
-    org.hibernate.SQL: ERROR
-    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
 
+# ==================== SUPABASE STORAGE ====================
+# Requeridas: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
-  url: ${SUPABASE_URL:}
-  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  url: ${SUPABASE_URL}
+  service-role-key: ${SUPABASE_KEY}
   storage:
-    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images}
+    bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images-test}
 
 # ==================== UPLOAD ====================
 upload:
@@ -116,11 +124,6 @@ spring.servlet.multipart:
   max-file-size: 50MB
   max-request-size: 60MB
 
-openroof:
-  reservation:
-    ttl-hours: ${RESERVATION_TTL_HOURS:72}
-    default-percent: ${RESERVATION_DEFAULT_PERCENT:1.00}
-
 shedlock:
   defaults:
     lock-at-most-for: 9m
@@ -129,3 +132,18 @@ shedlock:
 mail:
   from-name: OpenRoof
   base-url: ${FRONTEND_URL:http://localhost:5173}
+
+screening:
+  provider: ${SCREENING_PROVIDER:INTERNAL}
+
+---
+# Developer profile: activate with -Dspring.profiles.active=dev
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

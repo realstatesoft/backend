@@ -3,6 +3,7 @@ package com.openroof.openroof.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.dto.notification.NotificationResponse;
 import com.openroof.openroof.exception.ForbiddenException;
@@ -10,6 +11,7 @@ import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.NotificationService;
 import jakarta.servlet.FilterChain;
@@ -53,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = NotificationController.class,
         properties = "spring.config.location=classpath:/notification-controller-test.yml"
 )
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class NotificationControllerTest {
 
     @Autowired
@@ -75,6 +77,12 @@ class NotificationControllerTest {
 
     @MockitoBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     private static final String BASE = "/notifications";
 

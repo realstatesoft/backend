@@ -1,6 +1,7 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.repository.ImageRepository;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
@@ -77,6 +78,9 @@ class SecurityEndpointsTest {
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
+
     @BeforeEach
     void setUp() throws Exception {
         // Keep security filters active while making the mocked JWT filter transparent.
@@ -97,16 +101,24 @@ class SecurityEndpointsTest {
         }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
 
         doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
             jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);
             res.setStatus(401);
             return null;
         }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
 
-                // Ensure security filters are registered with MockMvc in this @WebMvcTest slice
-                mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                                .webAppContextSetup(context)
-                                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
-                                .build();
+        // Ensure security filters are registered with MockMvc in this @WebMvcTest slice
+        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                        .webAppContextSetup(context)
+                        .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                        .build();
     }
 
     @Test

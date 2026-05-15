@@ -1,0 +1,18 @@
+databaseChangeLog:
+  # OR-232: [BE] DTOs + Mapper TenantScreening — agregar columna notes
+  - changeSet:
+      id: 052-add-notes-to-tenant-screenings
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: tenant_screenings
+                columnName: notes
+      changes:
+        - addColumn:
+            tableName: tenant_screenings
+            columns:
+              - column:
+                  name: notes
+                  type: TEXT

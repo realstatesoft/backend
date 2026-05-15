@@ -20,12 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.openroof.openroof.config.JacksonConfig;
 import com.openroof.openroof.config.SecurityConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.dto.exchange.ExchangeRateResponse;
 import com.openroof.openroof.dto.exchange.ExchangeRatesResponse;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
@@ -34,7 +34,6 @@ import com.openroof.openroof.service.ExchangeRateService;
 
 @WebMvcTest(ExchangeRateController.class)
 @Import({SecurityConfig.class, JacksonConfig.class})
-@ActiveProfiles("test")
 class ExchangeRateControllerTest {
 
     @Autowired
@@ -55,6 +54,9 @@ class ExchangeRateControllerTest {
     @MockitoBean
     private com.openroof.openroof.exception.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
+
     @BeforeEach
     void setup() throws Exception {
         doAnswer(invocation -> {
@@ -72,6 +74,14 @@ class ExchangeRateControllerTest {
             chain.doFilter(request, response);
             return null;
         }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(request, response);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
     }
 
     @Test

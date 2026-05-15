@@ -56,17 +56,12 @@ databaseChangeLog:
               - column:
                   name: buyer_agent_id
 
-        - addCheckConstraint:
-          tableName: contracts
-          constraintName: chk_contracts_commission_pct_range
-          condition: commission_pct BETWEEN 0 AND 100
-
-        - addCheckConstraint:
-          tableName: contracts
-          constraintName: chk_contracts_listing_agent_commission_pct_range
-          condition: listing_agent_commission_pct BETWEEN 0 AND 100
-
-        - addCheckConstraint:
-          tableName: contracts
-          constraintName: chk_contracts_buyer_agent_commission_pct_range
-          condition: buyer_agent_commission_pct BETWEEN 0 AND 100
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE contracts ADD CONSTRAINT chk_contracts_commission_pct_range CHECK (commission_pct BETWEEN 0 AND 100)
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE contracts ADD CONSTRAINT chk_contracts_listing_agent_commission_pct_range CHECK (listing_agent_commission_pct BETWEEN 0 AND 100)
+        - sql:
+            dbms: postgresql
+            sql: ALTER TABLE contracts ADD CONSTRAINT chk_contracts_buyer_agent_commission_pct_range CHECK (buyer_agent_commission_pct BETWEEN 0 AND 100)

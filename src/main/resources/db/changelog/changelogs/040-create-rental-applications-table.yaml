@@ -1,0 +1,120 @@
+databaseChangeLog:
+  # OR-189: [BE] Migracion DB: crear tabla RentalApplication
+  - changeSet:
+      id: 040-create-rental-applications-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: rental_applications
+      changes:
+        - createTable:
+            tableName: rental_applications
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: property_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: applicant_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: desired_move_in_date
+                  type: DATE
+              - column:
+                  name: monthly_income
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: income_to_rent_ratio
+                  type: NUMERIC(5, 2)
+              - column:
+                  name: employment_status
+                  type: VARCHAR(30)
+              - column:
+                  name: employer_name
+                  type: VARCHAR(255)
+              - column:
+                  name: previous_addresses
+                  type: JSONB
+              - column:
+                  name: tenant_references
+                  type: JSONB
+              - column:
+                  name: has_pets
+                  type: BOOLEAN
+              - column:
+                  name: screening_consent
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: screening_consent_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: submitted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: decided_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: rejection_reason
+                  type: TEXT
+        - addForeignKeyConstraint:
+            baseTableName: rental_applications
+            baseColumnNames: property_id
+            referencedTableName: properties
+            referencedColumnNames: id
+            constraintName: fk_rental_applications_property
+        - addForeignKeyConstraint:
+            baseTableName: rental_applications
+            baseColumnNames: applicant_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_rental_applications_applicant
+        - createIndex:
+            indexName: idx_rental_applications_property
+            tableName: rental_applications
+            columns:
+              - column:
+                  name: property_id
+        - createIndex:
+            indexName: idx_rental_applications_applicant
+            tableName: rental_applications
+            columns:
+              - column:
+                  name: applicant_id
+        - createIndex:
+            indexName: idx_rental_applications_status
+            tableName: rental_applications
+            columns:
+              - column:
+                  name: status

@@ -3,8 +3,10 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.dto.agent.ClientInteractionResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.security.AgentClientSecurity;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.ClientInteractionService;
 import com.openroof.openroof.model.enums.UserRole;
@@ -45,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClientInteractionController.class)
-@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.exception.GlobalExceptionHandler.class, com.openroof.openroof.test.SliceSecurityBeans.class })
 class ClientInteractionControllerTest {
 
     @Autowired
@@ -70,6 +72,12 @@ class ClientInteractionControllerTest {
 
     @MockitoBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
 
     private static final String API_BASE = "/clients/1/interactions";
 

@@ -17,13 +17,16 @@
     <description>Plataforma inmobiliaria OpenRoof</description>
 
     <properties>
-        <java.version>24</java.version>
+        <java.version>21</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.8.6</springdoc.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <liquibase.url>jdbc:postgresql://localhost:5432/openroof_db</liquibase.url>
+        <liquibase.username>openroof</liquibase.username>
+        <liquibase.password>openroof123</liquibase.password>
+        <liquibase.driver>org.postgresql.Driver</liquibase.driver>
     </properties>
-
     <dependencies>
         <!-- ==================== WEB ==================== -->
         <dependency>
@@ -100,6 +103,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
         <!-- ==================== ACTUATOR ==================== -->
@@ -198,10 +205,10 @@
                     <changeLogFile>src/main/resources/db/changelog/db.changelog-master.yaml</changeLogFile>
                     <outputChangeLogFile>
                         src/main/resources/db/changelog/changelogs/001-initial-schema.yaml</outputChangeLogFile>
-                    <url>jdbc:postgresql://localhost:5432/openroof_db</url>
-                    <username>openroof</username>
-                    <password>openroof123</password>
-                    <driver>org.postgresql.Driver</driver>
+                    <url>${liquibase.url}</url>
+                    <username>${liquibase.username}</username>
+                    <password>${liquibase.password}</password>
+                    <driver>${liquibase.driver}</driver>
                     <defaultSchemaName>public</defaultSchemaName>
                 </configuration>
             </plugin>

@@ -1,0 +1,14 @@
+package com.openroof.openroof.model.enums;
+
+public enum NotificationEventType {
+    PAYMENT_DUE,
+    PAYMENT_RECEIVED,
+    MAINTENANCE_UPDATE,
+    LEASE_EXPIRING,
+    LEASE_SIGNED,
+    LEASE_ACTIVATED,
+    APPLICATION_APPROVED,
+    APPLICATION_REJECTED,
+    INSPECTION_SCHEDULED,
+    SLA_BREACH
+}

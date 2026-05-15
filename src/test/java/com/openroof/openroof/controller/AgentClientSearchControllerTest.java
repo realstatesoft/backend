@@ -6,10 +6,12 @@ import com.openroof.openroof.exception.GlobalExceptionHandler;
 import com.openroof.openroof.dto.agent.AgentClientSearchRequest;
 import com.openroof.openroof.dto.agent.UnifiedClientSummaryResponse;
 import com.openroof.openroof.exception.JwtAuthenticationEntryPoint;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.security.AgentClientSecurity;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.AgentClientService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgentClientController.class)
-@Import({ SecurityConfig.class, JacksonConfig.class, GlobalExceptionHandler.class })
+@Import({ SecurityConfig.class, JacksonConfig.class, GlobalExceptionHandler.class, com.openroof.openroof.test.SliceSecurityBeans.class })
 class AgentClientSearchControllerTest {
 
     @Autowired
@@ -68,6 +70,12 @@ class AgentClientSearchControllerTest {
     @MockitoBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
+
     private static final String API_BASE = "/clients";
 
     @BeforeEach
@@ -84,6 +92,22 @@ class AgentClientSearchControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+            jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(any(), any(), any());
+
+        doAnswer(invocation -> {
+            jakarta.servlet.ServletRequest req = invocation.getArgument(0);
+            jakarta.servlet.ServletResponse res = invocation.getArgument(1);
+            jakarta.servlet.FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(any(), any(), any());
 
         doAnswer(invocation -> {
             jakarta.servlet.http.HttpServletResponse res = invocation.getArgument(1);

@@ -9,7 +9,6 @@ import com.openroof.openroof.exception.InvalidConfigurationException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.config.SystemConfig;
 import com.openroof.openroof.repository.SystemConfigRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -82,7 +81,9 @@ class AdminSettingsServiceTest {
         @Test
         @DisplayName("Lanza InvalidConfigurationException si un valor no es parseable")
         void corruptIntValue_throwsInvalidConfiguration() {
-            mockAllKeys();
+            when(repo.findByConfigKey(KEY_SALE_COMMISSION)).thenReturn(Optional.of(cfg(KEY_SALE_COMMISSION, "10.00")));
+            when(repo.findByConfigKey(KEY_RENT_COMMISSION)).thenReturn(Optional.of(cfg(KEY_RENT_COMMISSION, "5.00")));
+            when(repo.findByConfigKey(KEY_RENT_DEPOSIT)).thenReturn(Optional.of(cfg(KEY_RENT_DEPOSIT, "1")));
             when(repo.findByConfigKey(KEY_RESERVATION_TTL))
                     .thenReturn(Optional.of(cfg(KEY_RESERVATION_TTL, "not-a-number")));
 
@@ -93,7 +94,6 @@ class AdminSettingsServiceTest {
         @Test
         @DisplayName("Lanza InvalidConfigurationException si un decimal no es parseable")
         void corruptDecimalValue_throwsInvalidConfiguration() {
-            mockAllKeys();
             when(repo.findByConfigKey(KEY_SALE_COMMISSION))
                     .thenReturn(Optional.of(cfg(KEY_SALE_COMMISSION, "abc")));
 

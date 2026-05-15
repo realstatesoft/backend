@@ -3,6 +3,7 @@ package com.openroof.openroof.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.config.SecurityConfig;
 import com.openroof.openroof.config.JacksonConfig;
+import com.openroof.openroof.config.SecurityHeadersFilter;
 import com.openroof.openroof.config.TestSecurityMocksConfig;
 import com.openroof.openroof.dto.contract.ContractResponse;
 import com.openroof.openroof.dto.contract.ContractStatusUpdateRequest;
@@ -10,8 +11,10 @@ import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.ContractType;
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.service.ContractService;
+import com.openroof.openroof.service.ContractPdfService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -60,6 +63,9 @@ class ContractControllerTest {
     private ContractService contractService;
 
     @MockitoBean
+    private ContractPdfService contractPdfService;
+
+    @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @MockitoBean
@@ -74,6 +80,12 @@ class ContractControllerTest {
     @MockitoBean
     private com.openroof.openroof.security.PropertyViewRateLimiter propertyViewRateLimiter;
 
+    @MockitoBean
+    private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
+
+    @MockitoBean
+    private SecurityHeadersFilter securityHeadersFilter;
+
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
         doAnswer(invocation -> {
@@ -83,6 +95,24 @@ class ContractControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(invocation -> {

@@ -9,6 +9,8 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import com.openroof.openroof.common.BaseEntity;
+import com.openroof.openroof.model.enums.NotificationChannel;
+import com.openroof.openroof.model.enums.NotificationDeliveryStatus;
 import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.user.User;
 
@@ -66,4 +68,27 @@ public class Notification extends BaseEntity {
 
     @Column(name = "read_at")
     private LocalDateTime readAt;
+
+    // Rental module extensions (added via 051-add-notification-preferences.yaml)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private NotificationChannel channel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_status", length = 20)
+    private NotificationDeliveryStatus deliveryStatus;
+
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
+
+    @Column(name = "related_entity_type", length = 50)
+    private String relatedEntityType;
+
+    @Column(name = "related_entity_id")
+    private Long relatedEntityId;
+
+    public void markAsRead() {
+        this.readAt = LocalDateTime.now();
+        this.deliveryStatus = NotificationDeliveryStatus.READ;
+    }
 }

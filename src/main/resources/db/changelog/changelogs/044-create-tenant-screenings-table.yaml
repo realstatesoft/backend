@@ -1,0 +1,93 @@
+databaseChangeLog:
+  # OR-227: [BE] Migracion DB: crear tabla TenantScreening
+  - changeSet:
+      id: 044-create-tenant-screenings-table
+      author: openroof
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: tenant_screenings
+      changes:
+        - createTable:
+            tableName: tenant_screenings
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: application_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: provider
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: credit_score
+                  type: INTEGER
+              - column:
+                  name: credit_report_url
+                  type: VARCHAR(500)
+              - column:
+                  name: background_check_status
+                  type: VARCHAR(20)
+              - column:
+                  name: background_report_url
+                  type: VARCHAR(500)
+              - column:
+                  name: eviction_history
+                  type: JSONB
+              - column:
+                  name: criminal_records
+                  type: JSONB
+              - column:
+                  name: income_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: identity_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: recommendation
+                  type: VARCHAR(20)
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: run_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+        - addForeignKeyConstraint:
+            baseTableName: tenant_screenings
+            baseColumnNames: application_id
+            referencedTableName: rental_applications
+            referencedColumnNames: id
+            constraintName: fk_tenant_screenings_application
+        - createIndex:
+            indexName: idx_tenant_screenings_application
+            tableName: tenant_screenings
+            columns:
+              - column:
+                  name: application_id
