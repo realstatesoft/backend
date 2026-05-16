@@ -2,17 +2,12 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
-import com.openroof.openroof.dto.agent.AgentReviewSummaryResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
-import com.openroof.openroof.dto.agent.UpdateAgentReviewRequest;
-import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
-import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentReviewMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.agent.AgentReview;
-import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -24,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,97 +43,95 @@ public class AgentReviewService {
     private final AgentReviewMapper reviewMapper;
 
     @Transactional
-    public AgentReviewResponse create(Long agentId, String reviewerEmail, CreateAgentReviewRequest req) {
-        User reviewer = getUser(reviewerEmail);
+    public AgentReviewResponse createReview(Long agentId, Long userId, CreateAgentReviewRequest dto) {
+        User reviewer = getUserById(userId);
         AgentProfile agent = agentProfileRepository.findById(agentId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
 
-        if (agent.getUser() != null && agent.getUser().getId().equals(reviewer.getId())) {
-            throw new BadRequestException("No te podés reseñar a vos mismo");
+        if (agent.getUser() != null && agent.getUser().getId().equals(userId)) {
+            throw new ConflictException("No podés reseñarte a vos mismo");
         }
 
-        if (reviewRepository.existsByAgent_IdAndUser_Id(agentId, reviewer.getId())) {
-            throw new ConflictException("Ya enviaste una reseña para este agente. Podés editarla desde tu perfil.");
+        if (reviewRepository.existsByAgent_IdAndUser_Id(agentId, userId)) {
+            throw new ConflictException("Ya existe una reseña de este usuario para este agente");
         }
 
         Property property = null;
-        if (req.propertyId() != null) {
-            property = propertyRepository.findById(req.propertyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Property", "id", req.propertyId()));
+        if (dto.propertyId() != null) {
+            property = propertyRepository.findById(dto.propertyId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Property", "id", dto.propertyId()));
         }
 
-        AgentReview review = AgentReview.builder()
-                .agent(agent)
-                .property(property)
-                .build();
-        review.setUser(reviewer);
-        review.setRating(req.rating());
-        review.setComment(req.comment());
+        AgentReview review = reviewMapper.toEntity(dto, agent, reviewer, property);
 
         AgentReview saved;
         try {
             saved = reviewRepository.saveAndFlush(review);
         } catch (DataIntegrityViolationException ex) {
-            throw new ConflictException("Ya enviaste una reseña para este agente. Podés editarla desde tu perfil.");
+            throw new ConflictException("Ya existe una reseña de este usuario para este agente");
         }
 
-        recalculateAgentRating(agent);
+        recalculateAgentRating(agentId);
         log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
         return toResponse(saved, reviewer.getId());
     }
 
     @Transactional
-    public AgentReviewResponse update(Long reviewId, String userEmail, UpdateAgentReviewRequest req) {
-        User user = getUser(userEmail);
+    public AgentReviewResponse updateReview(Long reviewId, Long userId, CreateAgentReviewRequest dto) {
         AgentReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentReview", "id", reviewId));
 
-        if (!review.getUser().getId().equals(user.getId())) {
-            throw new ForbiddenException("Solo el autor puede modificar esta reseña");
+        if (!review.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Solo el autor puede modificar esta reseña");
         }
 
-        if (req.rating() != null) review.setRating(req.rating());
-        if (req.comment() != null) review.setComment(req.comment());
+        review.setRating(dto.rating());
+        review.setComment(dto.comment());
 
         AgentReview saved = reviewRepository.save(review);
-        recalculateAgentRating(saved.getAgent());
-        return toResponse(saved, user.getId());
+        recalculateAgentRating(saved.getAgent().getId());
+        return toResponse(saved);
     }
 
     @Transactional
-    public void delete(Long reviewId, String userEmail) {
-        User user = getUser(userEmail);
+    public void deleteReview(Long reviewId, Long userId) {
         AgentReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentReview", "id", reviewId));
 
-        boolean isOwner = review.getUser().getId().equals(user.getId());
-        boolean isAdmin = user.getRole() == UserRole.ADMIN;
-        if (!isOwner && !isAdmin) {
-            throw new ForbiddenException("Solo el autor o un ADMIN pueden eliminar esta reseña");
+        if (!review.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("Solo el autor puede eliminar esta reseña");
         }
 
         AgentProfile agent = review.getAgent();
         reviewRepository.delete(review);
-        recalculateAgentRating(agent);
+        recalculateAgentRating(agent.getId());
     }
 
-    public Page<AgentReviewResponse> getReviews(Long agentId, Pageable pageable, Long currentUserId) {
+    public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable) {
         if (!agentProfileRepository.existsById(agentId)) {
             throw new ResourceNotFoundException("AgentProfile", "id", agentId);
         }
-        return reviewRepository.findByAgent_Id(agentId, pageable).map(r -> toResponse(r, currentUserId));
+        return reviewRepository.findByAgent_Id(agentId, pageable)
+                .map(r -> reviewMapper.toResponse(r, currentUserId));
     }
 
-    public AgentReviewSummaryResponse getSummary(Long agentId) {
-        if (!agentProfileRepository.existsById(agentId)) {
-            throw new ResourceNotFoundException("AgentProfile", "id", agentId);
-        }
-        long count = reviewRepository.countByAgent_Id(agentId);
-        Double avg = reviewRepository.avgRatingByAgentId(agentId);
-        BigDecimal avgRating = avg == null
-                ? BigDecimal.ZERO
-                : BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_UP);
-        return new AgentReviewSummaryResponse(agentId, avgRating, count);
+    public AgentRatingSummaryResponse getRatingSummary(Long agentId, Long currentUserId) {
+        AgentProfile agent = agentProfileRepository.findById(agentId)
+                .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
+
+        Map<Integer, Long> distribution = reviewRepository
+                .countRatingDistributionByAgentId(agentId)
+                .stream()
+                .collect(Collectors.toMap(
+                        AgentReviewRepository.RatingDistribution::getRating,
+                        AgentReviewRepository.RatingDistribution::getCount));
+
+        var latestReviews = reviewRepository.findTop5ByAgent_IdOrderByCreatedAtDesc(agentId)
+                .stream()
+                .map(r -> reviewMapper.toResponse(r, currentUserId))
+                .toList();
+
+        return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
     public AgentRatingSummaryResponse getRatingSummary(Long agentId) {

@@ -32,6 +32,12 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     @Query("SELECT AVG(r.rating) FROM AgentReview r WHERE r.agent.id = :agentId")
     Double avgRatingByAgentId(@Param("agentId") Long agentId);
 
+    @Query("SELECT AVG(r.rating) FROM AgentReview r WHERE r.agent.id = :agentId")
+    Optional<Double> calculateAvgRating(@Param("agentId") Long agentId);
+
+    @Query("SELECT COUNT(r) FROM AgentReview r WHERE r.agent.id = :agentId")
+    long calculateTotalReviews(@Param("agentId") Long agentId);
+
     // — Métodos adicionales —
     Optional<AgentReview> findByAgent_IdAndUser_Id(Long agentId, Long userId);
 
