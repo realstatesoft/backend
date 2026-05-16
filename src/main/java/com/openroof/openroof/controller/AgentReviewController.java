@@ -69,7 +69,7 @@ public class AgentReviewController {
             @Valid @RequestBody CreateAgentReviewRequest req,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(ApiResponse.ok(
-                agentReviewService.updateReview(reviewId, currentUser.getId(), req)));
+                agentReviewService.updateReview(agentId, reviewId, currentUser.getId(), req)));
     }
 
     @DeleteMapping("/{reviewId}")
@@ -79,7 +79,7 @@ public class AgentReviewController {
             @PathVariable Long agentId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal User currentUser) {
-        agentReviewService.deleteReview(reviewId, currentUser.getId());
+        agentReviewService.deleteReview(agentId, reviewId, currentUser.getId());
         return ResponseEntity.noContent().build();
     }
 }

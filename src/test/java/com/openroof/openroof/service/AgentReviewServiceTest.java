@@ -165,7 +165,7 @@ class AgentReviewServiceTest {
         when(reviewRepository.avgRatingByAgentId(100L)).thenReturn(5.0);
         when(reviewMapper.toResponse(eq(review), eq(10L))).thenReturn(expectedResponse);
 
-        AgentReviewResponse res = service.updateReview(1L, 10L,
+        AgentReviewResponse res = service.updateReview(100L, 1L, 10L,
                 new CreateAgentReviewRequest(5, "updated", null));
 
         assertThat(res.rating()).isEqualTo(5);
@@ -180,7 +180,7 @@ class AgentReviewServiceTest {
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
 
-        assertThatThrownBy(() -> service.updateReview(1L, 10L,
+        assertThatThrownBy(() -> service.updateReview(100L, 1L, 10L,
                 new CreateAgentReviewRequest(5, "x", null)))
                 .isInstanceOf(AccessDeniedException.class);
     }
@@ -189,7 +189,19 @@ class AgentReviewServiceTest {
     void updateReview_notFound_throws() {
         when(reviewRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.updateReview(999L, 10L,
+        assertThatThrownBy(() -> service.updateReview(100L, 999L, 10L,
+                new CreateAgentReviewRequest(5, "x", null)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateReview_wrongAgent_throwsNotFound() {
+        AgentReview review = AgentReview.builder().agent(agent).build(); // agent.id = 100L
+        review.setUser(reviewer);
+        review.setId(1L);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+
+        assertThatThrownBy(() -> service.updateReview(999L, 1L, 10L,
                 new CreateAgentReviewRequest(5, "x", null)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
@@ -205,7 +217,7 @@ class AgentReviewServiceTest {
         when(reviewRepository.countByAgent_Id(100L)).thenReturn(0L);
         when(reviewRepository.avgRatingByAgentId(100L)).thenReturn(null);
 
-        service.deleteReview(1L, 10L);
+        service.deleteReview(100L, 1L, 10L);
 
         verify(reviewRepository).delete(review);
         verify(agentProfileRepository).save(agent);
@@ -218,7 +230,7 @@ class AgentReviewServiceTest {
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
 
-        assertThatThrownBy(() -> service.deleteReview(1L, 10L))
+        assertThatThrownBy(() -> service.deleteReview(100L, 1L, 10L))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -232,7 +244,7 @@ class AgentReviewServiceTest {
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
 
-        assertThatThrownBy(() -> service.deleteReview(1L, 99L))
+        assertThatThrownBy(() -> service.deleteReview(100L, 1L, 99L))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -240,7 +252,18 @@ class AgentReviewServiceTest {
     void deleteReview_notFound_throws() {
         when(reviewRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.deleteReview(999L, 10L))
+        assertThatThrownBy(() -> service.deleteReview(100L, 999L, 10L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deleteReview_wrongAgent_throwsNotFound() {
+        AgentReview review = AgentReview.builder().agent(agent).build(); // agent.id = 100L
+        review.setUser(reviewer);
+        review.setId(1L);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+
+        assertThatThrownBy(() -> service.deleteReview(999L, 1L, 10L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

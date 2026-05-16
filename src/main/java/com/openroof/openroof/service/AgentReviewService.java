@@ -75,9 +75,13 @@ public class AgentReviewService {
     }
 
     @Transactional
-    public AgentReviewResponse updateReview(Long reviewId, Long userId, CreateAgentReviewRequest dto) {
+    public AgentReviewResponse updateReview(Long agentId, Long reviewId, Long userId, CreateAgentReviewRequest dto) {
         AgentReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentReview", "id", reviewId));
+
+        if (!review.getAgent().getId().equals(agentId)) {
+            throw new ResourceNotFoundException("AgentReview", "id", reviewId);
+        }
 
         if (!review.getUser().getId().equals(userId)) {
             throw new AccessDeniedException("Solo el autor puede modificar esta reseña");
@@ -93,9 +97,13 @@ public class AgentReviewService {
     }
 
     @Transactional
-    public void deleteReview(Long reviewId, Long userId) {
+    public void deleteReview(Long agentId, Long reviewId, Long userId) {
         AgentReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentReview", "id", reviewId));
+
+        if (!review.getAgent().getId().equals(agentId)) {
+            throw new ResourceNotFoundException("AgentReview", "id", reviewId);
+        }
 
         if (!review.getUser().getId().equals(userId)) {
             throw new AccessDeniedException("Solo el autor puede eliminar esta reseña");
