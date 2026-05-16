@@ -1,8 +1,8 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
+import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
-import com.openroof.openroof.dto.agent.AgentReviewSummaryResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
 import com.openroof.openroof.dto.agent.UpdateAgentReviewRequest;
 import com.openroof.openroof.service.AgentReviewService;
@@ -30,16 +30,27 @@ public class AgentReviewController {
 
     @GetMapping
     @Operation(summary = "Listar reseñas de un agente (público)")
-    public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> list(
+    public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> getReviews(
             @PathVariable Long agentId,
             @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getReviews(agentId, pageable)));
     }
 
     @GetMapping("/summary")
-    @Operation(summary = "Promedio y cantidad de reseñas (público)")
-    public ResponseEntity<ApiResponse<AgentReviewSummaryResponse>> summary(@PathVariable Long agentId) {
-        return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getSummary(agentId)));
+    @Operation(summary = "Resumen de rating: promedio, distribución y últimas reseñas (público)")
+    public ResponseEntity<ApiResponse<AgentRatingSummaryResponse>> getRatingSummary(@PathVariable Long agentId) {
+        return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getRatingSummary(agentId)));
+    }
+
+    @GetMapping("/mine")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Obtener la propia reseña del usuario autenticado para este agente")
+    public ResponseEntity<ApiResponse<AgentReviewResponse>> getMyReview(
+            @PathVariable Long agentId,
+            Principal principal) {
+        return agentReviewService.getMyReview(agentId, principal.getName())
+                .map(r -> ResponseEntity.ok(ApiResponse.ok(r)))
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @PostMapping
