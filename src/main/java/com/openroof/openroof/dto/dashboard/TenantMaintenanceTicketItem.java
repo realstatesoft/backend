@@ -10,6 +10,7 @@ public record TenantMaintenanceTicketItem(
     String category,
     String priority,
     String status,
+    List<String> images,
     VendorContact vendor,
     List<StatusHistoryItem> statusHistory,
     Integer rating,
