@@ -8,6 +8,7 @@ import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.mapper.AgentReviewMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.agent.AgentReview;
 import com.openroof.openroof.model.enums.UserRole;
@@ -38,6 +39,7 @@ public class AgentReviewService {
     private final AgentProfileRepository agentProfileRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
+    private final AgentReviewMapper reviewMapper;
 
     @Transactional
     public AgentReviewResponse create(Long agentId, String reviewerEmail, CreateAgentReviewRequest req) {
@@ -149,15 +151,6 @@ public class AgentReviewService {
     }
 
     private AgentReviewResponse toResponse(AgentReview r) {
-        return new AgentReviewResponse(
-                r.getId(),
-                r.getAgent() != null ? r.getAgent().getId() : null,
-                r.getUser() != null ? r.getUser().getId() : null,
-                r.getUser() != null ? r.getUser().getName() : null,
-                r.getProperty() != null ? r.getProperty().getId() : null,
-                r.getRating(),
-                r.getComment(),
-                r.getCreatedAt(),
-                r.getUpdatedAt());
+        return reviewMapper.toResponse(r, null);
     }
 }
