@@ -29,7 +29,7 @@ public class AgentReviewController {
 
     @GetMapping
     @Operation(summary = "Listar reseñas de un agente (público)")
-    public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> getReviews(
+    public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> list(
             @PathVariable Long agentId,
             @PageableDefault(size = 10) Pageable pageable,
             @AuthenticationPrincipal User currentUser) {
@@ -39,20 +39,13 @@ public class AgentReviewController {
     }
 
     @GetMapping("/summary")
-    @Operation(summary = "Resumen de rating: promedio, distribución y últimas reseñas (público)")
-    public ResponseEntity<ApiResponse<AgentRatingSummaryResponse>> getRatingSummary(@PathVariable Long agentId) {
-        return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getRatingSummary(agentId)));
-    }
-
-    @GetMapping("/mine")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Obtener la propia reseña del usuario autenticado para este agente")
-    public ResponseEntity<ApiResponse<AgentReviewResponse>> getMyReview(
+    @Operation(summary = "Resumen de calificaciones: promedio, distribución y últimas reseñas")
+    public ResponseEntity<ApiResponse<AgentRatingSummaryResponse>> summary(
             @PathVariable Long agentId,
-            Principal principal) {
-        return agentReviewService.getMyReview(agentId, principal.getName())
-                .map(r -> ResponseEntity.ok(ApiResponse.ok(r)))
-                .orElse(ResponseEntity.noContent().build());
+            @AuthenticationPrincipal User currentUser) {
+        Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        return ResponseEntity.ok(ApiResponse.ok(
+                agentReviewService.getRatingSummary(agentId, currentUserId)));
     }
 
     @PostMapping
