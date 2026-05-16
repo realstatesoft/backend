@@ -25,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -132,11 +134,40 @@ public class AgentReviewService {
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
-    private void recalculateAgentRating(Long agentId) {
-        AgentProfile agent = agentProfileRepository.findById(agentId)
-                .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
-        long count = reviewRepository.calculateTotalReviews(agentId);
-        Double avg = reviewRepository.calculateAvgRating(agentId).orElse(null);
+    public AgentRatingSummaryResponse getRatingSummary(Long agentId) {
+        if (!agentProfileRepository.existsById(agentId)) {
+            throw new ResourceNotFoundException("AgentProfile", "id", agentId);
+        }
+        long count = reviewRepository.countByAgent_Id(agentId);
+        Double avg = reviewRepository.avgRatingByAgentId(agentId);
+        BigDecimal avgRating = avg == null
+                ? BigDecimal.ZERO
+                : BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_UP);
+        Map<Integer, Long> distribution = reviewRepository.countRatingDistributionByAgentId(agentId)
+                .stream()
+                .collect(Collectors.toMap(
+                        AgentReviewRepository.RatingDistribution::getRating,
+                        AgentReviewRepository.RatingDistribution::getCount));
+        List<AgentReviewResponse> latestReviews = reviewRepository
+                .findTop5ByAgent_IdOrderByCreatedAtDesc(agentId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        return new AgentRatingSummaryResponse(avgRating, (int) count, distribution, latestReviews);
+    }
+
+    public Optional<AgentReviewResponse> getMyReview(Long agentId, String userEmail) {
+        if (!agentProfileRepository.existsById(agentId)) {
+            throw new ResourceNotFoundException("AgentProfile", "id", agentId);
+        }
+        User user = getUser(userEmail);
+        return reviewRepository.findByAgent_IdAndUser_Id(agentId, user.getId())
+                .map(r -> toResponse(r, true));
+    }
+
+    void recalculateAgentRating(AgentProfile agent) {
+        long count = reviewRepository.countByAgent_Id(agent.getId());
+        Double avg = reviewRepository.avgRatingByAgentId(agent.getId());
         agent.setTotalReviews((int) count);
         agent.setAvgRating(avg == null
                 ? BigDecimal.ZERO
@@ -144,8 +175,28 @@ public class AgentReviewService {
         agentProfileRepository.save(agent);
     }
 
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+    private User getUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+    }
+
+    private AgentReviewResponse toResponse(AgentReview r) {
+        return toResponse(r, false);
+    }
+
+    private AgentReviewResponse toResponse(AgentReview r, boolean isOwn) {
+        return new AgentReviewResponse(
+                r.getId(),
+                r.getAgent() != null ? r.getAgent().getId() : null,
+                r.getUser() != null ? r.getUser().getId() : null,
+                r.getUser() != null ? r.getUser().getName() : null,
+                r.getUser() != null ? r.getUser().getAvatarUrl() : null,
+                r.getProperty() != null ? r.getProperty().getId() : null,
+                r.getProperty() != null ? r.getProperty().getAddress() : null,
+                r.getRating(),
+                r.getComment(),
+                r.getCreatedAt(),
+                r.getUpdatedAt(),
+                isOwn);
     }
 }
