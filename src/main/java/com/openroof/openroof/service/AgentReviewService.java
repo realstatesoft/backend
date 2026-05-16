@@ -8,6 +8,7 @@ import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.mapper.AgentReviewMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.agent.AgentReview;
 import com.openroof.openroof.model.enums.UserRole;
@@ -38,6 +39,7 @@ public class AgentReviewService {
     private final AgentProfileRepository agentProfileRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
+    private final AgentReviewMapper reviewMapper;
 
     @Transactional
     public AgentReviewResponse create(Long agentId, String reviewerEmail, CreateAgentReviewRequest req) {
@@ -76,7 +78,7 @@ public class AgentReviewService {
 
         recalculateAgentRating(agent);
         log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
-        return toResponse(saved);
+        return toResponse(saved, reviewer.getId());
     }
 
     @Transactional
@@ -94,7 +96,7 @@ public class AgentReviewService {
 
         AgentReview saved = reviewRepository.save(review);
         recalculateAgentRating(saved.getAgent());
-        return toResponse(saved);
+        return toResponse(saved, user.getId());
     }
 
     @Transactional
@@ -114,11 +116,11 @@ public class AgentReviewService {
         recalculateAgentRating(agent);
     }
 
-    public Page<AgentReviewResponse> getReviews(Long agentId, Pageable pageable) {
+    public Page<AgentReviewResponse> getReviews(Long agentId, Pageable pageable, Long currentUserId) {
         if (!agentProfileRepository.existsById(agentId)) {
             throw new ResourceNotFoundException("AgentProfile", "id", agentId);
         }
-        return reviewRepository.findByAgent_Id(agentId, pageable).map(this::toResponse);
+        return reviewRepository.findByAgent_Id(agentId, pageable).map(r -> toResponse(r, currentUserId));
     }
 
     public AgentReviewSummaryResponse getSummary(Long agentId) {
@@ -148,19 +150,7 @@ public class AgentReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
-    private AgentReviewResponse toResponse(AgentReview r) {
-        return new AgentReviewResponse(
-                r.getId(),
-                r.getAgent() != null ? r.getAgent().getId() : null,
-                r.getUser() != null ? r.getUser().getId() : null,
-                r.getUser() != null ? r.getUser().getName() : null,
-                r.getUser() != null ? r.getUser().getAvatarUrl() : null,
-                r.getProperty() != null ? r.getProperty().getId() : null,
-                r.getProperty() != null ? r.getProperty().getAddress() : null,
-                r.getRating(),
-                r.getComment(),
-                r.getCreatedAt(),
-                r.getUpdatedAt(),
-                false);
+    private AgentReviewResponse toResponse(AgentReview r, Long currentUserId) {
+        return reviewMapper.toResponse(r, currentUserId);
     }
 }
