@@ -13,6 +13,8 @@ import java.util.List;
 
 @Repository
 public interface LeasePaymentRepository extends JpaRepository<LeasePayment, Long> {
+    java.util.Optional<LeasePayment> findByIdempotencyKey(String idempotencyKey);
+
     List<LeasePayment> findByInstallmentId(Long installmentId);
 
     List<LeasePayment> findByInstallmentIdIn(java.util.Collection<Long> installmentIds);

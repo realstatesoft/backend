@@ -48,7 +48,7 @@ public class RentalController {
     private void verifyLeaseAccess(Lease lease, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        if (user.getRole() == UserRole.ADMIN) return;
+        if (user.getRole() == UserRole.ADMIN || user.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PROPERTY_MANAGER"))) return;
         boolean isTenant = lease.getPrimaryTenant() != null && lease.getPrimaryTenant().getId().equals(user.getId());
         boolean isLandlord = lease.getLandlord() != null && lease.getLandlord().getId().equals(user.getId());
         if (!isTenant && !isLandlord) {
@@ -114,7 +114,7 @@ public class RentalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response, "Pago registrado"));
     }
 
-    @GetMapping("/installments/{id}/invoice-url")
+    @GetMapping({"/installments/{id}/invoice-url", "/installments/{id}/invoice.pdf"})
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL de la factura de una cuota")
     public ResponseEntity<ApiResponse<String>> downloadInvoice(@PathVariable Long id, Principal principal) {
@@ -123,13 +123,13 @@ public class RentalController {
         verifyLeaseAccess(installment.getLease(), principal.getName());
 
         if (installment.getInvoicePdfUrl() == null || installment.getInvoicePdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.ok(null, "La factura aún no se ha generado"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("La factura aún no se ha generado"));
         }
 
         return ResponseEntity.ok(ApiResponse.ok(installment.getInvoicePdfUrl(), "URL de la factura obtenida"));
     }
 
-    @GetMapping("/payments/{id}/receipt-url")
+    @GetMapping({"/payments/{id}/receipt-url", "/payments/{id}/receipt.pdf"})
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL del recibo de un pago")
     public ResponseEntity<ApiResponse<String>> downloadReceipt(@PathVariable Long id, Principal principal) {
@@ -138,7 +138,7 @@ public class RentalController {
         verifyLeaseAccess(payment.getLease(), principal.getName());
 
         if (payment.getReceiptPdfUrl() == null || payment.getReceiptPdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.ok(null, "El recibo aún no se ha generado"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("El recibo aún no se ha generado"));
         }
 
         return ResponseEntity.ok(ApiResponse.ok(payment.getReceiptPdfUrl(), "URL del recibo obtenida"));

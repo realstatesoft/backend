@@ -95,6 +95,9 @@ public class LeasePayment extends BaseEntity {
     @Column(name = "idempotency_key", nullable = false, unique = true, length = 255)
     private String idempotencyKey;
 
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     public boolean isCompleted() {
         return LeasePaymentStatus.COMPLETED == status;
     }
