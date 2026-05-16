@@ -116,8 +116,9 @@ class AgentReviewServiceTest {
             r.setId(500L);
             return r;
         });
-        when(reviewRepository.countByAgent_Id(100L)).thenReturn(1L);
-        when(reviewRepository.avgRatingByAgentId(100L)).thenReturn(4.0);
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(4.0));
 
         AgentReviewResponse res = service.create(100L, "reviewer@test.com", req);
 
@@ -138,6 +139,9 @@ class AgentReviewServiceTest {
         when(userRepository.findByEmail("reviewer@test.com")).thenReturn(Optional.of(reviewer));
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
         when(reviewRepository.save(review)).thenReturn(review);
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(5.0));
 
         AgentReviewResponse res = service.update(1L, "reviewer@test.com",
                 new UpdateAgentReviewRequest(5, "updated"));
@@ -168,6 +172,9 @@ class AgentReviewServiceTest {
         review.setId(1L);
         when(userRepository.findByEmail("reviewer@test.com")).thenReturn(Optional.of(reviewer));
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
 
         service.delete(1L, "reviewer@test.com");
 
@@ -184,6 +191,9 @@ class AgentReviewServiceTest {
         review.setId(1L);
         when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
 
         service.delete(1L, "admin@test.com");
 
