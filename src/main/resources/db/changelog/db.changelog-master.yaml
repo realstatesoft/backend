@@ -207,4 +207,7 @@ databaseChangeLog:
   - include:
       file: changelogs/058-agent-reviews-unique-constraint.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changelogs/059-add-notes-to-lease-payments.yaml
+      relativeToChangelogFile: true
 
