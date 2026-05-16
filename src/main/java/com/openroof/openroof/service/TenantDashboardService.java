@@ -101,7 +101,7 @@ public class TenantDashboardService {
         LastPaymentInfo lastPayment = buildLastPaymentInfo(tenantId);
 
         // 8. Total pagado en el último año
-        BigDecimal totalPaidLastYear = paymentRepository.sumCompletedByUserSince(tenantId, PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
+        BigDecimal totalPaidLastYear = leasePaymentRepository.sumCompletedByTenantSince(tenantId, LeasePaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidLastYear == null) totalPaidLastYear = BigDecimal.ZERO;
 
         // 9. Listas de resumen (Próximas cuotas a pagar)
@@ -277,7 +277,7 @@ public class TenantDashboardService {
                 .toList();
 
         // Summary header - Corrected "on time" vs "late" logic (across all leases)
-        BigDecimal totalPaidYear = paymentRepository.sumCompletedByUserSince(tenant.getId(), PaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
+        BigDecimal totalPaidYear = leasePaymentRepository.sumCompletedByTenantSince(tenant.getId(), LeasePaymentStatus.COMPLETED, LocalDateTime.now().minusYears(1));
         if (totalPaidYear == null) totalPaidYear = BigDecimal.ZERO;
 
         List<RentalInstallment> allInstallments = rentalInstallmentRepository.findByLeaseIdsOrderByDueDateAsc(leaseIds);
@@ -294,10 +294,19 @@ public class TenantDashboardService {
         long late = allInstallments.stream()
                 .filter(i -> {
                     if (i.getStatus() == InstallmentStatus.OVERDUE) return true;
-                    if (i.getStatus() != InstallmentStatus.PAID || i.getPaidDate() == null) return false;
+                    
                     int graceDays = i.getLease() != null && i.getLease().getGracePeriodDays() != null
                             ? i.getLease().getGracePeriodDays() : 0;
-                    return i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays));
+                            
+                    if (i.getStatus() == InstallmentStatus.PAID && i.getPaidDate() != null) {
+                        return i.getPaidDate().isAfter(i.getDueDate().plusDays(graceDays));
+                    }
+                    
+                    if (i.getStatus() == InstallmentStatus.PENDING || i.getStatus() == InstallmentStatus.PARTIAL) {
+                        return LocalDate.now().isAfter(i.getDueDate().plusDays(graceDays));
+                    }
+                    
+                    return false;
                 })
                 .count();
 
@@ -367,6 +376,7 @@ public class TenantDashboardService {
                             m.getCategory() != null ? m.getCategory().name() : null,
                             m.getPriority().name(),
                             m.getStatus().name(),
+                            m.getImages(),
                             vendorContact,
                             history,
                             m.getTenantSatisfactionRating(),
@@ -419,6 +429,7 @@ public class TenantDashboardService {
                 mr.getCategory() != null ? mr.getCategory().name() : null,
                 mr.getPriority().name(),
                 mr.getStatus().name(),
+                mr.getImages(),
                 null,
                 history,
                 null,
