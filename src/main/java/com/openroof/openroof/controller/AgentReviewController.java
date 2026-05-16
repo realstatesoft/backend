@@ -5,6 +5,7 @@ import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
 import com.openroof.openroof.dto.agent.UpdateAgentReviewRequest;
+import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.AgentReviewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +17,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -32,8 +34,10 @@ public class AgentReviewController {
     @Operation(summary = "Listar reseñas de un agente (público)")
     public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> getReviews(
             @PathVariable Long agentId,
-            @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getReviews(agentId, pageable)));
+            @PageableDefault(size = 10) Pageable pageable,
+            @AuthenticationPrincipal User currentUser) {
+        Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        return ResponseEntity.ok(ApiResponse.ok(agentReviewService.getReviews(agentId, pageable, currentUserId)));
     }
 
     @GetMapping("/summary")

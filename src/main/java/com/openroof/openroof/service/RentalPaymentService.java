@@ -30,7 +30,7 @@ public class RentalPaymentService {
 
     @Transactional
     public LeasePayment registerPayment(Long installmentId, User payer, BigDecimal amount, String method, String idempotencyKey, String notes) {
-        RentalInstallment installment = installmentRepository.findById(installmentId)
+        RentalInstallment installment = installmentRepository.findByIdForUpdate(installmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
 
         if (installment.getStatus() == InstallmentStatus.PAID) {
@@ -50,6 +50,11 @@ public class RentalPaymentService {
 
         Lease lease = installment.getLease();
 
+        java.util.Optional<LeasePayment> existingPayment = leasePaymentRepository.findByIdempotencyKey(idempotencyKey);
+        if (existingPayment.isPresent()) {
+            return existingPayment.get();
+        }
+
         LeasePayment payment = LeasePayment.builder()
                 .lease(lease)
                 .installment(installment)
@@ -60,12 +65,14 @@ public class RentalPaymentService {
                 .status(LeasePaymentStatus.COMPLETED)
                 .type(LeasePaymentType.RENT)
                 .idempotencyKey(idempotencyKey)
+                .notes(notes)
                 .paidAt(LocalDateTime.now())
                 .build();
 
         leasePaymentRepository.save(payment);
 
-        BigDecimal newPaid = installment.getPaidAmount().add(amount);
+        BigDecimal currentPaid = installment.getPaidAmount() == null ? BigDecimal.ZERO : installment.getPaidAmount();
+        BigDecimal newPaid = currentPaid.add(amount);
         installment.setPaidAmount(newPaid);
 
         if (newPaid.compareTo(installment.getTotalAmount()) >= 0) {
