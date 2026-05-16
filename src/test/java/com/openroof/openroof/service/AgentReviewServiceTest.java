@@ -16,6 +16,7 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.AgentReviewRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.mapper.AgentReviewMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class AgentReviewServiceTest {
     @Mock private AgentProfileRepository agentProfileRepository;
     @Mock private UserRepository userRepository;
     @Mock private PropertyRepository propertyRepository;
+    @Mock private AgentReviewMapper reviewMapper;
 
     private AgentReviewService service;
 
@@ -53,7 +55,7 @@ class AgentReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AgentReviewService(reviewRepository, agentProfileRepository, userRepository, propertyRepository);
+        service = new AgentReviewService(reviewRepository, agentProfileRepository, userRepository, propertyRepository, reviewMapper);
 
         reviewer = User.builder().name("Reviewer").email("reviewer@test.com").role(UserRole.USER).build();
         reviewer.setId(10L);
@@ -210,7 +212,7 @@ class AgentReviewServiceTest {
     void getReviews_agentNotFound_throws() {
         when(agentProfileRepository.existsById(404L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.getReviews(404L, PageRequest.of(0, 10)))
+        assertThatThrownBy(() -> service.getReviews(404L, PageRequest.of(0, 10), null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -223,7 +225,7 @@ class AgentReviewServiceTest {
         when(agentProfileRepository.existsById(100L)).thenReturn(true);
         when(reviewRepository.findByAgent_Id(eq100L(), any())).thenReturn(new PageImpl<>(List.of(r)));
 
-        Page<AgentReviewResponse> page = service.getReviews(100L, PageRequest.of(0, 10));
+        Page<AgentReviewResponse> page = service.getReviews(100L, PageRequest.of(0, 10), null);
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).rating()).isEqualTo(4);
