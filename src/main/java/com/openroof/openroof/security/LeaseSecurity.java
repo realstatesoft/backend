@@ -40,31 +40,15 @@ public class LeaseSecurity {
      * @throws AccessDeniedException si no tiene acceso
      */
     public void assertLeaseAccess(Long userId, Long leaseId) {
-        if (userId == null) {
-            throw new AccessDeniedException("Usuario no autenticado");
-        }
-        if (leaseId == null) {
-            throw new AccessDeniedException("Lease id nulo");
-        }
+        UserAndLease ul = loadOrDeny(userId, leaseId);
+        if (ul == null) return;  // ADMIN
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AccessDeniedException(
-                        "Usuario " + userId + " no encontrado"));
-
-        if (user.getRole() == UserRole.ADMIN) {
-            return;
-        }
-
-        Lease lease = leaseRepository.findById(leaseId)
-                .orElseThrow(() -> new AccessDeniedException(
-                        "Lease " + leaseId + " no encontrado o sin acceso"));
-
-        boolean isLandlord = lease.getLandlord() != null
-                && lease.getLandlord().getId() != null
-                && lease.getLandlord().getId().equals(userId);
-        boolean isTenant = lease.getPrimaryTenant() != null
-                && lease.getPrimaryTenant().getId() != null
-                && lease.getPrimaryTenant().getId().equals(userId);
+        boolean isLandlord = ul.lease().getLandlord() != null
+                && ul.lease().getLandlord().getId() != null
+                && ul.lease().getLandlord().getId().equals(userId);
+        boolean isTenant = ul.lease().getPrimaryTenant() != null
+                && ul.lease().getPrimaryTenant().getId() != null
+                && ul.lease().getPrimaryTenant().getId().equals(userId);
 
         if (!isLandlord && !isTenant) {
             throw new AccessDeniedException(
@@ -92,22 +76,14 @@ public class LeaseSecurity {
      * Aplica a: ADMIN, landlord, primary tenant, o agente con assignment ACCEPTED sobre la propiedad.
      */
     public void assertInstallmentAccess(Long userId, Long leaseId) {
-        if (userId == null) throw new AccessDeniedException("Usuario no autenticado");
-        if (leaseId == null) throw new AccessDeniedException("Lease id nulo");
+        UserAndLease ul = loadOrDeny(userId, leaseId);
+        if (ul == null) return;  // ADMIN
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AccessDeniedException("Usuario " + userId + " no encontrado"));
-
-        if (user.getRole() == UserRole.ADMIN) return;
-
-        Lease lease = leaseRepository.findById(leaseId)
-                .orElseThrow(() -> new AccessDeniedException("Lease " + leaseId + " no encontrado o sin acceso"));
-
+        Lease lease = ul.lease();
         if (lease.getLandlord() != null && userId.equals(lease.getLandlord().getId())) return;
-
         if (lease.getPrimaryTenant() != null && userId.equals(lease.getPrimaryTenant().getId())) return;
 
-        if (user.getRole() == UserRole.AGENT && lease.getProperty() != null) {
+        if (ul.user().getRole() == UserRole.AGENT && lease.getProperty() != null) {
             Optional<AgentProfile> profile = agentProfileRepository.findByUser_Id(userId);
             if (profile.isPresent()) {
                 boolean assigned = propertyAssignmentRepository.findActiveByPropertyAndAgent(
@@ -123,6 +99,9 @@ public class LeaseSecurity {
     }
 
     public boolean hasInstallmentAccess(Long userId, Long leaseId) {
+        if (leaseId == null) {
+            return false;
+        }
         try {
             assertInstallmentAccess(userId, leaseId);
             return true;
@@ -130,6 +109,25 @@ public class LeaseSecurity {
             return false;
         }
     }
+
+    /** Null-safe loader: validates ids, loads user+lease, short-circuits for ADMIN (returns null). */
+    private UserAndLease loadOrDeny(Long userId, Long leaseId) {
+        if (userId == null) throw new AccessDeniedException("Usuario no autenticado");
+        if (leaseId == null) throw new AccessDeniedException("Lease id nulo");
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AccessDeniedException("Usuario " + userId + " no encontrado"));
+
+        if (user.getRole() == UserRole.ADMIN) return null;
+
+        Lease lease = leaseRepository.findById(leaseId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Lease " + leaseId + " no encontrado o sin acceso"));
+
+        return new UserAndLease(user, lease);
+    }
+
+    private record UserAndLease(User user, Lease lease) {}
 
     /**
      * Verifica que el usuario pueda gestionar (editar/activar/terminar) un lease,
@@ -158,6 +156,7 @@ public class LeaseSecurity {
     public boolean canCreateLease(Long propertyId, Object principalObj) {
         if (propertyId == null) return false;
         if (!(principalObj instanceof User currentUser)) return false;
+        if (currentUser.getRole() == UserRole.ADMIN) return true;
         return propertySecurity.canModify(propertyId, currentUser);
     }
 }
