@@ -9,6 +9,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PropertyViewService {
 
     private static final int RECENT_LIMIT = 10;
@@ -33,15 +36,20 @@ public class PropertyViewService {
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Propiedad no encontrada"));
 
-        propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(user.getId(), propertyId)
-                .ifPresent(propertyViewRepository::delete);
+        // Eliminar vistas previas de este usuario para esta propiedad para evitar duplicados
+        // y prevenir ObjectOptimisticLockingFailureException en accesos concurrentes.
+        propertyViewRepository.deleteByUserIdAndPropertyId(user.getId(), propertyId);
 
         PropertyView view = PropertyView.builder()
                 .property(property)
                 .user(user)
                 .build();
 
-        propertyViewRepository.save(view);
+        try {
+            propertyViewRepository.save(view);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Vista de propiedad duplicada detectada para user={} property={}", user.getId(), propertyId);
+        }
     }
 
     @Transactional(readOnly = true)

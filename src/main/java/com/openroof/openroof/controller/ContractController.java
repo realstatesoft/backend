@@ -132,10 +132,10 @@ public class ContractController {
     // ─── UPDATE STATUS ────────────────────────────────────────────────────────
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
     @Operation(summary = "Actualizar el estado de un contrato",
                description = """
-               Transiciones válidas para AGENT:
+               Transiciones válidas:
                  DRAFT → SENT | CANCELLED
                  SENT → PARTIALLY_SIGNED | REJECTED | CANCELLED
                  PARTIALLY_SIGNED → SIGNED | REJECTED | CANCELLED
@@ -179,6 +179,20 @@ public class ContractController {
 
         List<SignatureStatusResponse> list = contractService.getSignatures(id, auth.getName());
         return ResponseEntity.ok(ApiResponse.ok(list));
+    }
+
+    // ─── ACTIVATE LEASE (para contratos de alquiler firmados) ─────────────────
+
+    @PostMapping("/{id}/activate-lease")
+    @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
+    @Operation(summary = "Activar lease desde un contrato de alquiler firmado",
+               description = "Crea un Lease activo y genera las cuotas a partir de un contrato de alquiler ya firmado. Útil para contratos firmados antes de la automatización.")
+    public ResponseEntity<ApiResponse<Void>> activateLease(
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            Authentication auth) {
+
+        contractService.activateLeaseFromContract(id, auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(null, "Lease activado y cuotas generadas exitosamente"));
     }
 
     // ─── DELETE ───────────────────────────────────────────────────────────────

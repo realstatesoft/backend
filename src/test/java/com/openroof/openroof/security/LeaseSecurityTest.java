@@ -3,11 +3,14 @@ package com.openroof.openroof.security;
 import com.openroof.openroof.model.enums.LeaseStatus;
 import com.openroof.openroof.model.enums.LeaseType;
 import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.LeaseRepository;
 import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,18 +36,17 @@ class LeaseSecurityTest {
     private static final Long TENANT_ID = 3L;
     private static final Long OTHER_ID = 4L;
     private static final Long LEASE_ID = 100L;
+    private static final Long PROPERTY_ID = 200L;
 
-    @Mock
-    private LeaseRepository leaseRepository;
-
-    @Mock
-    private UserRepository userRepository;
+    @Mock private LeaseRepository leaseRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private PropertySecurity propertySecurity;
 
     private LeaseSecurity leaseSecurity;
 
     @BeforeEach
     void setUp() {
-        leaseSecurity = new LeaseSecurity(leaseRepository, userRepository);
+        leaseSecurity = new LeaseSecurity(leaseRepository, userRepository, propertySecurity);
     }
 
     // ---------- assertLeaseAccess ----------
@@ -193,7 +195,7 @@ class LeaseSecurityTest {
     }
 
     @Test
-    void hasLeaseAccess_nullLeaseId_returnsFalse() {
+    void hasLeaseAccess_nullLeaseId_returnsFalse_withoutTouchingAnyRepo() {
         assertFalse(leaseSecurity.hasLeaseAccess(LANDLORD_ID, null));
         verifyNoInteractions(userRepository);
         verifyNoInteractions(leaseRepository);
@@ -207,6 +209,76 @@ class LeaseSecurityTest {
                 .thenReturn(Optional.empty());
 
         assertFalse(leaseSecurity.hasLeaseAccess(LANDLORD_ID, LEASE_ID));
+    }
+
+    // ---------- canManageLease ----------
+
+    @Nested
+    @DisplayName("canManageLease()")
+    class CanManageLease {
+
+        @Test
+        @DisplayName("ADMIN retorna true sin consultar el lease")
+        void admin_returnsTrueWithoutLoadingLease() {
+            User admin = user(ADMIN_ID, UserRole.ADMIN);
+
+            assertTrue(leaseSecurity.canManageLease(LEASE_ID, admin));
+            verifyNoInteractions(leaseRepository);
+        }
+
+        @Test
+        @DisplayName("Owner de la propiedad retorna true cuando propertySecurity lo permite")
+        void propertyOwner_returnsTrue() {
+            User owner = user(OTHER_ID, UserRole.USER);
+            Lease lease = leaseWithProperty(PROPERTY_ID);
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(lease));
+            when(propertySecurity.canModify(PROPERTY_ID, owner)).thenReturn(true);
+
+            assertTrue(leaseSecurity.canManageLease(LEASE_ID, owner));
+        }
+
+        @Test
+        @DisplayName("Agente asignado retorna true cuando propertySecurity lo permite")
+        void assignedAgent_returnsTrue() {
+            User agent = user(OTHER_ID, UserRole.AGENT);
+            Lease lease = leaseWithProperty(PROPERTY_ID);
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(lease));
+            when(propertySecurity.canModify(PROPERTY_ID, agent)).thenReturn(true);
+
+            assertTrue(leaseSecurity.canManageLease(LEASE_ID, agent));
+        }
+
+        @Test
+        @DisplayName("Usuario sin relación con la propiedad retorna false")
+        void outsider_returnsFalse() {
+            User outsider = user(OTHER_ID, UserRole.USER);
+            Lease lease = leaseWithProperty(PROPERTY_ID);
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(lease));
+            when(propertySecurity.canModify(PROPERTY_ID, outsider)).thenReturn(false);
+
+            assertFalse(leaseSecurity.canManageLease(LEASE_ID, outsider));
+        }
+
+        @Test
+        @DisplayName("Lease no encontrado retorna false")
+        void leaseNotFound_returnsFalse() {
+            User user = user(OTHER_ID, UserRole.USER);
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.empty());
+
+            assertFalse(leaseSecurity.canManageLease(LEASE_ID, user));
+            verifyNoInteractions(propertySecurity);
+        }
+
+        @Test
+        @DisplayName("Property null en el lease retorna false")
+        void leaseWithNullProperty_returnsFalse() {
+            User user = user(OTHER_ID, UserRole.USER);
+            Lease lease = lease(LANDLORD_ID, TENANT_ID);  // sin property
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(lease));
+
+            assertFalse(leaseSecurity.canManageLease(LEASE_ID, user));
+            verifyNoInteractions(propertySecurity);
+        }
     }
 
     // ---------- helpers ----------
@@ -232,6 +304,14 @@ class LeaseSecurityTest {
                 .monthlyRent(BigDecimal.valueOf(1000))
                 .build();
         l.setId(LEASE_ID);
+        return l;
+    }
+
+    private Lease leaseWithProperty(Long propertyId) {
+        Property property = Property.builder().build();
+        property.setId(propertyId);
+        Lease l = lease(LANDLORD_ID, TENANT_ID);
+        l.setProperty(property);
         return l;
     }
 }

@@ -86,9 +86,9 @@ class AgentReviewRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByAgentId debe retornar reviews paginadas del agente")
-    void findByAgentId_returnsPagedReviews() {
-        Page<AgentReview> result = agentReviewRepository.findByAgentId(
+    @DisplayName("findByAgent_Id debe retornar reviews paginadas del agente")
+    void findByAgent_Id_returnsPagedReviews() {
+        Page<AgentReview> result = agentReviewRepository.findByAgent_Id(
                 testAgent.getId(), PageRequest.of(0, 10));
 
         assertThat(result.getContent()).hasSize(2);
@@ -98,18 +98,18 @@ class AgentReviewRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByAgentId debe retornar página vacía para agente sin reviews")
-    void findByAgentId_returnsEmptyForUnknownAgent() {
-        Page<AgentReview> result = agentReviewRepository.findByAgentId(
+    @DisplayName("findByAgent_Id debe retornar página vacía para agente sin reviews")
+    void findByAgent_Id_returnsEmptyForUnknownAgent() {
+        Page<AgentReview> result = agentReviewRepository.findByAgent_Id(
                 Long.MAX_VALUE, PageRequest.of(0, 10));
 
         assertThat(result.getContent()).isEmpty();
     }
 
     @Test
-    @DisplayName("findByAgentIdAndUserId debe encontrar la review existente")
-    void findByAgentIdAndUserId_returnsReviewWhenExists() {
-        Optional<AgentReview> result = agentReviewRepository.findByAgentIdAndUserId(
+    @DisplayName("findByAgent_IdAndUser_Id debe encontrar la review existente")
+    void findByAgent_IdAndUser_Id_returnsReviewWhenExists() {
+        Optional<AgentReview> result = agentReviewRepository.findByAgent_IdAndUser_Id(
                 testAgent.getId(), reviewer1.getId());
 
         assertThat(result).isPresent();
@@ -118,27 +118,27 @@ class AgentReviewRepositoryTest {
     }
 
     @Test
-    @DisplayName("findByAgentIdAndUserId debe retornar vacío cuando no existe")
-    void findByAgentIdAndUserId_returnsEmptyWhenNotExists() {
-        Optional<AgentReview> result = agentReviewRepository.findByAgentIdAndUserId(
+    @DisplayName("findByAgent_IdAndUser_Id debe retornar vacío cuando no existe")
+    void findByAgent_IdAndUser_Id_returnsEmptyWhenNotExists() {
+        Optional<AgentReview> result = agentReviewRepository.findByAgent_IdAndUser_Id(
                 testAgent.getId(), Long.MAX_VALUE);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("existsByAgentIdAndUserId debe retornar true cuando existe la review")
-    void existsByAgentIdAndUserId_returnsTrueWhenExists() {
-        boolean exists = agentReviewRepository.existsByAgentIdAndUserId(
+    @DisplayName("existsByAgent_IdAndUser_Id debe retornar true cuando existe la review")
+    void existsByAgent_IdAndUser_Id_returnsTrueWhenExists() {
+        boolean exists = agentReviewRepository.existsByAgent_IdAndUser_Id(
                 testAgent.getId(), reviewer1.getId());
 
         assertThat(exists).isTrue();
     }
 
     @Test
-    @DisplayName("existsByAgentIdAndUserId debe retornar false cuando no existe")
-    void existsByAgentIdAndUserId_returnsFalseWhenNotExists() {
-        boolean exists = agentReviewRepository.existsByAgentIdAndUserId(
+    @DisplayName("existsByAgent_IdAndUser_Id debe retornar false cuando no existe")
+    void existsByAgent_IdAndUser_Id_returnsFalseWhenNotExists() {
+        boolean exists = agentReviewRepository.existsByAgent_IdAndUser_Id(
                 testAgent.getId(), Long.MAX_VALUE);
 
         assertThat(exists).isFalse();
@@ -178,8 +178,12 @@ class AgentReviewRepositoryTest {
         }
 
         List<AgentReview> top5 = agentReviewRepository
-                .findTop5ByAgentIdOrderByCreatedAtDesc(testAgent.getId());
+                .findTop5ByAgent_IdOrderByCreatedAtDesc(testAgent.getId());
 
         assertThat(top5).hasSize(5);
+
+        // Verificar que la lista está ordenada de más reciente a más antigua
+        assertThat(top5.get(0).getCreatedAt()).isAfterOrEqualTo(top5.get(1).getCreatedAt());
+        assertThat(top5.get(1).getCreatedAt()).isAfterOrEqualTo(top5.get(2).getCreatedAt());
     }
 }

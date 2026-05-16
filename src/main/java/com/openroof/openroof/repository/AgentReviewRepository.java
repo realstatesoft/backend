@@ -20,14 +20,23 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
         Long getCount();
     }
 
-    Page<AgentReview> findByAgentId(Long agentId, Pageable pageable);
+    // — Métodos usados por el servicio (convención dev) —
+    boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
 
-    Optional<AgentReview> findByAgentIdAndUserId(Long agentId, Long userId);
+    Page<AgentReview> findByAgent_Id(Long agentId, Pageable pageable);
 
-    boolean existsByAgentIdAndUserId(Long agentId, Long userId);
+    List<AgentReview> findAllByAgent_Id(Long agentId);
+
+    long countByAgent_Id(Long agentId);
+
+    @Query("SELECT AVG(r.rating) FROM AgentReview r WHERE r.agent.id = :agentId")
+    Double avgRatingByAgentId(@Param("agentId") Long agentId);
+
+    // — Métodos adicionales —
+    Optional<AgentReview> findByAgent_IdAndUser_Id(Long agentId, Long userId);
 
     @Query("SELECT r.rating AS rating, COUNT(r) AS count FROM AgentReview r WHERE r.agent.id = :agentId GROUP BY r.rating")
     List<RatingDistribution> countRatingDistributionByAgentId(@Param("agentId") Long agentId);
 
-    List<AgentReview> findTop5ByAgentIdOrderByCreatedAtDesc(Long agentId);
+    List<AgentReview> findTop5ByAgent_IdOrderByCreatedAtDesc(Long agentId);
 }
