@@ -69,9 +69,9 @@ public class AgentReviewService {
             throw new ConflictException("Ya existe una reseña de este usuario para este agente");
         }
 
-        recalculateAfterCreate(agent, dto.rating());
-        log.info("AgentReview {} created for agent={} by user={}", saved.getId(), agentId, userId);
-        return reviewMapper.toResponse(saved, userId);
+        recalculateAgentRating(agentId);
+        log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
+        return toResponse(saved, reviewer.getId());
     }
 
     @Transactional
@@ -87,9 +87,8 @@ public class AgentReviewService {
         review.setComment(dto.comment());
 
         AgentReview saved = reviewRepository.save(review);
-        recalculateFromDb(saved.getAgent());
-        log.info("AgentReview {} updated by user={}", reviewId, userId);
-        return reviewMapper.toResponse(saved, userId);
+        recalculateAgentRating(saved.getAgent().getId());
+        return toResponse(saved);
     }
 
     @Transactional
@@ -103,9 +102,7 @@ public class AgentReviewService {
 
         AgentProfile agent = review.getAgent();
         reviewRepository.delete(review);
-        reviewRepository.flush();
-        recalculateFromDb(agent);
-        log.info("AgentReview {} deleted by user={}", reviewId, userId);
+        recalculateAgentRating(agent.getId());
     }
 
     public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable) {
@@ -135,29 +132,11 @@ public class AgentReviewService {
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
-    // ─── helpers ──────────────────────────────────────────────────────────────
-
-    public void recalculateAgentRating(AgentProfile agent) {
-        recalculateFromDb(agent);
-    }
-
-    private void recalculateAfterCreate(AgentProfile agent, int newRating) {
-        BigDecimal currentAvg = agent.getAvgRating() != null ? agent.getAvgRating() : BigDecimal.ZERO;
-        int currentTotal = agent.getTotalReviews() != null ? agent.getTotalReviews() : 0;
-
-        BigDecimal newAvg = currentAvg
-                .multiply(BigDecimal.valueOf(currentTotal))
-                .add(BigDecimal.valueOf(newRating))
-                .divide(BigDecimal.valueOf(currentTotal + 1), 2, RoundingMode.HALF_UP);
-
-        agent.setAvgRating(newAvg);
-        agent.setTotalReviews(currentTotal + 1);
-        agentProfileRepository.save(agent);
-    }
-
-    private void recalculateFromDb(AgentProfile agent) {
-        long count = reviewRepository.countByAgent_Id(agent.getId());
-        Double avg = reviewRepository.avgRatingByAgentId(agent.getId());
+    private void recalculateAgentRating(Long agentId) {
+        AgentProfile agent = agentProfileRepository.findById(agentId)
+                .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
+        long count = reviewRepository.calculateTotalReviews(agentId);
+        Double avg = reviewRepository.calculateAvgRating(agentId).orElse(null);
         agent.setTotalReviews((int) count);
         agent.setAvgRating(avg == null
                 ? BigDecimal.ZERO

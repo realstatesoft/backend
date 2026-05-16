@@ -123,9 +123,14 @@ class AgentReviewServiceTest {
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewer));
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
         when(reviewRepository.existsByAgent_IdAndUser_Id(100L, 10L)).thenReturn(false);
-        when(reviewMapper.toEntity(any(), any(), any(), any())).thenReturn(savedReview);
-        when(reviewRepository.saveAndFlush(savedReview)).thenReturn(savedReview);
-        when(reviewMapper.toResponse(eq(savedReview), eq(10L))).thenReturn(expectedResponse);
+        when(reviewRepository.saveAndFlush(any(AgentReview.class))).thenAnswer(inv -> {
+            AgentReview r = inv.getArgument(0);
+            r.setId(500L);
+            return r;
+        });
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(4.0));
 
         AgentReviewResponse res = service.createReview(100L, 10L, req);
 
@@ -160,9 +165,9 @@ class AgentReviewServiceTest {
 
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
         when(reviewRepository.save(review)).thenReturn(review);
-        when(reviewRepository.countByAgent_Id(100L)).thenReturn(1L);
-        when(reviewRepository.avgRatingByAgentId(100L)).thenReturn(5.0);
-        when(reviewMapper.toResponse(eq(review), eq(10L))).thenReturn(expectedResponse);
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(5.0));
 
         AgentReviewResponse res = service.updateReview(1L, 10L,
                 new CreateAgentReviewRequest(5, "updated", null));
@@ -201,8 +206,9 @@ class AgentReviewServiceTest {
         review.setUser(reviewer);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
-        when(reviewRepository.countByAgent_Id(100L)).thenReturn(0L);
-        when(reviewRepository.avgRatingByAgentId(100L)).thenReturn(null);
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
 
         service.deleteReview(1L, 10L);
 
@@ -216,6 +222,9 @@ class AgentReviewServiceTest {
         review.setUser(agentUser);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteReview(1L, 10L))
                 .isInstanceOf(AccessDeniedException.class);
