@@ -50,7 +50,7 @@ public class AgentReviewService {
         }
 
         if (reviewRepository.existsByAgent_IdAndUser_Id(agentId, reviewer.getId())) {
-            throw new ConflictException("Ya reseñaste a este agente");
+            throw new ConflictException("Ya enviaste una reseña para este agente. Podés editarla desde tu perfil.");
         }
 
         Property property = null;
@@ -71,7 +71,7 @@ public class AgentReviewService {
         try {
             saved = reviewRepository.saveAndFlush(review);
         } catch (DataIntegrityViolationException ex) {
-            throw new ConflictException("Ya reseñaste a este agente");
+            throw new ConflictException("Ya enviaste una reseña para este agente. Podés editarla desde tu perfil.");
         }
 
         recalculateAgentRating(agent);
