@@ -78,7 +78,7 @@ public class AgentReviewService {
 
         recalculateAgentRating(agent);
         log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
-        return toResponse(saved);
+        return toResponse(saved, reviewer.getId());
     }
 
     @Transactional
@@ -96,7 +96,7 @@ public class AgentReviewService {
 
         AgentReview saved = reviewRepository.save(review);
         recalculateAgentRating(saved.getAgent());
-        return toResponse(saved);
+        return toResponse(saved, user.getId());
     }
 
     @Transactional
@@ -116,11 +116,11 @@ public class AgentReviewService {
         recalculateAgentRating(agent);
     }
 
-    public Page<AgentReviewResponse> getReviews(Long agentId, Pageable pageable) {
+    public Page<AgentReviewResponse> getReviews(Long agentId, Pageable pageable, Long currentUserId) {
         if (!agentProfileRepository.existsById(agentId)) {
             throw new ResourceNotFoundException("AgentProfile", "id", agentId);
         }
-        return reviewRepository.findByAgent_Id(agentId, pageable).map(this::toResponse);
+        return reviewRepository.findByAgent_Id(agentId, pageable).map(r -> toResponse(r, currentUserId));
     }
 
     public AgentReviewSummaryResponse getSummary(Long agentId) {
@@ -150,7 +150,7 @@ public class AgentReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
-    private AgentReviewResponse toResponse(AgentReview r) {
-        return reviewMapper.toResponse(r, null);
+    private AgentReviewResponse toResponse(AgentReview r, Long currentUserId) {
+        return reviewMapper.toResponse(r, currentUserId);
     }
 }
