@@ -12,40 +12,28 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Mapper manual para conversiones entre AgentReview (entidad) y DTOs.
- */
 @Component
 public class AgentReviewMapper {
 
-    // ─── Entity → Response ────────────────────────────────────────
-
     public AgentReviewResponse toResponse(AgentReview review, Long currentUserId) {
-        User reviewer = review.getUser();
-        Property property = review.getProperty();
-        AgentProfile agent = review.getAgent();
-
         boolean isOwn = currentUserId != null
-                && reviewer != null
-                && currentUserId.equals(reviewer.getId());
+                && review.getUser() != null
+                && currentUserId.equals(review.getUser().getId());
 
         return new AgentReviewResponse(
                 review.getId(),
-                agent != null ? agent.getId() : null,
-                reviewer != null ? reviewer.getId() : null,
-                reviewer != null ? reviewer.getName() : null,
-                reviewer != null ? reviewer.getAvatarUrl() : null,
-                property != null ? property.getId() : null,
-                property != null ? property.getAddress() : null,
+                review.getAgent() != null ? review.getAgent().getId() : null,
+                review.getUser() != null ? review.getUser().getId() : null,
+                review.getUser() != null ? review.getUser().getName() : null,
+                review.getUser() != null ? review.getUser().getAvatarUrl() : null,
+                review.getProperty() != null ? review.getProperty().getId() : null,
+                review.getProperty() != null ? review.getProperty().getAddress() : null,
                 review.getRating(),
                 review.getComment(),
                 review.getCreatedAt(),
                 review.getUpdatedAt(),
-                isOwn
-        );
+                isOwn);
     }
-
-    // ─── Request → Entity ─────────────────────────────────────────
 
     public AgentReview toEntity(CreateAgentReviewRequest dto, AgentProfile agent, User user, Property property) {
         AgentReview review = AgentReview.builder()
@@ -58,18 +46,13 @@ public class AgentReviewMapper {
         return review;
     }
 
-    // ─── Summary ──────────────────────────────────────────────────
-
-    public AgentRatingSummaryResponse toSummaryResponse(
-            AgentProfile agent,
-            List<AgentReviewResponse> latest,
-            Map<Integer, Long> distribution) {
-
+    public AgentRatingSummaryResponse toSummaryResponse(AgentProfile agent,
+                                                         List<AgentReviewResponse> latestReviews,
+                                                         Map<Integer, Long> distribution) {
         return new AgentRatingSummaryResponse(
                 agent.getAvgRating(),
                 agent.getTotalReviews(),
                 distribution,
-                latest
-        );
+                latestReviews);
     }
 }
