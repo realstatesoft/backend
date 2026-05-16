@@ -7,9 +7,12 @@ public record AgentReviewResponse(
         Long agentId,
         Long reviewerId,
         String reviewerName,
+        String reviewerAvatarUrl,
         Long propertyId,
+        String propertyAddress,
         Integer rating,
         String comment,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        boolean isOwn
 ) {}

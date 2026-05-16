@@ -154,10 +154,13 @@ public class AgentReviewService {
                 r.getAgent() != null ? r.getAgent().getId() : null,
                 r.getUser() != null ? r.getUser().getId() : null,
                 r.getUser() != null ? r.getUser().getName() : null,
+                r.getUser() != null ? r.getUser().getAvatarUrl() : null,
                 r.getProperty() != null ? r.getProperty().getId() : null,
+                r.getProperty() != null ? r.getProperty().getAddress() : null,
                 r.getRating(),
                 r.getComment(),
                 r.getCreatedAt(),
-                r.getUpdatedAt());
+                r.getUpdatedAt(),
+                false);
     }
 }
