@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Valida la lógica de negocio completa contra BD H2 en memoria.
  */
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:lease-service-test;DB_CLOSE_DELAY=-1;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS VARCHAR",
+        "spring.datasource.url=jdbc:h2:mem:lease-service-test;NON_KEYWORDS=VALUE;DB_CLOSE_DELAY=-1;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS VARCHAR",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",

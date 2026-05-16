@@ -16,6 +16,7 @@ import com.openroof.openroof.model.enums.DepositStatus;
 import com.openroof.openroof.model.enums.InstallmentStatus;
 import com.openroof.openroof.model.enums.LeaseStatus;
 import com.openroof.openroof.model.enums.LeaseType;
+import com.openroof.openroof.model.rental.RentalInstallment;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
@@ -271,7 +272,7 @@ class LeaseControllerTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("PATCH /api/leases/{id}")
+    @DisplayName("PUT /api/leases/{id}")
     class Update {
 
         @Test
@@ -328,9 +329,10 @@ class LeaseControllerTest {
         @Test
         @DisplayName("Activa el lease y retorna lista de installments con 200")
         void activateReturns200WithInstallments() throws Exception {
+            var domainInstallment = new RentalInstallment();
             when(leaseSecurity.canManageLease(eq(10L), any())).thenReturn(true);
-            when(leaseService.activateLease(10L)).thenReturn(List.of());
-            when(installmentMapper.toResponseList(any())).thenReturn(List.of(sampleInstallmentResponse()));
+            when(leaseService.activateLease(10L)).thenReturn(List.of(domainInstallment));
+            when(installmentMapper.toResponseList(List.of(domainInstallment))).thenReturn(List.of(sampleInstallmentResponse()));
 
             mockMvc.perform(post("/api/leases/10/activate")
                             .with(authentication(agentAuth())))

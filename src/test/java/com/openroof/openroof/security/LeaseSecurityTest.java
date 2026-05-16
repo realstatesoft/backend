@@ -1,12 +1,17 @@
 package com.openroof.openroof.security;
 
+import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.model.enums.LeaseStatus;
 import com.openroof.openroof.model.enums.LeaseType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.property.Property;
+import com.openroof.openroof.model.property.PropertyAssignment;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.repository.LeaseRepository;
+import com.openroof.openroof.repository.PropertyAssignmentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,12 +24,16 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -41,12 +50,16 @@ class LeaseSecurityTest {
     @Mock private LeaseRepository leaseRepository;
     @Mock private UserRepository userRepository;
     @Mock private PropertySecurity propertySecurity;
+    @Mock private AgentProfileRepository agentProfileRepository;
+    @Mock private PropertyAssignmentRepository propertyAssignmentRepository;
 
     private LeaseSecurity leaseSecurity;
 
     @BeforeEach
     void setUp() {
-        leaseSecurity = new LeaseSecurity(leaseRepository, userRepository, propertySecurity);
+        leaseSecurity = new LeaseSecurity(
+                leaseRepository, userRepository, propertySecurity,
+                agentProfileRepository, propertyAssignmentRepository);
     }
 
     // ---------- assertLeaseAccess ----------
@@ -278,6 +291,228 @@ class LeaseSecurityTest {
 
             assertFalse(leaseSecurity.canManageLease(LEASE_ID, user));
             verifyNoInteractions(propertySecurity);
+        }
+    }
+
+    // ---------- assertInstallmentAccess ----------
+
+    @Nested
+    @DisplayName("assertInstallmentAccess()")
+    class AssertInstallmentAccess {
+
+        @Test
+        @DisplayName("ADMIN pasa sin cargar el lease")
+        void admin_allowed_withoutLoadingLease() {
+            when(userRepository.findById(ADMIN_ID))
+                    .thenReturn(Optional.of(user(ADMIN_ID, UserRole.ADMIN)));
+
+            assertDoesNotThrow(() -> leaseSecurity.assertInstallmentAccess(ADMIN_ID, LEASE_ID));
+
+            verifyNoInteractions(leaseRepository);
+        }
+
+        @Test
+        @DisplayName("Landlord del lease tiene acceso")
+        void landlord_allowed() {
+            when(userRepository.findById(LANDLORD_ID))
+                    .thenReturn(Optional.of(user(LANDLORD_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+
+            assertDoesNotThrow(() -> leaseSecurity.assertInstallmentAccess(LANDLORD_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Primary tenant del lease tiene acceso")
+        void tenant_allowed() {
+            when(userRepository.findById(TENANT_ID))
+                    .thenReturn(Optional.of(user(TENANT_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+
+            assertDoesNotThrow(() -> leaseSecurity.assertInstallmentAccess(TENANT_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Agente con assignment ACCEPTED sobre la propiedad tiene acceso")
+        void agentWithAcceptedAssignment_allowed() {
+            User agent = user(OTHER_ID, UserRole.AGENT);
+            AgentProfile profile = AgentProfile.builder().user(agent).build();
+            profile.setId(50L);
+
+            when(userRepository.findById(OTHER_ID)).thenReturn(Optional.of(agent));
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+            when(agentProfileRepository.findByUser_Id(OTHER_ID)).thenReturn(Optional.of(profile));
+            when(propertyAssignmentRepository.findActiveByPropertyAndAgent(
+                    eq(PROPERTY_ID), eq(50L), anyList()))
+                    .thenReturn(Optional.of(new PropertyAssignment()));
+
+            assertDoesNotThrow(() -> leaseSecurity.assertInstallmentAccess(OTHER_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Agente sin assignment activo recibe AccessDeniedException")
+        void agentWithoutAssignment_throwsAccessDenied() {
+            User agent = user(OTHER_ID, UserRole.AGENT);
+            AgentProfile profile = AgentProfile.builder().user(agent).build();
+            profile.setId(50L);
+
+            when(userRepository.findById(OTHER_ID)).thenReturn(Optional.of(agent));
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+            when(agentProfileRepository.findByUser_Id(OTHER_ID)).thenReturn(Optional.of(profile));
+            when(propertyAssignmentRepository.findActiveByPropertyAndAgent(
+                    eq(PROPERTY_ID), eq(50L), anyList()))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(AccessDeniedException.class,
+                    () -> leaseSecurity.assertInstallmentAccess(OTHER_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Agente sin perfil de agente recibe AccessDeniedException")
+        void agentWithNoProfile_throwsAccessDenied() {
+            User agent = user(OTHER_ID, UserRole.AGENT);
+
+            when(userRepository.findById(OTHER_ID)).thenReturn(Optional.of(agent));
+            when(leaseRepository.findById(LEASE_ID)).thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+            when(agentProfileRepository.findByUser_Id(OTHER_ID)).thenReturn(Optional.empty());
+
+            assertThrows(AccessDeniedException.class,
+                    () -> leaseSecurity.assertInstallmentAccess(OTHER_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Usuario sin relación con el lease recibe AccessDeniedException con sus IDs")
+        void outsider_throwsAccessDenied_withIds() {
+            when(userRepository.findById(OTHER_ID))
+                    .thenReturn(Optional.of(user(OTHER_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+
+            AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                    () -> leaseSecurity.assertInstallmentAccess(OTHER_ID, LEASE_ID));
+
+            assertTrue(ex.getMessage().contains(String.valueOf(OTHER_ID)));
+            assertTrue(ex.getMessage().contains(String.valueOf(LEASE_ID)));
+        }
+
+        @Test
+        @DisplayName("userId null lanza AccessDeniedException sin tocar repositorios")
+        void nullUserId_throwsAccessDenied() {
+            assertThrows(AccessDeniedException.class,
+                    () -> leaseSecurity.assertInstallmentAccess(null, LEASE_ID));
+
+            verifyNoInteractions(userRepository, leaseRepository);
+        }
+
+        @Test
+        @DisplayName("leaseId null lanza AccessDeniedException sin tocar repositorios")
+        void nullLeaseId_throwsAccessDenied() {
+            assertThrows(AccessDeniedException.class,
+                    () -> leaseSecurity.assertInstallmentAccess(LANDLORD_ID, null));
+
+            verifyNoInteractions(userRepository, leaseRepository);
+        }
+    }
+
+    // ---------- hasInstallmentAccess ----------
+
+    @Nested
+    @DisplayName("hasInstallmentAccess()")
+    class HasInstallmentAccess {
+
+        @Test
+        @DisplayName("Landlord retorna true")
+        void landlord_returnsTrue() {
+            when(userRepository.findById(LANDLORD_ID))
+                    .thenReturn(Optional.of(user(LANDLORD_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+
+            assertTrue(leaseSecurity.hasInstallmentAccess(LANDLORD_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("Usuario sin relación retorna false")
+        void outsider_returnsFalse() {
+            when(userRepository.findById(OTHER_ID))
+                    .thenReturn(Optional.of(user(OTHER_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.of(leaseWithProperty(PROPERTY_ID)));
+
+            assertFalse(leaseSecurity.hasInstallmentAccess(OTHER_ID, LEASE_ID));
+        }
+
+        @Test
+        @DisplayName("userId null retorna false sin tocar repositorios")
+        void nullUserId_returnsFalse() {
+            assertFalse(leaseSecurity.hasInstallmentAccess(null, LEASE_ID));
+            verifyNoInteractions(userRepository, leaseRepository);
+        }
+
+        @Test
+        @DisplayName("leaseId null retorna false sin tocar repositorios")
+        void nullLeaseId_returnsFalse() {
+            assertFalse(leaseSecurity.hasInstallmentAccess(LANDLORD_ID, null));
+            verifyNoInteractions(userRepository, leaseRepository);
+        }
+
+        @Test
+        @DisplayName("Lease no encontrado retorna false")
+        void leaseNotFound_returnsFalse() {
+            when(userRepository.findById(LANDLORD_ID))
+                    .thenReturn(Optional.of(user(LANDLORD_ID, UserRole.USER)));
+            when(leaseRepository.findById(LEASE_ID))
+                    .thenReturn(Optional.empty());
+
+            assertFalse(leaseSecurity.hasInstallmentAccess(LANDLORD_ID, LEASE_ID));
+        }
+    }
+
+    // ---------- canCreateLease ----------
+
+    @Nested
+    @DisplayName("canCreateLease()")
+    class CanCreateLease {
+
+        @Test
+        @DisplayName("propertyId null retorna false sin consultar propertySecurity")
+        void nullPropertyId_returnsFalse() {
+            assertFalse(leaseSecurity.canCreateLease(null, user(OTHER_ID, UserRole.USER)));
+            verifyNoInteractions(propertySecurity);
+        }
+
+        @Test
+        @DisplayName("principal no es User retorna false")
+        void nonUserPrincipal_returnsFalse() {
+            assertFalse(leaseSecurity.canCreateLease(PROPERTY_ID, "not-a-user"));
+            verifyNoInteractions(propertySecurity);
+        }
+
+        @Test
+        @DisplayName("principal null retorna false")
+        void nullPrincipal_returnsFalse() {
+            assertFalse(leaseSecurity.canCreateLease(PROPERTY_ID, null));
+            verifyNoInteractions(propertySecurity);
+        }
+
+        @Test
+        @DisplayName("ADMIN retorna true sin consultar propertySecurity")
+        void admin_returnsTrue() {
+            User admin = user(ADMIN_ID, UserRole.ADMIN);
+            assertTrue(leaseSecurity.canCreateLease(PROPERTY_ID, admin));
+            verifyNoInteractions(propertySecurity);
+        }
+
+        @Test
+        @DisplayName("Delega en propertySecurity.canModify y propaga su resultado")
+        void delegatesToPropertySecurity() {
+            User owner = user(OTHER_ID, UserRole.USER);
+            when(propertySecurity.canModify(PROPERTY_ID, owner)).thenReturn(true);
+            assertTrue(leaseSecurity.canCreateLease(PROPERTY_ID, owner));
+
+            when(propertySecurity.canModify(PROPERTY_ID, owner)).thenReturn(false);
+            assertFalse(leaseSecurity.canCreateLease(PROPERTY_ID, owner));
         }
     }
 
