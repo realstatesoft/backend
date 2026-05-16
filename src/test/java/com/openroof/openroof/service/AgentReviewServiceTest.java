@@ -89,7 +89,7 @@ class AgentReviewServiceTest {
 
         assertThatThrownBy(() -> service.create(100L, "reviewer@test.com", req))
                 .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("Ya reseñaste");
+                .hasMessageContaining("Ya enviaste una reseña para este agente");
     }
 
     @Test

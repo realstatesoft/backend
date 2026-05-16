@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 059-add-notes-to-lease-payments
+      author: ai-assistant
+      changes:
+        - addColumn:
+            tableName: lease_payments
+            columns:
+              - column:
+                  name: notes
+                  type: text
+                  remarks: "Optional notes for the manual payment"
