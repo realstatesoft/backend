@@ -1,8 +1,7 @@
 package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
-import com.openroof.openroof.dto.payment.PaymentRequest;
-import com.openroof.openroof.dto.payment.PaymentResponse;
+import com.openroof.openroof.dto.rental.InstallmentPaymentRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -16,6 +15,7 @@ import com.openroof.openroof.repository.LeaseRepository;
 import com.openroof.openroof.repository.RentalInstallmentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.service.PaymentService;
+import com.openroof.openroof.service.RentalPaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,6 +41,7 @@ public class RentalController {
     private final RentalInstallmentRepository installmentRepository;
     private final LeasePaymentRepository leasePaymentRepository;
     private final PaymentService paymentService;
+    private final RentalPaymentService rentalPaymentService;
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
 
@@ -78,12 +79,12 @@ public class RentalController {
     }
 
     @PostMapping("/installments/{id}/payments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'PROPERTY_MANAGER')")
-    @Operation(summary = "Registrar un pago manual para una cuota")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Registrar un pago para una cuota")
     @Transactional
-    public ResponseEntity<ApiResponse<PaymentResponse>> registerManualPayment(
+    public ResponseEntity<ApiResponse<com.openroof.openroof.dto.rental.LeasePaymentResponse>> registerManualPayment(
             @PathVariable Long id,
-            @Valid @RequestBody PaymentRequest request,
+            @Valid @RequestBody InstallmentPaymentRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Principal principal) {
         RentalInstallment installment = installmentRepository.findById(id)
@@ -92,11 +93,28 @@ public class RentalController {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new BadRequestException("Idempotency-Key es obligatorio");
         }
-        PaymentResponse response = paymentService.create(request, principal.getName(), idempotencyKey);
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        LeasePayment payment = rentalPaymentService.registerPayment(
+                id, user, request.amount(), request.method(), idempotencyKey, request.notes());
+                
+        com.openroof.openroof.dto.rental.LeasePaymentResponse response = new com.openroof.openroof.dto.rental.LeasePaymentResponse(
+                payment.getId(),
+                payment.getLease().getId(),
+                payment.getInstallment().getId(),
+                payment.getAmount(),
+                payment.getCurrency(),
+                payment.getMethod() != null ? payment.getMethod().name() : null,
+                payment.getStatus() != null ? payment.getStatus().name() : null,
+                payment.getType() != null ? payment.getType().name() : null,
+                payment.getPaidAt(),
+                payment.getReceiptPdfUrl()
+        );
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response, "Pago registrado"));
     }
 
-    @GetMapping("/installments/{id}/invoice.pdf")
+    @GetMapping("/installments/{id}/invoice-url")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL de la factura de una cuota")
     public ResponseEntity<ApiResponse<String>> downloadInvoice(@PathVariable Long id, Principal principal) {
@@ -105,13 +123,13 @@ public class RentalController {
         verifyLeaseAccess(installment.getLease(), principal.getName());
 
         if (installment.getInvoicePdfUrl() == null || installment.getInvoicePdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.ok(null, "La factura aún no se ha generado"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.ok(null, "La factura aún no se ha generado"));
         }
 
         return ResponseEntity.ok(ApiResponse.ok(installment.getInvoicePdfUrl(), "URL de la factura obtenida"));
     }
 
-    @GetMapping("/payments/{id}/receipt.pdf")
+    @GetMapping("/payments/{id}/receipt-url")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL del recibo de un pago")
     public ResponseEntity<ApiResponse<String>> downloadReceipt(@PathVariable Long id, Principal principal) {
@@ -120,7 +138,7 @@ public class RentalController {
         verifyLeaseAccess(payment.getLease(), principal.getName());
 
         if (payment.getReceiptPdfUrl() == null || payment.getReceiptPdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.ok(null, "El recibo aún no se ha generado"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.ok(null, "El recibo aún no se ha generado"));
         }
 
         return ResponseEntity.ok(ApiResponse.ok(payment.getReceiptPdfUrl(), "URL del recibo obtenida"));
