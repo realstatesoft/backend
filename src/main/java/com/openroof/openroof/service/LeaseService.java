@@ -36,7 +36,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class LeaseService {
 
-    private static final int SIGNATURE_TOKEN_VALIDITY_DAYS = 30;
+    private static final int SIGNATURE_TOKEN_VALIDITY_DAYS = 3;
 
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;

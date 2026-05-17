@@ -24,6 +24,7 @@ import com.openroof.openroof.security.JwtAuthenticationFilter;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.security.LeaseSecurity;
 import com.openroof.openroof.security.PropertySecurity;
+import com.openroof.openroof.service.ESignatureService;
 import com.openroof.openroof.service.LeaseService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
@@ -74,6 +75,7 @@ class LeaseControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private LeaseService leaseService;
+    @MockitoBean private ESignatureService eSignatureService;
     @MockitoBean private RentalInstallmentMapper installmentMapper;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private PropertySecurity propertySecurity;
@@ -362,6 +364,58 @@ class LeaseControllerTest {
             mockMvc.perform(post("/api/leases/10/activate")
                             .with(authentication(tenantAuth())))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/leases/{id}/send-for-signature
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("POST /api/leases/{id}/send-for-signature")
+    class SendForSignature {
+
+        @Test
+        @DisplayName("Usuario con permisos envía a firma y recibe 200")
+        void sendForSignatureReturns200() throws Exception {
+            when(leaseSecurity.canManageLease(eq(10L), any())).thenReturn(true);
+
+            mockMvc.perform(post("/api/leases/10/send-for-signature")
+                            .with(authentication(agentAuth())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.message").value("Lease enviado a firma"));
+        }
+
+        @Test
+        @DisplayName("Usuario sin permisos recibe 403")
+        void sendForSignatureForbiddenReturns403() throws Exception {
+            when(leaseSecurity.canManageLease(eq(10L), any())).thenReturn(false);
+
+            mockMvc.perform(post("/api/leases/10/send-for-signature")
+                            .with(authentication(tenantAuth())))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/leases/{id}/sign?token=...
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("POST /api/leases/{id}/sign")
+    class SignByToken {
+
+        @Test
+        @DisplayName("No requiere autenticación y responde 200 con token válido")
+        void signPublicEndpointReturns200() throws Exception {
+            mockMvc.perform(post("/api/leases/10/sign")
+                            .param("token", "1d57c18b-06e7-4ce9-a2e0-eaf2de6b74ba")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"signatureData\":\"ok\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.message").value("Firma registrada"));
         }
     }
 
