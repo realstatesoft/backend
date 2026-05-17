@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
-    password: ${DB_PASS}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 4
@@ -65,7 +65,7 @@ springdoc:
   show-actuator: false
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,http://192.168.0.9:5173,http://192.168.0.9:5174,https://*.vercel.app}
 
 openroof:
   reservation:
@@ -98,7 +98,7 @@ logging:
 # Obtener de: Supabase Dashboard → Project Settings → API
 supabase:
   url: ${SUPABASE_URL}
-  service-role-key: ${SUPABASE_KEY}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images-test}
 
