@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -49,7 +51,7 @@ public class ESignatureService {
         lease.setSignatureTokenExpiresAt(LocalDateTime.now().plusHours(SIGNATURE_TOKEN_TTL_HOURS));
 
         Lease saved = leaseRepository.save(lease);
-        notificationService.notifyLeaseSentForSignature(saved);
+        runAfterCommit(() -> notificationService.notifyLeaseSentForSignature(saved));
         return saved;
     }
 
@@ -91,13 +93,14 @@ public class ESignatureService {
         appendAuditEvent(lease, signerSide, ip, userAgent, now, rawToken, request);
         Lease saved = leaseRepository.save(lease);
 
-        notificationService.notifyLeaseSigned(saved, signerSide);
-
         if (saved.isSigned()) {
             leaseService.activateLease(saved.getId());
-            return leaseRepository.findById(saved.getId()).orElse(saved);
+            Lease finalLease = leaseRepository.findById(saved.getId()).orElse(saved);
+            runAfterCommit(() -> notificationService.notifyLeaseSigned(finalLease, signerSide));
+            return finalLease;
         }
 
+        runAfterCommit(() -> notificationService.notifyLeaseSigned(saved, signerSide));
         return saved;
     }
 
@@ -166,6 +169,27 @@ public class ESignatureService {
         } catch (NoSuchAlgorithmException ex) {
             log.error("SHA-256 not available", ex);
             throw new IllegalStateException("SHA-256 not available");
+        }
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    safeRun(action);
+                }
+            });
+        } else {
+            safeRun(action);
+        }
+    }
+
+    private void safeRun(Runnable action) {
+        try {
+            action.run();
+        } catch (Throwable t) {
+            log.error("Post-commit notification callback failed; transaction already committed", t);
         }
     }
 }

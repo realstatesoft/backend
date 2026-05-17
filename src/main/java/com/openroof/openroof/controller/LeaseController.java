@@ -115,13 +115,10 @@ public class LeaseController {
     public ResponseEntity<ApiResponse<Void>> sign(
             @PathVariable Long id,
             @RequestParam("token") String token,
-            @RequestBody(required = false) SignLeaseRequest request,
+            @Valid @RequestBody(required = false) SignLeaseRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest
     ) {
-        String xForwardedFor = httpRequest.getHeader("X-Forwarded-For");
-        String ip = (xForwardedFor != null && !xForwardedFor.isBlank())
-                ? xForwardedFor.split(",")[0].trim()
-                : httpRequest.getRemoteAddr();
+        String ip = httpRequest.getRemoteAddr();
         String userAgent = httpRequest.getHeader("User-Agent");
 
         eSignatureService.sign(id, token, request, ip, userAgent);
