@@ -45,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.liquibase.enabled=false",
-        "application.security.jwt.secret-key=aGVsbG8td29ybGQtdGVzdC1zZWNyZXQta2V5LTI1Ni1iaXQtbG9uZy1lbm91Z2gtZm9yLXRlc3Rpbmc=",
         "supabase.url=http://localhost:54321",
         "supabase.service-role-key=dummy-key",
         "supabase.storage.bucket=test-bucket",
@@ -213,6 +212,12 @@ class FullRentalFlowIntegrationTest {
         void periodsCoverFullLeaseTerm() {
             assertThat(installments.get(0).getPeriodStart()).isEqualTo(startDate);
             assertThat(installments.get(installments.size() - 1).getPeriodEnd()).isEqualTo(endDate);
+
+            for (int i = 0; i < installments.size() - 1; i++) {
+                assertThat(installments.get(i).getPeriodEnd().plusDays(1))
+                        .as("Brecha entre cuota %d y %d", i + 1, i + 2)
+                        .isEqualTo(installments.get(i + 1).getPeriodStart());
+            }
         }
     }
 }
