@@ -2,6 +2,8 @@ package com.openroof.openroof.dto.agent;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record AgentReviewResponse(
         Long id,
         Long agentId,
@@ -14,5 +16,5 @@ public record AgentReviewResponse(
         String comment,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        boolean isOwn
+        @JsonProperty("isOwn") boolean isOwn
 ) {}

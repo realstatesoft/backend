@@ -61,7 +61,7 @@ public class AdminAgentReviewService {
         auditLogRepository.save(auditLog);
 
         if (agent != null) {
-            agentReviewService.recalculateAgentRating(agent);
+            agentReviewService.recalculateAgentRating(agent.getId());
         }
 
         log.info("Admin {} deleted AgentReview {} (reason: {})", admin.getId(), reviewId, moderationReason);
