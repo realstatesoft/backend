@@ -3,6 +3,7 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentReviewMapper;
@@ -112,18 +113,18 @@ class AgentReviewServiceTest {
     @Test
     void createReview_success_recalculatesRatingIncrementally() {
         CreateAgentReviewRequest req = new CreateAgentReviewRequest(4, "ok", null);
-        AgentReview savedReview = AgentReview.builder().agent(agent).build();
-        savedReview.setUser(reviewer);
-        savedReview.setId(500L);
-        savedReview.setRating(4);
-        AgentReviewResponse expectedResponse = new AgentReviewResponse(
+        AgentReview mappedReview = AgentReview.builder().agent(agent).build();
+        mappedReview.setUser(reviewer);
+        mappedReview.setRating(4);
+        AgentReviewResponse mappedResponse = new AgentReviewResponse(
                 500L, 100L, 10L, "Reviewer", null, null, null, 4, "ok",
                 LocalDateTime.now(), LocalDateTime.now(), true);
 
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewer));
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
         when(reviewRepository.existsByAgent_IdAndUser_Id(100L, 10L)).thenReturn(false);
-        when(reviewRepository.saveAndFlush(any(AgentReview.class))).thenAnswer(inv -> {
+        when(reviewMapper.toEntity(eq(req), eq(agent), eq(reviewer), eq(null))).thenReturn(mappedReview);
+        when(reviewRepository.saveAndFlush(eq(mappedReview))).thenAnswer(inv -> {
             AgentReview r = inv.getArgument(0);
             r.setId(500L);
             return r;
@@ -131,6 +132,7 @@ class AgentReviewServiceTest {
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
         when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
         when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(4.0));
+        when(reviewMapper.toResponse(eq(mappedReview), eq(10L))).thenReturn(mappedResponse);
 
         AgentReviewResponse res = service.createReview(100L, 10L, req);
 
@@ -159,7 +161,7 @@ class AgentReviewServiceTest {
         review.setUser(reviewer);
         review.setRating(3);
         review.setId(1L);
-        AgentReviewResponse expectedResponse = new AgentReviewResponse(
+        AgentReviewResponse mappedResponse = new AgentReviewResponse(
                 1L, 100L, 10L, "Reviewer", null, null, null, 5, "updated",
                 LocalDateTime.now(), LocalDateTime.now(), true);
 
@@ -168,6 +170,7 @@ class AgentReviewServiceTest {
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
         when(reviewRepository.calculateTotalReviews(100L)).thenReturn(1L);
         when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.of(5.0));
+        when(reviewMapper.toResponse(eq(review), eq(10L))).thenReturn(mappedResponse);
 
         AgentReviewResponse res = service.updateReview(1L, 10L,
                 new CreateAgentReviewRequest(5, "updated", null));
@@ -222,9 +225,6 @@ class AgentReviewServiceTest {
         review.setUser(agentUser);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
-        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
-        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
-        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteReview(1L, 10L))
                 .isInstanceOf(AccessDeniedException.class);
@@ -257,7 +257,7 @@ class AgentReviewServiceTest {
     void getReviews_agentNotFound_throws() {
         when(agentProfileRepository.existsById(404L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.getReviews(404L, null, PageRequest.of(0, 10)))
+        assertThatThrownBy(() -> service.getReviews(404L, null, PageRequest.of(0, 10), null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -275,10 +275,41 @@ class AgentReviewServiceTest {
         when(reviewRepository.findByAgent_Id(eq(100L), any())).thenReturn(new PageImpl<>(List.of(r)));
         when(reviewMapper.toResponse(eq(r), eq((Long) null))).thenReturn(expected);
 
-        Page<AgentReviewResponse> page = service.getReviews(100L, null, PageRequest.of(0, 10));
+        Page<AgentReviewResponse> page = service.getReviews(100L, null, PageRequest.of(0, 10), null);
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).rating()).isEqualTo(4);
+    }
+
+    @Test
+    void getReviews_withRatingFilter_usesFilteredQuery() {
+        AgentReview r = AgentReview.builder().agent(agent).build();
+        r.setUser(reviewer);
+        r.setId(2L);
+        r.setRating(5);
+        AgentReviewResponse expected = new AgentReviewResponse(
+                2L, 100L, 10L, "Reviewer", null, null, null, 5, "great",
+                LocalDateTime.now(), LocalDateTime.now(), false);
+
+        when(agentProfileRepository.existsById(100L)).thenReturn(true);
+        when(reviewRepository.findByAgent_IdAndRating(eq(100L), eq(5), any()))
+                .thenReturn(new PageImpl<>(List.of(r)));
+        when(reviewMapper.toResponse(eq(r), eq((Long) null))).thenReturn(expected);
+
+        Page<AgentReviewResponse> page = service.getReviews(100L, null, PageRequest.of(0, 10), 5);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).rating()).isEqualTo(5);
+        verify(reviewRepository).findByAgent_IdAndRating(eq(100L), eq(5), any());
+    }
+
+    @Test
+    void getReviews_withInvalidRating_throwsBadRequest() {
+        when(agentProfileRepository.existsById(100L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.getReviews(100L, null, PageRequest.of(0, 10), 0))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("between 1 and 5");
     }
 
     // --- getRatingSummary -----------------------------------------------------

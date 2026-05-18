@@ -67,7 +67,7 @@ class AdminAgentReviewServiceTest {
         service.deleteReviewAsAdmin(500L, "admin@test.com", "Contenido ofensivo");
 
         verify(reviewRepository).delete(review);
-        verify(agentReviewService).recalculateAgentRating(agent.getId());
+        verify(agentReviewService).recalculateAgentRating(100L);
 
         ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogRepository).save(captor.capture());

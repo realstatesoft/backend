@@ -3,6 +3,7 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentReviewMapper;
@@ -105,17 +106,20 @@ public class AgentReviewService {
         recalculateAgentRating(agent.getId());
     }
 
-    public AgentReviewResponse getMyReview(Long agentId, Long userId) {
-        return reviewRepository.findByAgent_IdAndUser_Id(agentId, userId)
-                .map(r -> reviewMapper.toResponse(r, userId))
-                .orElse(null);
-    }
-
-    public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable) {
+    public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable, Integer rating) {
         if (!agentProfileRepository.existsById(agentId)) {
             throw new ResourceNotFoundException("AgentProfile", "id", agentId);
         }
-        return reviewRepository.findByAgent_Id(agentId, pageable)
+
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new BadRequestException("rating must be between 1 and 5");
+        }
+
+        Page<AgentReview> page = rating != null
+                ? reviewRepository.findByAgent_IdAndRating(agentId, rating, pageable)
+                : reviewRepository.findByAgent_Id(agentId, pageable);
+
+        return page
                 .map(r -> reviewMapper.toResponse(r, currentUserId));
     }
 
