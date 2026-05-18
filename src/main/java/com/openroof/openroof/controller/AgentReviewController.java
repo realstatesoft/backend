@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
+import com.openroof.openroof.dto.agent.AgentReviewPageResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
 import com.openroof.openroof.model.user.User;
@@ -10,8 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +30,15 @@ public class AgentReviewController {
 
     @GetMapping
     @Operation(summary = "Listar reseñas de un agente (público)")
-    public ResponseEntity<ApiResponse<Page<AgentReviewResponse>>> list(
+    public ResponseEntity<ApiResponse<AgentReviewPageResponse>> list(
             @PathVariable Long agentId,
-            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(name = "rating", required = false) Integer rating,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User currentUser) {
         Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        var page = agentReviewService.getReviews(agentId, currentUserId, pageable, rating);
         return ResponseEntity.ok(ApiResponse.ok(
-                agentReviewService.getReviews(agentId, currentUserId, pageable)));
+                AgentReviewPageResponse.from(page)));
     }
 
     @GetMapping("/summary")

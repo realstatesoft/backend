@@ -3,6 +3,7 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.agent.AgentRatingSummaryResponse;
 import com.openroof.openroof.dto.agent.AgentReviewResponse;
 import com.openroof.openroof.dto.agent.CreateAgentReviewRequest;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentReviewMapper;
@@ -71,7 +72,7 @@ public class AgentReviewService {
 
         recalculateAgentRating(agentId);
         log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
-        return toResponse(saved, reviewer.getId());
+        return reviewMapper.toResponse(saved, reviewer.getId());
     }
 
     @Transactional
@@ -88,7 +89,7 @@ public class AgentReviewService {
 
         AgentReview saved = reviewRepository.save(review);
         recalculateAgentRating(saved.getAgent().getId());
-        return toResponse(saved);
+        return reviewMapper.toResponse(saved, userId);
     }
 
     @Transactional
@@ -105,11 +106,20 @@ public class AgentReviewService {
         recalculateAgentRating(agent.getId());
     }
 
-    public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable) {
+    public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable, Integer rating) {
         if (!agentProfileRepository.existsById(agentId)) {
             throw new ResourceNotFoundException("AgentProfile", "id", agentId);
         }
-        return reviewRepository.findByAgent_Id(agentId, pageable)
+
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new BadRequestException("rating must be between 1 and 5");
+        }
+
+        Page<AgentReview> page = rating != null
+                ? reviewRepository.findByAgent_IdAndRating(agentId, rating, pageable)
+                : reviewRepository.findByAgent_Id(agentId, pageable);
+
+        return page
                 .map(r -> reviewMapper.toResponse(r, currentUserId));
     }
 
@@ -132,7 +142,7 @@ public class AgentReviewService {
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
-    private void recalculateAgentRating(Long agentId) {
+    public void recalculateAgentRating(Long agentId) {
         AgentProfile agent = agentProfileRepository.findById(agentId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
         long count = reviewRepository.calculateTotalReviews(agentId);

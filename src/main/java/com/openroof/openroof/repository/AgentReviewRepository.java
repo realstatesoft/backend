@@ -24,6 +24,7 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
 
     Page<AgentReview> findByAgent_Id(Long agentId, Pageable pageable);
+    Page<AgentReview> findByAgent_IdAndRating(Long agentId, Integer rating, Pageable pageable);
 
     List<AgentReview> findAllByAgent_Id(Long agentId);
 
