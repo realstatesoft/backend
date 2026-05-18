@@ -15,9 +15,11 @@ import com.openroof.openroof.repository.AgentSpecialtyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.ContractRepository;
+import com.openroof.openroof.repository.AgentReviewRepository;
 import com.openroof.openroof.model.enums.ContractStatus;
 import com.openroof.openroof.model.enums.PropertyStatus;
 import com.openroof.openroof.model.contract.Contract;
+import com.openroof.openroof.mapper.AgentReviewMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -43,6 +45,8 @@ public class AgentProfileService {
     private final AgentProfileMapper agentProfileMapper;
     private final PropertyRepository propertyRepository;
     private final ContractRepository contractRepository;
+    private final AgentReviewRepository agentReviewRepository;
+    private final AgentReviewMapper agentReviewMapper;
 
     // ─── CREATE ───────────────────────────────────────────────────
 
@@ -78,8 +82,40 @@ public class AgentProfileService {
 
     @Transactional(readOnly = true)
     public AgentProfileResponse getById(Long id) {
+        return getById(id, false);
+    }
+
+    @Transactional(readOnly = true)
+    public AgentProfileResponse getById(Long id, boolean includeReviews) {
         AgentProfile agent = findAgentOrThrow(id);
-        return agentProfileMapper.toResponse(agent, calculateAgentStats(agent));
+        AgentProfileResponse base = agentProfileMapper.toResponse(agent, calculateAgentStats(agent));
+        List<AgentReviewResponse> latestReviews = null;
+        if (includeReviews) {
+            latestReviews = agentReviewRepository.findTop3ByAgent_IdOrderByCreatedAtDesc(agent.getId())
+                    .stream()
+                    .map(review -> agentReviewMapper.toResponse(review, null))
+                    .toList();
+        }
+        return new AgentProfileResponse(
+                base.id(),
+                base.userId(),
+                base.userName(),
+                base.userEmail(),
+                base.userPhone(),
+                base.userAvatarUrl(),
+                base.companyName(),
+                base.bio(),
+                base.experienceYears(),
+                base.licenseNumber(),
+                base.avgRating(),
+                base.totalReviews(),
+                base.specialties(),
+                base.socialMedia(),
+                latestReviews,
+                base.stats(),
+                base.createdAt(),
+                base.updatedAt()
+        );
     }
 
     @Transactional(readOnly = true)
