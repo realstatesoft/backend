@@ -38,6 +38,19 @@ public class AgentReviewController {
                 agentReviewService.getReviews(agentId, currentUserId, pageable)));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Obtener la propia reseña del usuario autenticado para este agente")
+    public ResponseEntity<ApiResponse<AgentReviewResponse>> myReview(
+            @PathVariable Long agentId,
+            @AuthenticationPrincipal User currentUser) {
+        AgentReviewResponse review = agentReviewService.getMyReview(agentId, currentUser.getId());
+        if (review == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ApiResponse.ok(review));
+    }
+
     @GetMapping("/summary")
     @Operation(summary = "Resumen de calificaciones: promedio, distribución y últimas reseñas")
     public ResponseEntity<ApiResponse<AgentRatingSummaryResponse>> summary(
@@ -60,7 +73,7 @@ public class AgentReviewController {
                 .body(ApiResponse.ok(res, "Reseña creada"));
     }
 
-    @PatchMapping("/{reviewId}")
+    @RequestMapping(value = "/{reviewId}", method = {org.springframework.web.bind.annotation.RequestMethod.PUT, org.springframework.web.bind.annotation.RequestMethod.PATCH})
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Editar la propia reseña")
     public ResponseEntity<ApiResponse<AgentReviewResponse>> update(

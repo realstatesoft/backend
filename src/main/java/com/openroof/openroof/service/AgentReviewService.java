@@ -71,7 +71,7 @@ public class AgentReviewService {
 
         recalculateAgentRating(agentId);
         log.info("AgentReview {} created for agent={} by reviewer={}", saved.getId(), agentId, reviewer.getId());
-        return toResponse(saved, reviewer.getId());
+        return reviewMapper.toResponse(saved, reviewer.getId());
     }
 
     @Transactional
@@ -88,7 +88,7 @@ public class AgentReviewService {
 
         AgentReview saved = reviewRepository.save(review);
         recalculateAgentRating(saved.getAgent().getId());
-        return toResponse(saved);
+        return reviewMapper.toResponse(saved, userId);
     }
 
     @Transactional
@@ -103,6 +103,12 @@ public class AgentReviewService {
         AgentProfile agent = review.getAgent();
         reviewRepository.delete(review);
         recalculateAgentRating(agent.getId());
+    }
+
+    public AgentReviewResponse getMyReview(Long agentId, Long userId) {
+        return reviewRepository.findByAgent_IdAndUser_Id(agentId, userId)
+                .map(r -> reviewMapper.toResponse(r, userId))
+                .orElse(null);
     }
 
     public Page<AgentReviewResponse> getReviews(Long agentId, Long currentUserId, Pageable pageable) {
@@ -132,7 +138,7 @@ public class AgentReviewService {
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
-    private void recalculateAgentRating(Long agentId) {
+    public void recalculateAgentRating(Long agentId) {
         AgentProfile agent = agentProfileRepository.findById(agentId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
         long count = reviewRepository.calculateTotalReviews(agentId);
