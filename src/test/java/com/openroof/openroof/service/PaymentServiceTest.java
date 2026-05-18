@@ -45,6 +45,8 @@ class PaymentServiceTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private UserRepository userRepository;
     @Mock private PropertyService propertyService;
+    @Mock private SubscriptionPlanService subscriptionPlanService;
+    @Mock private SubscriptionService subscriptionService;
 
     private PaymentService service;
 
@@ -53,7 +55,7 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentService(paymentRepository, userRepository, propertyService);
+        service = new PaymentService(paymentRepository, userRepository, propertyService, subscriptionPlanService, subscriptionService);
 
         user = User.builder().name("Juan Pérez").email("user@test.com").role(UserRole.USER).build();
         user.setId(1L);
@@ -144,7 +146,7 @@ class PaymentServiceTest {
             });
 
             PaymentRequest request = new PaymentRequest(
-                    PaymentType.SUBSCRIPTION, new BigDecimal("100.00"), "  Suscripción mensual  ", null);
+                    PaymentType.OTHER, new BigDecimal("100.00"), "  Suscripción mensual  ", null);
 
             service.create(request, "user@test.com");
 

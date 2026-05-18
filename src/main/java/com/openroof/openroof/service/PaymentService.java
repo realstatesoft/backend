@@ -32,6 +32,8 @@ public class PaymentService {
     private final UserRepository userRepository;
 
     private final PropertyService propertyService;
+    private final SubscriptionPlanService subscriptionPlanService;
+    private final SubscriptionService subscriptionService;
 
     // ADMIN: listar todos los pagos con filtros opcionales
     public Page<PaymentResponse> getAll(Long userId, PaymentStatus status, Pageable pageable) {
@@ -111,7 +113,13 @@ public class PaymentService {
             }
             propertyService.highlightPropertyWithPayment(meta.getPropertyId(), payment.getId(), meta.getHighlightDays());
         }
-        // TO-DO: activación de suscripción cuando se implemente
+        if (payment.getType() == PaymentType.SUBSCRIPTION) {
+            PaymentMetadata meta = payment.getMetadata();
+            if (meta == null || meta.getSubscriptionPlanId() == null) {
+                throw new BadRequestException("Metadata de pago incompleta: se requiere subscriptionPlanId");
+            }
+            subscriptionService.activateSubscription(payment.getUser().getId(), payment.getId(), meta.getSubscriptionPlanId());
+        }
 
         return toResponse(paymentRepository.save(payment));
     }
@@ -140,6 +148,15 @@ public class PaymentService {
             }
             if (metadata.getHighlightDays() < 1 || metadata.getHighlightDays() > 365) {
                 throw new BadRequestException("highlightDays debe estar entre 1 y 365");
+            }
+        }
+        if (type == PaymentType.SUBSCRIPTION) {
+            if (metadata == null || metadata.getSubscriptionPlanId() == null) {
+                throw new BadRequestException("Para pagos de tipo SUBSCRIPTION se requiere subscriptionPlanId en metadata");
+            }
+            var plan = subscriptionPlanService.getPlanOrThrow(metadata.getSubscriptionPlanId());
+            if (!plan.getActive()) {
+                throw new BadRequestException("El plan de suscripción seleccionado no está disponible");
             }
         }
     }
