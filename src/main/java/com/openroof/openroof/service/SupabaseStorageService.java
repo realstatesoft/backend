@@ -34,11 +34,23 @@ public class SupabaseStorageService implements StorageService {
     private final String maxFileSizeLabel;
 
     public SupabaseStorageService(
-            @Value("${supabase.url:}") String supabaseUrl,
-            @Value("${supabase.service-role-key:}") String serviceRoleKey,
-            @Value("${supabase.storage.bucket:openroof-images}") String bucket,
-            @Value("${upload.max-file-size:10MB}") String maxFileSize
+            @Value("${SUPABASE_URL:https://gnkzarhkjbuydrzybydm.supabase.co}") String supabaseUrl,
+            @Value("${SUPABASE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdua3phcmhramJ1eWRyenlieWRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjQ2OTE4OCwiZXhwIjoyMDg4MDQ1MTg4fQ.XxpJq7fIayI0CHRXOqfQC0s0btbjTzlrwWKqPPIt9Ec}") String serviceRoleKey,
+            @Value("${supabase.storage.bucket:openroof-images-test}") String bucket,
+            @Value("${upload.max-file-size:15MB}") String maxFileSize
     ) {
+        // Protección contra caché de sistema operativo que inyecta "undefined"
+        if (supabaseUrl != null && "undefined".equalsIgnoreCase(supabaseUrl.trim())) {
+            log.warn("Se detectó la URL literal 'undefined' inyectada por el entorno local. Usando URL correcta por defecto.");
+            supabaseUrl = "https://gnkzarhkjbuydrzybydm.supabase.co";
+        }
+        
+        log.info("Inicializando SupabaseStorageService con URL: '{}'", supabaseUrl);
+        
+        if (supabaseUrl == null || !supabaseUrl.startsWith("http")) {
+            log.error("¡ERROR CRÍTICO! La URL de Supabase es inválida o no tiene esquema: '{}'", supabaseUrl);
+        }
+
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
         this.maxFileSizeBytes = DataSize.parse(maxFileSize).toBytes();
