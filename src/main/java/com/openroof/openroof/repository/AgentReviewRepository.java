@@ -45,4 +45,6 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     List<RatingDistribution> countRatingDistributionByAgentId(@Param("agentId") Long agentId);
 
     List<AgentReview> findTop5ByAgent_IdOrderByCreatedAtDesc(Long agentId);
+
+    List<AgentReview> findTop3ByAgent_IdOrderByCreatedAtDesc(Long agentId);
 }

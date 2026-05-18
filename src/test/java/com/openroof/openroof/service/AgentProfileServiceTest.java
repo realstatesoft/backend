@@ -4,7 +4,9 @@ import com.openroof.openroof.dto.agent.*;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.AgentProfileMapper;
+import com.openroof.openroof.mapper.AgentReviewMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
+import com.openroof.openroof.model.agent.AgentReview;
 import com.openroof.openroof.model.agent.AgentSpecialty;
 import com.openroof.openroof.model.enums.SocialMediaPlatform;
 import com.openroof.openroof.model.enums.UserRole;
@@ -14,6 +16,7 @@ import com.openroof.openroof.repository.AgentSpecialtyRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.ContractRepository;
+import com.openroof.openroof.repository.AgentReviewRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,6 +57,10 @@ class AgentProfileServiceTest {
     private PropertyRepository propertyRepository;
     @Mock
     private ContractRepository contractRepository;
+    @Mock
+    private AgentReviewRepository agentReviewRepository;
+    @Mock
+    private AgentReviewMapper agentReviewMapper;
 
     @InjectMocks
     private AgentProfileService agentProfileService;
@@ -94,6 +101,7 @@ class AgentProfileServiceTest {
                 "Test Realty", "Experienced agent", 5, "LIC-001",
                 BigDecimal.ZERO, 0,
                 Collections.emptyList(), Collections.emptyList(),
+                null,
                 new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                 testAgent.getCreatedAt(), testAgent.getUpdatedAt()
         );
@@ -243,6 +251,37 @@ class AgentProfileServiceTest {
         }
 
         @Test
+        @DisplayName("Obtener agente con includeReviews=true → incluye hasta 3 reviews")
+        void getExistingAgentWithReviews_returnsResponseWithReviews() {
+            AgentReview r1 = AgentReview.builder().agent(testAgent).build();
+            r1.setId(1L);
+            AgentReview r2 = AgentReview.builder().agent(testAgent).build();
+            r2.setId(2L);
+
+            AgentReviewResponse review1 = new AgentReviewResponse(
+                    1L, 10L, 200L, "Reviewer 1", null, null, null, 5, "Excelente",
+                    LocalDateTime.now(), LocalDateTime.now(), false
+            );
+            AgentReviewResponse review2 = new AgentReviewResponse(
+                    2L, 10L, 201L, "Reviewer 2", null, null, null, 4, "Muy bueno",
+                    LocalDateTime.now(), LocalDateTime.now(), false
+            );
+
+            when(agentProfileRepository.findById(10L)).thenReturn(Optional.of(testAgent));
+            when(agentProfileMapper.toResponse(eq(testAgent), any())).thenReturn(testResponse);
+            when(agentReviewRepository.findTop3ByAgent_IdOrderByCreatedAtDesc(10L)).thenReturn(List.of(r1, r2));
+            when(agentReviewMapper.toResponse(r1, null)).thenReturn(review1);
+            when(agentReviewMapper.toResponse(r2, null)).thenReturn(review2);
+
+            AgentProfileResponse result = agentProfileService.getById(10L, true);
+
+            assertThat(result).isNotNull();
+            assertThat(result.latestReviews()).hasSize(2);
+            assertThat(result.latestReviews().get(0).id()).isEqualTo(1L);
+            assertThat(result.latestReviews().get(1).id()).isEqualTo(2L);
+        }
+
+        @Test
         @DisplayName("Obtener agente inexistente → 404")
         void getNonExistentAgent_throwsNotFound() {
             when(agentProfileRepository.findById(999L)).thenReturn(Optional.empty());
@@ -346,6 +385,7 @@ class AgentProfileServiceTest {
                     "New Company", "New bio", 10, "LIC-001",
                     BigDecimal.ZERO, 0,
                     Collections.emptyList(), Collections.emptyList(),
+                    null,
                     new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                     testAgent.getCreatedAt(), testAgent.getUpdatedAt()
             );
