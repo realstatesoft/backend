@@ -48,7 +48,7 @@ public class AgentReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
 
         if (agent.getUser() != null && agent.getUser().getId().equals(userId)) {
-            throw new ConflictException("No podés reseñarte a vos mismo");
+            throw new BadRequestException("No podés reseñarte a vos mismo");
         }
 
         if (reviewRepository.existsByAgent_IdAndUser_Id(agentId, userId)) {
@@ -97,8 +97,10 @@ public class AgentReviewService {
         AgentReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentReview", "id", reviewId));
 
-        if (!review.getUser().getId().equals(userId)) {
-            throw new AccessDeniedException("Solo el autor puede eliminar esta reseña");
+        User currentUser = getUserById(userId);
+
+        if (!review.getUser().getId().equals(userId) && currentUser.getRole() != com.openroof.openroof.model.enums.UserRole.ADMIN) {
+            throw new AccessDeniedException("Solo el autor o un administrador puede eliminar esta reseña");
         }
 
         AgentProfile agent = review.getAgent();
@@ -123,6 +125,15 @@ public class AgentReviewService {
                 .map(r -> reviewMapper.toResponse(r, currentUserId));
     }
 
+    public AgentReviewResponse getMyReview(Long agentId, Long userId) {
+        if (!agentProfileRepository.existsById(agentId)) {
+            throw new ResourceNotFoundException("AgentProfile", "id", agentId);
+        }
+        return reviewRepository.findByAgent_IdAndUser_Id(agentId, userId)
+                .map(r -> reviewMapper.toResponse(r, userId))
+                .orElse(null);
+    }
+
     public AgentRatingSummaryResponse getRatingSummary(Long agentId, Long currentUserId) {
         AgentProfile agent = agentProfileRepository.findById(agentId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
@@ -140,6 +151,12 @@ public class AgentReviewService {
                 .toList();
 
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
+    }
+
+    public AgentReviewResponse getMyReview(Long agentId, Long userId) {
+        return reviewRepository.findByAgent_IdAndUser_Id(agentId, userId)
+                .map(r -> reviewMapper.toResponse(r, userId))
+                .orElse(null);
     }
 
     public void recalculateAgentRating(Long agentId) {
