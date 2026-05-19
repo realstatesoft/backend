@@ -36,6 +36,7 @@ public class AgentProfileMapper {
                 agent.getTotalReviews(),
                 mapSpecialties(agent.getSpecialties()),
                 mapSocialMedia(agent.getSocialMedia()),
+                null,
                 stats,
                 agent.getCreatedAt(),
                 agent.getUpdatedAt()

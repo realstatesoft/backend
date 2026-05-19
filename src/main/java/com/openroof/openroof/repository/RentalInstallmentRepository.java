@@ -15,6 +15,10 @@ import java.util.List;
 @Repository
 public interface RentalInstallmentRepository extends JpaRepository<RentalInstallment, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM RentalInstallment i WHERE i.id = :id")
+    java.util.Optional<RentalInstallment> findByIdForUpdate(@Param("id") Long id);
+
     boolean existsByLeaseId(Long leaseId);
 
     List<RentalInstallment> findByLeaseIdOrderByDueDateAsc(Long leaseId);

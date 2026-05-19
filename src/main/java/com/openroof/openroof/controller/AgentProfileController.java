@@ -53,9 +53,11 @@ public class AgentProfileController {
     @GetMapping("/{id}")
     @Operation(summary = "Obtener un perfil de agente por ID")
     public ResponseEntity<ApiResponse<AgentProfileResponse>> getById(
-            @Parameter(description = "ID del agente") @PathVariable Long id) {
+            @Parameter(description = "ID del agente") @PathVariable Long id,
+            @Parameter(description = "Incluir últimas 3 reviews en la respuesta")
+            @RequestParam(name = "includeReviews", defaultValue = "false") boolean includeReviews) {
 
-        AgentProfileResponse response = agentProfileService.getById(id);
+        AgentProfileResponse response = agentProfileService.getById(id, includeReviews);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

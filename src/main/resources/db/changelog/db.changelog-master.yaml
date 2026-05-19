@@ -219,5 +219,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changelogs/062-add-unique-active-subscription-per-user.yaml
+  - include:
+      file: changelogs/059-add-notes-to-lease-payments.yaml
       relativeToChangelogFile: true
 

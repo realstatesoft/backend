@@ -24,6 +24,7 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     boolean existsByAgent_IdAndUser_Id(Long agentId, Long userId);
 
     Page<AgentReview> findByAgent_Id(Long agentId, Pageable pageable);
+    Page<AgentReview> findByAgent_IdAndRating(Long agentId, Integer rating, Pageable pageable);
 
     List<AgentReview> findAllByAgent_Id(Long agentId);
 
@@ -32,6 +33,12 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     @Query("SELECT AVG(r.rating) FROM AgentReview r WHERE r.agent.id = :agentId")
     Double avgRatingByAgentId(@Param("agentId") Long agentId);
 
+    @Query("SELECT AVG(r.rating) FROM AgentReview r WHERE r.agent.id = :agentId")
+    Optional<Double> calculateAvgRating(@Param("agentId") Long agentId);
+
+    @Query("SELECT COUNT(r) FROM AgentReview r WHERE r.agent.id = :agentId")
+    long calculateTotalReviews(@Param("agentId") Long agentId);
+
     // — Métodos adicionales —
     Optional<AgentReview> findByAgent_IdAndUser_Id(Long agentId, Long userId);
 
@@ -39,4 +46,6 @@ public interface AgentReviewRepository extends JpaRepository<AgentReview, Long> 
     List<RatingDistribution> countRatingDistributionByAgentId(@Param("agentId") Long agentId);
 
     List<AgentReview> findTop5ByAgent_IdOrderByCreatedAtDesc(Long agentId);
+
+    List<AgentReview> findTop3ByAgent_IdOrderByCreatedAtDesc(Long agentId);
 }

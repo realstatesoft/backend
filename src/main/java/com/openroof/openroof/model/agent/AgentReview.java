@@ -5,6 +5,7 @@ import com.openroof.openroof.model.property.Property;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -14,6 +15,7 @@ import org.hibernate.annotations.SQLRestriction;
         @Index(name = "idx_agent_reviews_date", columnList = "created_at")
 })
 @SQLRestriction("deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE agent_reviews SET deleted_at = CURRENT_TIMESTAMP, version = version + 1 WHERE id = ? AND version = ?")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -99,6 +99,7 @@ class AgentProfileControllerTest {
                 "Test Realty", "Experienced agent", 5, "LIC-001",
                 BigDecimal.ZERO, 0,
                 Collections.emptyList(), Collections.emptyList(),
+                null,
                 new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                 LocalDateTime.now(), LocalDateTime.now()
         );
@@ -259,7 +260,7 @@ class AgentProfileControllerTest {
         @Test
         @DisplayName("Obtener agente por ID existente → 200")
         void getAgentById_returns200() throws Exception {
-            when(agentProfileService.getById(10L)).thenReturn(sampleResponse());
+            when(agentProfileService.getById(10L, false)).thenReturn(sampleResponse());
 
             mockMvc.perform(get(API_BASE + "/10"))
                     .andExpect(status().isOk())
@@ -271,13 +272,24 @@ class AgentProfileControllerTest {
         @Test
         @DisplayName("Obtener agente por ID inexistente → 404")
         void getAgentByInvalidId_returns404() throws Exception {
-            when(agentProfileService.getById(999L))
+            when(agentProfileService.getById(999L, false))
                     .thenThrow(new ResourceNotFoundException("Agente no encontrado con ID: 999"));
 
             mockMvc.perform(get(API_BASE + "/999"))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.message").value(containsString("999")));
+        }
+
+        @Test
+        @DisplayName("Obtener agente por ID con includeReviews=true → 200")
+        void getAgentByIdWithIncludeReviews_returns200() throws Exception {
+            when(agentProfileService.getById(10L, true)).thenReturn(sampleResponse());
+
+            mockMvc.perform(get(API_BASE + "/10").param("includeReviews", "true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.id").value(10));
         }
 
         @Test
@@ -316,6 +328,7 @@ class AgentProfileControllerTest {
                     "New Company", "New bio", 10, "LIC-001",
                     BigDecimal.ZERO, 0,
                     Collections.emptyList(), Collections.emptyList(),
+                    null,
                     new AgentProfileResponse.AgentStatsDto(0, 0, 0, "$ 0"),
                     LocalDateTime.now(), LocalDateTime.now()
             );

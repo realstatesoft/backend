@@ -3,6 +3,7 @@ package com.openroof.openroof.controller;
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.rental.CreateLeaseRequest;
 import com.openroof.openroof.dto.rental.LeaseResponse;
+import com.openroof.openroof.dto.rental.SignLeaseRequest;
 import com.openroof.openroof.dto.rental.LeaseSummaryResponse;
 import com.openroof.openroof.dto.rental.RentalInstallmentResponse;
 import com.openroof.openroof.exception.ResourceNotFoundException;
@@ -10,6 +11,7 @@ import com.openroof.openroof.mapper.RentalInstallmentMapper;
 import com.openroof.openroof.model.enums.LeaseStatus;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.service.ESignatureService;
 import com.openroof.openroof.service.LeaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +43,7 @@ import java.util.List;
 public class LeaseController {
 
     private final LeaseService leaseService;
+    private final ESignatureService eSignatureService;
     private final RentalInstallmentMapper installmentMapper;
     private final UserRepository userRepository;
 
@@ -97,6 +100,29 @@ public class LeaseController {
         List<RentalInstallmentResponse> installments =
                 installmentMapper.toResponseList(leaseService.activateLease(id));
         return ResponseEntity.ok(ApiResponse.ok(installments, "Contrato activado"));
+    }
+
+    @PostMapping("/{id}/send-for-signature")
+    @PreAuthorize("@leaseSecurity.canManageLease(#id, authentication.principal)")
+    @Operation(summary = "Enviar lease a firma electrónica")
+    public ResponseEntity<ApiResponse<Void>> sendForSignature(@PathVariable Long id) {
+        eSignatureService.sendForSignature(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Lease enviado a firma"));
+    }
+
+    @PostMapping("/{id}/sign")
+    @Operation(summary = "Firmar lease mediante token", description = "No requiere JWT; valida token de un solo uso.")
+    public ResponseEntity<ApiResponse<Void>> sign(
+            @PathVariable Long id,
+            @RequestParam("token") String token,
+            @Valid @RequestBody(required = false) SignLeaseRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest
+    ) {
+        String ip = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        eSignatureService.sign(id, token, request, ip, userAgent);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Firma registrada"));
     }
 
     @PostMapping("/{id}/terminate")

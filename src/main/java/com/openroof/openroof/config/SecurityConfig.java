@@ -88,6 +88,8 @@ public class SecurityConfig {
                                                 .requestMatchers(new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/subscription-plans$|^/subscription-plans/\\d+$", "GET")).permitAll()
                                                 // Endpoints públicos de alquileres (catálogo)
                                                 .requestMatchers(HttpMethod.GET, "/leases/public/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/leases/*/sign").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/leases/*/sign").permitAll()
                                                 // Endpoints protegidos — autorización fina vía LeaseSecurity
                                                 .requestMatchers("/leases/**").authenticated()
                                                 .requestMatchers("/rentals/**").authenticated()

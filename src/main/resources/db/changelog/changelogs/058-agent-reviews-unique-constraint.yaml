@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 058-agent-reviews-unique-constraint
-      author: OR-213
+      author: OR-314
       preConditions:
         - onFail: MARK_RAN
         - sqlCheck:
@@ -14,11 +14,11 @@ databaseChangeLog:
                 HAVING COUNT(*) > 1
               ) duplicates
       changes:
-        - addUniqueConstraint:
-            tableName: agent_reviews
-            columnNames: agent_id, user_id
-            constraintName: uq_agent_reviews_agent_user
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uq_agent_reviews_active_agent_user
+              ON agent_reviews (agent_id, user_id)
+              WHERE deleted_at IS NULL;
       rollback:
-        - dropUniqueConstraint:
-            tableName: agent_reviews
-            constraintName: uq_agent_reviews_agent_user
+        - sql:
+            sql: DROP INDEX IF EXISTS uq_agent_reviews_active_agent_user;

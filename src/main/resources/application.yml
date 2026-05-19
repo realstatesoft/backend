@@ -6,15 +6,16 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?prepareThreshold=0&sslmode=require&tcpKeepAlive=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 4
+      maximum-pool-size: 10
       minimum-idle: 2
       idle-timeout: 30000
-      connection-timeout: 20000
+      max-lifetime: 300000
+      connection-timeout: 30000
 
   jpa:
     hibernate:
