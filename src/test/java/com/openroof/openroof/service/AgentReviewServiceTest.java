@@ -74,7 +74,7 @@ class AgentReviewServiceTest {
     // --- createReview ---------------------------------------------------------
 
     @Test
-    void createReview_selfReview_throwsConflict() {
+    void createReview_selfReview_throwsBadRequest() {
         CreateAgentReviewRequest req = new CreateAgentReviewRequest(5, "great", null);
         AgentProfile selfAgent = AgentProfile.builder().user(reviewer).build();
         selfAgent.setId(100L);
@@ -82,11 +82,11 @@ class AgentReviewServiceTest {
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(selfAgent));
 
         assertThatThrownBy(() -> service.createReview(100L, 10L, req))
-                .isInstanceOf(ConflictException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void createReview_duplicate_throwsConflict() {
+    void createReview_duplicateReview_throwsConflict() {
         CreateAgentReviewRequest req = new CreateAgentReviewRequest(5, "great", null);
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewer));
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
@@ -156,7 +156,7 @@ class AgentReviewServiceTest {
     // --- updateReview ---------------------------------------------------------
 
     @Test
-    void updateReview_byOwner_ok() {
+    void updateReview_success() {
         AgentReview review = AgentReview.builder().agent(agent).build();
         review.setUser(reviewer);
         review.setRating(3);
@@ -181,7 +181,7 @@ class AgentReviewServiceTest {
     }
 
     @Test
-    void updateReview_byNonOwner_throwsAccessDenied() {
+    void updateReview_notOwner_throwsAccessDenied() {
         AgentReview review = AgentReview.builder().agent(agent).build();
         review.setUser(agentUser);
         review.setId(1L);
@@ -204,11 +204,12 @@ class AgentReviewServiceTest {
     // --- deleteReview ---------------------------------------------------------
 
     @Test
-    void deleteReview_byOwner_ok() {
+    void deleteReview_success() {
         AgentReview review = AgentReview.builder().agent(agent).build();
         review.setUser(reviewer);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(reviewer));
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
         when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
         when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
@@ -225,22 +226,29 @@ class AgentReviewServiceTest {
         review.setUser(agentUser);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(reviewer));
 
         assertThatThrownBy(() -> service.deleteReview(1L, 10L))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
-    void deleteReview_byAdmin_throwsAccessDenied() {
+    void deleteReview_adminCanDeleteAnyReview() {
         User admin = User.builder().email("admin@test.com").role(UserRole.ADMIN).build();
         admin.setId(99L);
         AgentReview review = AgentReview.builder().agent(agent).build();
         review.setUser(reviewer);
         review.setId(1L);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
-
-        assertThatThrownBy(() -> service.deleteReview(1L, 99L))
-                .isInstanceOf(AccessDeniedException.class);
+        when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
+        when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
+        when(reviewRepository.calculateTotalReviews(100L)).thenReturn(0L);
+        when(reviewRepository.calculateAvgRating(100L)).thenReturn(Optional.empty());
+        
+        service.deleteReview(1L, 99L);
+        
+        verify(reviewRepository).delete(review);
+        verify(agentProfileRepository).save(agent);
     }
 
     @Test
@@ -323,20 +331,57 @@ class AgentReviewServiceTest {
     }
 
     @Test
-    void getRatingSummary_returnsSummary() {
-        agent.setAvgRating(new BigDecimal("4.50"));
-        agent.setTotalReviews(10);
-        AgentRatingSummaryResponse expected = new AgentRatingSummaryResponse(
-                new BigDecimal("4.50"), 10, Map.of(), List.of());
+    void getRatingSummary_correctDistribution() {
+        agent.setAvgRating(new BigDecimal("4.67"));
+        agent.setTotalReviews(3);
+        
+        AgentReviewRepository.RatingDistribution dist4 = new AgentReviewRepository.RatingDistribution() {
+            public Integer getRating() { return 4; }
+            public Long getCount() { return 1L; }
+        };
+        AgentReviewRepository.RatingDistribution dist5 = new AgentReviewRepository.RatingDistribution() {
+            public Integer getRating() { return 5; }
+            public Long getCount() { return 2L; }
+        };
+        AgentRatingSummaryResponse expected = new AgentRatingSummaryResponse(new BigDecimal("4.67"), 3, Map.of(4, 1L, 5, 2L), List.of());
 
         when(agentProfileRepository.findById(100L)).thenReturn(Optional.of(agent));
-        when(reviewRepository.countRatingDistributionByAgentId(100L)).thenReturn(List.of());
-        when(reviewRepository.findTop5ByAgent_IdOrderByCreatedAtDesc(100L)).thenReturn(List.of());
+        when(reviewRepository.countRatingDistributionByAgentId(100L)).thenReturn(List.of(dist4, dist5));
         when(reviewMapper.toSummaryResponse(eq(agent), any(), any())).thenReturn(expected);
 
         AgentRatingSummaryResponse res = service.getRatingSummary(100L, null);
+        assertThat(res.avgRating()).isEqualByComparingTo("4.67");
+        assertThat(res.ratingDistribution().get(4)).isEqualTo(1L);
+        assertThat(res.ratingDistribution().get(5)).isEqualTo(2L);
+    }
 
-        assertThat(res.avgRating()).isEqualByComparingTo("4.50");
-        assertThat(res.totalReviews()).isEqualTo(10);
+    // --- getMyReview ----------------------------------------------------------
+
+    @Test
+    void getMyReview_found() {
+        AgentReview review = AgentReview.builder().agent(agent).build();
+        review.setUser(reviewer);
+        review.setId(1L);
+        review.setRating(5);
+        AgentReviewResponse expected = new AgentReviewResponse(
+                1L, 100L, 10L, "Reviewer", null, null, null, 5, "great",
+                LocalDateTime.now(), LocalDateTime.now(), true);
+
+        when(reviewRepository.findByAgent_IdAndUser_Id(100L, 10L)).thenReturn(Optional.of(review));
+        when(reviewMapper.toResponse(eq(review), eq(10L))).thenReturn(expected);
+
+        AgentReviewResponse result = service.getMyReview(100L, 10L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.rating()).isEqualTo(5);
+    }
+
+    @Test
+    void getMyReview_notFound_returnsNull() {
+        when(reviewRepository.findByAgent_IdAndUser_Id(100L, 10L)).thenReturn(Optional.empty());
+
+        AgentReviewResponse result = service.getMyReview(100L, 10L);
+
+        assertThat(result).isNull();
     }
 }
