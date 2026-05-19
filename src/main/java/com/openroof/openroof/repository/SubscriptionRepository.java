@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -24,12 +25,12 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     boolean existsByPlan_IdAndStatusIn(Long planId, List<SubscriptionStatus> statuses);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Subscription s SET s.status = :expired, s.updatedAt = :now " +
            "WHERE s.status = :active AND s.expiresAt < :now AND s.deletedAt IS NULL")
     int expireOlderThan(
-            SubscriptionStatus active,
-            SubscriptionStatus expired,
-            LocalDateTime now
+            @Param("active") SubscriptionStatus active,
+            @Param("expired") SubscriptionStatus expired,
+            @Param("now") LocalDateTime now
     );
 }

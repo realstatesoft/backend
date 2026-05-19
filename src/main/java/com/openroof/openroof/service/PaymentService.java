@@ -118,6 +118,10 @@ public class PaymentService {
             if (meta == null || meta.getSubscriptionPlanId() == null) {
                 throw new BadRequestException("Metadata de pago incompleta: se requiere subscriptionPlanId");
             }
+            var plan = subscriptionPlanService.getPlanOrThrow(meta.getSubscriptionPlanId());
+            if (!plan.getActive()) {
+                throw new BadRequestException("El plan de suscripción seleccionado ya no está disponible");
+            }
             subscriptionService.activateSubscription(payment.getUser().getId(), payment.getId(), meta.getSubscriptionPlanId());
         }
 

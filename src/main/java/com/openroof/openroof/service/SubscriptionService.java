@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.subscription.SubscriptionResponse;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.SubscriptionStatus;
@@ -15,6 +16,7 @@ import com.openroof.openroof.repository.SubscriptionRepository;
 import com.openroof.openroof.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -84,9 +86,13 @@ public class SubscriptionService {
                 .expiresAt(expiresAt)
                 .build();
 
-        Subscription saved = subscriptionRepository.save(subscription);
-        log.info("Suscripción activada: userId={}, planId={}, expiresAt={}", userId, planId, expiresAt);
-        return toResponse(saved);
+        try {
+            Subscription saved = subscriptionRepository.save(subscription);
+            log.info("Suscripción activada: userId={}, planId={}, expiresAt={}", userId, planId, expiresAt);
+            return toResponse(saved);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("El usuario ya tiene una suscripción activa");
+        }
     }
 
     // Usuario puede cancelar la suya; ADMIN puede cancelar cualquiera

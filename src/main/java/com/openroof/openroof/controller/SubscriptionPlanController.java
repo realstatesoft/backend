@@ -33,9 +33,9 @@ public class SubscriptionPlanController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Ver un plan por ID (público)")
+    @Operation(summary = "Ver un plan activo por ID (público)")
     public ResponseEntity<ApiResponse<SubscriptionPlanResponse>> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.ok(subscriptionPlanService.getById(id)));
+        return ResponseEntity.ok(ApiResponse.ok(subscriptionPlanService.getActiveById(id)));
     }
 
     @GetMapping("/admin")

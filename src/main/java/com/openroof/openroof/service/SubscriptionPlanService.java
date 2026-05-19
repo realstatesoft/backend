@@ -36,14 +36,23 @@ public class SubscriptionPlanService {
         return toResponse(getPlanOrThrow(id));
     }
 
+    public SubscriptionPlanResponse getActiveById(Long id) {
+        SubscriptionPlan plan = getPlanOrThrow(id);
+        if (!plan.getActive()) {
+            throw new ResourceNotFoundException("Plan de suscripción no encontrado");
+        }
+        return toResponse(plan);
+    }
+
     @Transactional
     public SubscriptionPlanResponse create(SubscriptionPlanRequest request) {
-        if (planRepository.existsByName(request.name())) {
-            throw new ConflictException("Ya existe un plan con el nombre: " + request.name());
+        String trimmedName = request.name().trim();
+        if (planRepository.existsByName(trimmedName)) {
+            throw new ConflictException("Ya existe un plan con el nombre: " + trimmedName);
         }
 
         SubscriptionPlan plan = SubscriptionPlan.builder()
-                .name(request.name().trim())
+                .name(trimmedName)
                 .description(request.description() != null ? request.description().trim() : null)
                 .price(request.price())
                 .durationMonths(request.durationMonths())
@@ -57,11 +66,12 @@ public class SubscriptionPlanService {
     public SubscriptionPlanResponse update(Long id, SubscriptionPlanRequest request) {
         SubscriptionPlan plan = getPlanOrThrow(id);
 
-        if (planRepository.existsByNameAndIdNot(request.name(), id)) {
-            throw new ConflictException("Ya existe un plan con el nombre: " + request.name());
+        String trimmedName = request.name().trim();
+        if (planRepository.existsByNameAndIdNot(trimmedName, id)) {
+            throw new ConflictException("Ya existe un plan con el nombre: " + trimmedName);
         }
 
-        plan.setName(request.name().trim());
+        plan.setName(trimmedName);
         plan.setDescription(request.description() != null ? request.description().trim() : null);
         plan.setPrice(request.price());
         plan.setDurationMonths(request.durationMonths());

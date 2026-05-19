@@ -13,7 +13,7 @@ public class SubscriptionScheduler {
 
     private final SubscriptionService subscriptionService;
 
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "UTC")
     public void expireSubscriptions() {
         log.info("Iniciando expiración de suscripciones vencidas...");
         int expired = subscriptionService.deactivateExpired();
