@@ -36,7 +36,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class LeaseService {
 
-    private static final int SIGNATURE_TOKEN_VALIDITY_DAYS = 30;
+    private static final int SIGNATURE_TOKEN_VALIDITY_DAYS = 3;
 
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
@@ -51,6 +51,9 @@ public class LeaseService {
         Property property = propertyRepository.findById(dto.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property", "id", dto.propertyId()));
         User landlord = property.getOwner();
+        if (!landlord.getId().equals(landlordId)) {
+            throw new BadRequestException("Landlord id does not match property owner");
+        }
         User tenant = userRepository.findById(dto.tenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.tenantId()));
 
@@ -60,7 +63,7 @@ public class LeaseService {
 
         Lease lease = leaseMapper.toEntity(dto, property, tenant, landlord);
         lease = leaseRepository.save(lease);
-        log.info("Lease id={} created by landlord id={}", lease.getId(), landlordId);
+        log.info("Lease id={} created by landlord id={}", lease.getId(), landlord.getId());
         return leaseMapper.toResponse(lease);
     }
 

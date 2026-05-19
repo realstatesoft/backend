@@ -34,11 +34,27 @@ public class SupabaseStorageService implements StorageService {
     private final String maxFileSizeLabel;
 
     public SupabaseStorageService(
-            @Value("${supabase.url:}") String supabaseUrl,
-            @Value("${supabase.service-role-key:}") String serviceRoleKey,
-            @Value("${supabase.storage.bucket:openroof-images}") String bucket,
-            @Value("${upload.max-file-size:10MB}") String maxFileSize
+            @Value("${supabase.url}") String supabaseUrl,
+            @Value("${supabase.service-role-key}") String serviceRoleKey,
+            @Value("${supabase.storage.bucket}") String bucket,
+            @Value("${upload.max-file-size:15MB}") String maxFileSize
     ) {
+        if (supabaseUrl == null || supabaseUrl.isBlank() || "undefined".equalsIgnoreCase(supabaseUrl.trim())) {
+            throw new IllegalStateException("supabase.url configuration is missing, empty, or undefined. Please configure it in the environment.");
+        }
+        if (serviceRoleKey == null || serviceRoleKey.isBlank() || "undefined".equalsIgnoreCase(serviceRoleKey.trim())) {
+            throw new IllegalStateException("supabase.service-role-key configuration is missing, empty, or undefined. Please configure it in the environment.");
+        }
+        if (bucket == null || bucket.isBlank() || "undefined".equalsIgnoreCase(bucket.trim())) {
+            throw new IllegalStateException("supabase.storage.bucket configuration is missing, empty, or undefined. Please configure it in the environment.");
+        }
+        
+        if (!supabaseUrl.startsWith("http")) {
+            throw new IllegalStateException("La URL de Supabase es inválida o no tiene esquema: '" + supabaseUrl + "'");
+        }
+
+        log.info("Inicializando SupabaseStorageService con URL: '{}'", supabaseUrl);
+
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
         this.maxFileSizeBytes = DataSize.parse(maxFileSize).toBytes();

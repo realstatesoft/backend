@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @SpringBootTest(properties = {
         // H2 datasource — overrides application-test.yml's ${DB_URL} etc.
-        "spring.datasource.url=jdbc:h2:mem:rental-test;DB_CLOSE_DELAY=-1;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS VARCHAR",
+        "spring.datasource.url=jdbc:h2:mem:rental-test;NON_KEYWORDS=VALUE;DB_CLOSE_DELAY=-1;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS VARCHAR",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",

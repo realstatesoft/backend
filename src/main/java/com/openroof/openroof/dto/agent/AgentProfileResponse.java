@@ -19,6 +19,7 @@ public record AgentProfileResponse(
         Integer totalReviews,
         List<SpecialtyDto> specialties,
         List<AgentSocialMediaDto> socialMedia,
+        List<AgentReviewResponse> latestReviews,
         AgentStatsDto stats,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
