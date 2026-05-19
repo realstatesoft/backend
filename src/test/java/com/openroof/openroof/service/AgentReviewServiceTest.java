@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -353,6 +354,10 @@ class AgentReviewServiceTest {
         assertThat(res.avgRating()).isEqualByComparingTo("4.67");
         assertThat(res.ratingDistribution().get(4)).isEqualTo(1L);
         assertThat(res.ratingDistribution().get(5)).isEqualTo(2L);
+
+        ArgumentCaptor<Map> distCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(reviewMapper).toSummaryResponse(eq(agent), any(), distCaptor.capture());
+        assertThat(distCaptor.getValue()).containsAllEntriesOf(Map.of(4, 1L, 5, 2L));
     }
 
     // --- getMyReview ----------------------------------------------------------

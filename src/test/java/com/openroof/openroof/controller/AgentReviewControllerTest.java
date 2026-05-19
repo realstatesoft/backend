@@ -23,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
@@ -136,6 +137,8 @@ class AgentReviewControllerTest {
         mockMvc.perform(delete("/agents/{id}/reviews/{rid}", agentProfile.getId(), review.getId())
                 .header("Authorization", adminToken))
                 .andExpect(status().isNoContent());
+
+        assertThat(reviewRepository.findById(review.getId())).isEmpty();
     }
 
     @Test
