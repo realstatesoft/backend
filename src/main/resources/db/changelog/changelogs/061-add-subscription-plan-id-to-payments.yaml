@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 061-add-subscription-plan-id-to-payments
+      author: tania
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: subscription_plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true

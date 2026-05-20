@@ -20,6 +20,7 @@ import com.openroof.openroof.exception.ExchangeRateUnavailableException;
 @Slf4j
 public class CambiosChacoClient {
 
+
     @Value("${exchange-rates.cambios-chaco.url:https://www.cambioschaco.com.py/widgets/cotizacion/?lang=es}")
     private String widgetUrl;
 

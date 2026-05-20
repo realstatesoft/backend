@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 062-add-unique-active-subscription-per-user
+      author: tania
+      changes:
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX ux_subscriptions_one_active_per_user
+              ON subscriptions (user_id)
+              WHERE status = 'ACTIVE' AND deleted_at IS NULL;
