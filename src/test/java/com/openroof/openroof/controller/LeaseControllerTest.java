@@ -10,6 +10,7 @@ import com.openroof.openroof.dto.rental.LeaseResponse;
 import com.openroof.openroof.dto.rental.LeaseSummaryResponse;
 import com.openroof.openroof.dto.rental.RentalInstallmentResponse;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.RentalInstallmentMapper;
 import com.openroof.openroof.model.enums.BillingFrequency;
 import com.openroof.openroof.model.enums.DepositStatus;
@@ -416,6 +417,59 @@ class LeaseControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.message").value("Firma registrada"));
+        }
+
+        @Test
+        @DisplayName("Sign sin parámetro token retorna 400")
+        void signWithoutTokenReturns400() throws Exception {
+            mockMvc.perform(post("/api/leases/10/sign")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"signatureData\":\"ok\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Sign con token vacío retorna 400 desde el servicio")
+        void signWithEmptyTokenReturns400() throws Exception {
+            when(eSignatureService.sign(any(), eq(""), any(), any(), any()))
+                    .thenThrow(new BadRequestException("Signature token is required"));
+
+            mockMvc.perform(post("/api/leases/10/sign")
+                            .param("token", ""))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Sign con token UUID inválido retorna 400")
+        void signWithInvalidTokenReturns400() throws Exception {
+            when(eSignatureService.sign(any(), eq("not-a-uuid"), any(), any(), any()))
+                    .thenThrow(new BadRequestException("Invalid signature token"));
+
+            mockMvc.perform(post("/api/leases/10/sign")
+                            .param("token", "not-a-uuid"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Sign con token expirado retorna 400")
+        void signWithExpiredTokenReturns400() throws Exception {
+            when(eSignatureService.sign(any(), eq("1d57c18b-06e7-4ce9-a2e0-eaf2de6b74ba"), any(), any(), any()))
+                    .thenThrow(new BadRequestException("Signature token has expired"));
+
+            mockMvc.perform(post("/api/leases/10/sign")
+                            .param("token", "1d57c18b-06e7-4ce9-a2e0-eaf2de6b74ba"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Sign con lease inexistente retorna 404")
+        void signWithNonExistentLeaseReturns404() throws Exception {
+            when(eSignatureService.sign(eq(999L), any(), any(), any(), any()))
+                    .thenThrow(new ResourceNotFoundException("Lease", "id", 999L));
+
+            mockMvc.perform(post("/api/leases/999/sign")
+                            .param("token", "1d57c18b-06e7-4ce9-a2e0-eaf2de6b74ba"))
+                    .andExpect(status().isNotFound());
         }
     }
 
