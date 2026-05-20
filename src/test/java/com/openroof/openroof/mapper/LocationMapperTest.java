@@ -7,17 +7,26 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code LocationMapper — toDto}.
+ */
 @DisplayName("LocationMapper — toDto")
 class LocationMapperTest {
 
     private final LocationMapper mapper = new LocationMapper();
 
+    /**
+     * null input returns null.
+     */
     @Test
     @DisplayName("null input returns null")
     void toDto_null_returnsNull() {
         assertThat(mapper.toDto(null)).isNull();
     }
 
+    /**
+     * fully populated Location maps all fields correctly.
+     */
     @Test
     @DisplayName("fully populated Location maps all fields correctly")
     void toDto_fullLocation_mapsAllFields() {
@@ -40,6 +49,9 @@ class LocationMapperTest {
         assertThat(dto.isNew()).isFalse();
     }
 
+    /**
+     * Location without coordinates maps lat/lng as null.
+     */
     @Test
     @DisplayName("Location without coordinates maps lat/lng as null")
     void toDto_noCoordinates_latLngNull() {
@@ -56,6 +68,9 @@ class LocationMapperTest {
         assertThat(dto.lng()).isNull();
     }
 
+    /**
+     * isNew is always false — mapper never marks as new.
+     */
     @Test
     @DisplayName("isNew is always false — mapper never marks as new")
     void toDto_isNewAlwaysFalse() {

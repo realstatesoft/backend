@@ -33,6 +33,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code PropertyAlertScheduler}.
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("PropertyAlertScheduler")
@@ -84,6 +87,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── processPropertyAlerts ────────────────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_noNewProperties_updatesWatermarkOnly.
+     */
     @Test
     @DisplayName("processPropertyAlerts_noNewProperties_updatesWatermarkOnly")
     void processPropertyAlerts_noNewProperties_updatesWatermarkOnly() {
@@ -99,6 +105,9 @@ class PropertyAlertSchedulerTest {
         verify(systemConfigRepository).save(any());
     }
 
+    /**
+     * processPropertyAlerts_noActivePreferences_noAlertsCreated.
+     */
     @Test
     @DisplayName("processPropertyAlerts_noActivePreferences_noAlertsCreated")
     void processPropertyAlerts_noActivePreferences_noAlertsCreated() {
@@ -116,6 +125,9 @@ class PropertyAlertSchedulerTest {
                 .existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_ownerSameAsPreferenceUser_skipsMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_ownerSameAsPreferenceUser_skipsMatch")
     void processPropertyAlerts_ownerSameAsPreferenceUser_skipsMatch() {
@@ -137,6 +149,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – null / empty filters ──────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_nullFilters_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_nullFilters_noMatch")
     void processPropertyAlerts_nullFilters_noMatch() {
@@ -155,6 +170,9 @@ class PropertyAlertSchedulerTest {
                 .existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_emptyFilters_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_emptyFilters_noMatch")
     void processPropertyAlerts_emptyFilters_noMatch() {
@@ -175,6 +193,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – propertyType filter ───────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_propertyTypeMismatch_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_propertyTypeMismatch_noMatch")
     void processPropertyAlerts_propertyTypeMismatch_noMatch() {
@@ -197,6 +218,9 @@ class PropertyAlertSchedulerTest {
                 .existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_spanishTypeCasa_matchesHouseProperty.
+     */
     @Test
     @DisplayName("processPropertyAlerts_spanishTypeCasa_matchesHouseProperty")
     void processPropertyAlerts_spanishTypeCasa_matchesHouseProperty() {
@@ -223,6 +247,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – category filter ────────────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_spanishCategoryVenta_matchesSaleProperty.
+     */
     @Test
     @DisplayName("processPropertyAlerts_spanishCategoryVenta_matchesSaleProperty")
     void processPropertyAlerts_spanishCategoryVenta_matchesSaleProperty() {
@@ -247,6 +274,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – price filter ───────────────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_priceBelowMinBudget_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_priceBelowMinBudget_noMatch")
     void processPropertyAlerts_priceBelowMinBudget_noMatch() {
@@ -275,6 +305,9 @@ class PropertyAlertSchedulerTest {
                 .existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_priceAboveMaxBudget_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_priceAboveMaxBudget_noMatch")
     void processPropertyAlerts_priceAboveMaxBudget_noMatch() {
@@ -299,6 +332,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – bedrooms filter ────────────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_bedroomsLessThanMin_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_bedroomsLessThanMin_noMatch")
     void processPropertyAlerts_bedroomsLessThanMin_noMatch() {
@@ -329,6 +365,9 @@ class PropertyAlertSchedulerTest {
 
     // ─── matches – city filter ────────────────────────────────────────────────
 
+    /**
+     * processPropertyAlerts_cityMismatch_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_cityMismatch_noMatch")
     void processPropertyAlerts_cityMismatch_noMatch() {
@@ -359,6 +398,9 @@ class PropertyAlertSchedulerTest {
                 .existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_cityAccentsNormalized_matchesAfterNormalization.
+     */
     @Test
     @DisplayName("processPropertyAlerts_cityAccentsNormalized_matchesAfterNormalization")
     void processPropertyAlerts_cityAccentsNormalized_matchesAfterNormalization() {
@@ -390,6 +432,9 @@ class PropertyAlertSchedulerTest {
         verify(alertRepository).existsByUserIdAndPropertyIdAndSearchPreferenceId(any(), any(), any());
     }
 
+    /**
+     * processPropertyAlerts_propertyNullLocation_cityFilterRequires_noMatch.
+     */
     @Test
     @DisplayName("processPropertyAlerts_propertyNullLocation_cityFilterRequires_noMatch")
     void processPropertyAlerts_propertyNullLocation_cityFilterRequires_noMatch() {

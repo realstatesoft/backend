@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code UserPreferenceMapper}.
+ */
 @DisplayName("UserPreferenceMapper")
 class UserPreferenceMapperTest {
 
@@ -27,6 +30,9 @@ class UserPreferenceMapperTest {
 
     // ─── toOptionDTO ────────────────────────────────────────────────────────
 
+    /**
+     * toOptionDTO_withCategory_mapsAllFields.
+     */
     @Test
     @DisplayName("toOptionDTO_withCategory_mapsAllFields")
     void toOptionDTO_withCategory_mapsAllFields() {
@@ -47,6 +53,9 @@ class UserPreferenceMapperTest {
         assertThat(dto.categoryCode()).isEqualTo("PROPERTY_TYPE");
     }
 
+    /**
+     * toOptionDTO_nullCategory_categoryCodeIsNull.
+     */
     @Test
     @DisplayName("toOptionDTO_nullCategory_categoryCodeIsNull")
     void toOptionDTO_nullCategory_categoryCodeIsNull() {
@@ -64,6 +73,9 @@ class UserPreferenceMapperTest {
 
     // ─── toCategoryDTO ──────────────────────────────────────────────────────
 
+    /**
+     * toCategoryDTO_nullOptions_returnsEmptyList.
+     */
     @Test
     @DisplayName("toCategoryDTO_nullOptions_returnsEmptyList")
     void toCategoryDTO_nullOptions_returnsEmptyList() {
@@ -81,6 +93,9 @@ class UserPreferenceMapperTest {
         assertThat(dto.options()).isEmpty();
     }
 
+    /**
+     * toCategoryDTO_optionsSortedByDisplayOrder.
+     */
     @Test
     @DisplayName("toCategoryDTO_optionsSortedByDisplayOrder")
     void toCategoryDTO_optionsSortedByDisplayOrder() {
@@ -109,6 +124,9 @@ class UserPreferenceMapperTest {
                 .containsExactly("A", "B", "C");
     }
 
+    /**
+     * toCategoryDTO_nullDisplayOrder_treatedAsZero.
+     */
     @Test
     @DisplayName("toCategoryDTO_nullDisplayOrder_treatedAsZero")
     void toCategoryDTO_nullDisplayOrder_treatedAsZero() {
@@ -136,6 +154,9 @@ class UserPreferenceMapperTest {
 
     // ─── toRangeDTO ─────────────────────────────────────────────────────────
 
+    /**
+     * toRangeDTO_mapsAllFields.
+     */
     @Test
     @DisplayName("toRangeDTO_mapsAllFields")
     void toRangeDTO_mapsAllFields() {
@@ -151,6 +172,9 @@ class UserPreferenceMapperTest {
         assertThat(dto.maxValue()).isEqualTo(500_000.0);
     }
 
+    /**
+     * toRangeDTO_nullMinAndMax_keepsNulls.
+     */
     @Test
     @DisplayName("toRangeDTO_nullMinAndMax_keepsNulls")
     void toRangeDTO_nullMinAndMax_keepsNulls() {
@@ -167,6 +191,9 @@ class UserPreferenceMapperTest {
 
     // ─── toResponseDTO ──────────────────────────────────────────────────────
 
+    /**
+     * toResponseDTO_nullSelectedOptions_returnsEmptyOptionsList.
+     */
     @Test
     @DisplayName("toResponseDTO_nullSelectedOptions_returnsEmptyOptionsList")
     void toResponseDTO_nullSelectedOptions_returnsEmptyOptionsList() {
@@ -187,6 +214,9 @@ class UserPreferenceMapperTest {
         assertThat(dto.ranges()).isEmpty();
     }
 
+    /**
+     * toResponseDTO_nullRanges_returnsEmptyRangesList.
+     */
     @Test
     @DisplayName("toResponseDTO_nullRanges_returnsEmptyRangesList")
     void toResponseDTO_nullRanges_returnsEmptyRangesList() {
@@ -205,6 +235,9 @@ class UserPreferenceMapperTest {
         assertThat(dto.onboardingCompleted()).isFalse();
     }
 
+    /**
+     * toResponseDTO_withOptionsAndRanges_mapsAll.
+     */
     @Test
     @DisplayName("toResponseDTO_withOptionsAndRanges_mapsAll")
     void toResponseDTO_withOptionsAndRanges_mapsAll() {
@@ -239,6 +272,9 @@ class UserPreferenceMapperTest {
 
     // ─── emptyResponseDTO ───────────────────────────────────────────────────
 
+    /**
+     * emptyResponseDTO_returnsEmptyPreferences.
+     */
     @Test
     @DisplayName("emptyResponseDTO_returnsEmptyPreferences")
     void emptyResponseDTO_returnsEmptyPreferences() {

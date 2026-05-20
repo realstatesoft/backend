@@ -34,6 +34,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code AuditService}.
+ */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuditService")
 class AuditServiceTest {
@@ -47,6 +50,9 @@ class AuditServiceTest {
 
     // ─── suggestAuditEntities — limit clamping ───────────────────────────────
 
+    /**
+     * suggestAuditEntities_limitAboveMax_clampedTo50.
+     */
     @Test
     @DisplayName("suggestAuditEntities_limitAboveMax_clampedTo50")
     @SuppressWarnings("unchecked")
@@ -63,6 +69,9 @@ class AuditServiceTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
     }
 
+    /**
+     * suggestAuditEntities_limitBelowMin_clampedTo1.
+     */
     @Test
     @DisplayName("suggestAuditEntities_limitBelowMin_clampedTo1")
     @SuppressWarnings("unchecked")
@@ -79,6 +88,9 @@ class AuditServiceTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(1);
     }
 
+    /**
+     * suggestAuditEntities_queryLongerThan80Chars_truncated.
+     */
     @Test
     @DisplayName("suggestAuditEntities_queryLongerThan80Chars_truncated")
     @SuppressWarnings("unchecked")
@@ -98,6 +110,9 @@ class AuditServiceTest {
 
     // ─── suggestAuditEntities — entity type routing ──────────────────────────
 
+    /**
+     * suggestAuditEntities_propertyType_callsPropertyRepo.
+     */
     @Test
     @DisplayName("suggestAuditEntities_propertyType_callsPropertyRepo")
     @SuppressWarnings("unchecked")
@@ -113,6 +128,9 @@ class AuditServiceTest {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * suggestAuditEntities_contractNumericQuery_passesIdToRepo.
+     */
     @Test
     @DisplayName("suggestAuditEntities_contractNumericQuery_passesIdToRepo")
     @SuppressWarnings("unchecked")
@@ -129,6 +147,9 @@ class AuditServiceTest {
         assertThat(idCaptor.getValue()).isEqualTo(42L);
     }
 
+    /**
+     * suggestAuditEntities_contractNonNumericQuery_passesNegativeOneToRepo.
+     */
     @Test
     @DisplayName("suggestAuditEntities_contractNonNumericQuery_passesNegativeOneToRepo")
     @SuppressWarnings("unchecked")
@@ -147,6 +168,9 @@ class AuditServiceTest {
 
     // ─── suggestAuditEntities — label formatting (via USER results) ──────────
 
+    /**
+     * suggestAuditEntities_userWithName_labelIncludesNameAndEmail.
+     */
     @Test
     @DisplayName("suggestAuditEntities_userWithName_labelIncludesNameAndEmail")
     @SuppressWarnings("unchecked")
@@ -168,6 +192,9 @@ class AuditServiceTest {
         assertThat(result.get(0).label()).isEqualTo("Ana Torres (ana@example.com)");
     }
 
+    /**
+     * suggestAuditEntities_userBlankName_labelIsEmailOnly.
+     */
     @Test
     @DisplayName("suggestAuditEntities_userBlankName_labelIsEmailOnly")
     @SuppressWarnings("unchecked")
@@ -189,6 +216,9 @@ class AuditServiceTest {
 
     // ─── log — no HTTP request context ──────────────────────────────────────
 
+    /**
+     * log_withoutRequestContext_savesEntryWithNullIpAndUA.
+     */
     @Test
     @DisplayName("log_withoutRequestContext_savesEntryWithNullIpAndUA")
     void log_withoutRequestContext_savesEntryWithNullIpAndUA() {
@@ -214,6 +244,9 @@ class AuditServiceTest {
         assertThat(saved.getUser()).isSameAs(actor);
     }
 
+    /**
+     * log_sensitivenewValues_redactedBeforePersist.
+     */
     @Test
     @DisplayName("log_sensitivenewValues_redactedBeforePersist")
     void log_sensitiveNewValues_redactedBeforePersist() {

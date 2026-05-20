@@ -17,6 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code AgentAgendaMapper}.
+ */
 @DisplayName("AgentAgendaMapper")
 class AgentAgendaMapperTest {
 
@@ -71,6 +74,9 @@ class AgentAgendaMapperTest {
 
     // ─── toResponse — null guard ─────────────────────────────────────────────
 
+    /**
+     * toResponse with null entity returns null.
+     */
     @Test
     @DisplayName("toResponse with null entity returns null")
     void toResponse_nullEntity_returnsNull() {
@@ -79,6 +85,9 @@ class AgentAgendaMapperTest {
 
     // ─── toResponse — scalar fields ──────────────────────────────────────────
 
+    /**
+     * toResponse maps all scalar fields verbatim.
+     */
     @Test
     @DisplayName("toResponse maps all scalar fields verbatim")
     void toResponse_fullEntity_mapsAllFields() {
@@ -103,6 +112,9 @@ class AgentAgendaMapperTest {
         assertThat(resp.clientName()).isEqualTo("Juan Comprador");
     }
 
+    /**
+     * toResponse with null user/agent/visit produces null foreign-key fields.
+     */
     @Test
     @DisplayName("toResponse with null user/agent/visit produces null foreign-key fields")
     void toResponse_nullForeignEntities_producesNullIds() {
@@ -116,6 +128,9 @@ class AgentAgendaMapperTest {
         assertThat(resp.clientName()).isNull();
     }
 
+    /**
+     * toResponse with visit that has no buyer produces null clientName.
+     */
     @Test
     @DisplayName("toResponse with visit that has no buyer produces null clientName")
     void toResponse_visitWithNoBuyer_clientNameIsNull() {
@@ -130,12 +145,18 @@ class AgentAgendaMapperTest {
 
     // ─── toEntity ────────────────────────────────────────────────────────────
 
+    /**
+     * toEntity with null request returns null.
+     */
     @Test
     @DisplayName("toEntity with null request returns null")
     void toEntity_nullRequest_returnsNull() {
         assertThat(mapper.toEntity(null, mockUser(1L), mockAgent(2L), null)).isNull();
     }
 
+    /**
+     * toEntity maps all request fields into a new AgentAgenda.
+     */
     @Test
     @DisplayName("toEntity maps all request fields into a new AgentAgenda")
     void toEntity_validRequest_mapsAllFields() {
@@ -161,6 +182,9 @@ class AgentAgendaMapperTest {
         assertThat(entity.getNotes()).isEqualTo("Traer laptop");
     }
 
+    /**
+     * toEntity accepts null agent — non-agent users have no AgentProfile.
+     */
     @Test
     @DisplayName("toEntity accepts null agent — non-agent users have no AgentProfile")
     void toEntity_nullAgent_entityHasNullAgent() {
@@ -175,6 +199,9 @@ class AgentAgendaMapperTest {
 
     // ─── updateEntity ────────────────────────────────────────────────────────
 
+    /**
+     * updateEntity with null request or null entity is a no-op.
+     */
     @Test
     @DisplayName("updateEntity with null request or null entity is a no-op")
     void updateEntity_nullInputs_noOp() {
@@ -186,6 +213,9 @@ class AgentAgendaMapperTest {
         // no exception expected
     }
 
+    /**
+     * updateEntity applies only non-null fields from request.
+     */
     @Test
     @DisplayName("updateEntity applies only non-null fields from request")
     void updateEntity_partialRequest_onlyNonNullFieldsUpdated() {
@@ -203,6 +233,9 @@ class AgentAgendaMapperTest {
         assertThat(entity.getVisit()).isNull();
     }
 
+    /**
+     * updateEntity always replaces visit — even with null (removes association).
+     */
     @Test
     @DisplayName("updateEntity always replaces visit — even with null (removes association)")
     void updateEntity_alwaysReplacesVisit() {
@@ -215,6 +248,9 @@ class AgentAgendaMapperTest {
         assertThat(entity.getVisit()).isNull(); // association removed
     }
 
+    /**
+     * updateEntity replaces visit when a new Visit is provided.
+     */
     @Test
     @DisplayName("updateEntity replaces visit when a new Visit is provided")
     void updateEntity_withNewVisit_replacesVisit() {

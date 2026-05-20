@@ -27,6 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code PropertyMapper}.
+ */
 @DisplayName("PropertyMapper")
 class PropertyMapperTest {
 
@@ -34,6 +37,9 @@ class PropertyMapperTest {
 
     // ─── toResponse ──────────────────────────────────────────────────────────
 
+    /**
+     * toResponse_withNullGeoLocation_returnsNullLatLng.
+     */
     @Test
     @DisplayName("toResponse_withNullGeoLocation_returnsNullLatLng")
     void toResponse_withNullGeoLocation_returnsNullLatLng() {
@@ -48,6 +54,9 @@ class PropertyMapperTest {
         assertThat(resp.lng()).isNull();
     }
 
+    /**
+     * toResponse_withGeoLocation_mapsLatLng.
+     */
     @Test
     @DisplayName("toResponse_withGeoLocation_mapsLatLng")
     void toResponse_withGeoLocation_mapsLatLng() {
@@ -65,6 +74,9 @@ class PropertyMapperTest {
         assertThat(resp.lng()).isEqualByComparingTo("-58.38");
     }
 
+    /**
+     * toResponse_withNullConstruction_returnsNullConstructionFields.
+     */
     @Test
     @DisplayName("toResponse_withNullConstruction_returnsNullConstructionFields")
     void toResponse_withNullConstruction_returnsNullConstructionFields() {
@@ -79,6 +91,9 @@ class PropertyMapperTest {
         assertThat(resp.structureMaterial()).isNull();
     }
 
+    /**
+     * toResponse_withNullUtilities_returnsNullUtilityFields.
+     */
     @Test
     @DisplayName("toResponse_withNullUtilities_returnsNullUtilityFields")
     void toResponse_withNullUtilities_returnsNullUtilityFields() {
@@ -93,6 +108,9 @@ class PropertyMapperTest {
         assertThat(resp.electricityInstallation()).isNull();
     }
 
+    /**
+     * toResponse_withActiveHighlight_isHighlightedTrue.
+     */
     @Test
     @DisplayName("toResponse_withActiveHighlight_isHighlightedTrue")
     void toResponse_withActiveHighlight_isHighlightedTrue() {
@@ -112,6 +130,9 @@ class PropertyMapperTest {
         assertThat(resp.highlightedUntil()).isEqualTo(active.getHighlightedUntil());
     }
 
+    /**
+     * toResponse_withAllExpiredHighlights_isHighlightedFalse.
+     */
     @Test
     @DisplayName("toResponse_withAllExpiredHighlights_isHighlightedFalse")
     void toResponse_withAllExpiredHighlights_isHighlightedFalse() {
@@ -131,6 +152,9 @@ class PropertyMapperTest {
         assertThat(resp.highlightedUntil()).isNull();
     }
 
+    /**
+     * toResponse_withNullHighlights_isHighlightedFalse.
+     */
     @Test
     @DisplayName("toResponse_withNullHighlights_isHighlightedFalse")
     void toResponse_withNullHighlights_isHighlightedFalse() {
@@ -143,6 +167,9 @@ class PropertyMapperTest {
         assertThat(resp.highlighted()).isFalse();
     }
 
+    /**
+     * toResponse_withNullCollections_returnsEmptyLists.
+     */
     @Test
     @DisplayName("toResponse_withNullCollections_returnsEmptyLists")
     void toResponse_withNullCollections_returnsEmptyLists() {
@@ -157,6 +184,9 @@ class PropertyMapperTest {
         assertThat(resp.exteriorFeatureIds()).isEmpty();
     }
 
+    /**
+     * toResponse_withOwnerAgentLocation_mapsIds.
+     */
     @Test
     @DisplayName("toResponse_withOwnerAgentLocation_mapsIds")
     void toResponse_withOwnerAgentLocation_mapsIds() {
@@ -184,6 +214,9 @@ class PropertyMapperTest {
         assertThat(resp.locationName()).isEqualTo("Buenos Aires");
     }
 
+    /**
+     * toResponse_withMediaList_mapsMediaCorrectly.
+     */
     @Test
     @DisplayName("toResponse_withMediaList_mapsMediaCorrectly")
     void toResponse_withMediaList_mapsMediaCorrectly() {
@@ -205,6 +238,9 @@ class PropertyMapperTest {
 
     // ─── toSummaryResponse ───────────────────────────────────────────────────
 
+    /**
+     * toSummaryResponse_withPrimaryImage_returnsPrimaryImageUrl.
+     */
     @Test
     @DisplayName("toSummaryResponse_withPrimaryImage_returnsPrimaryImageUrl")
     void toSummaryResponse_withPrimaryImage_returnsPrimaryImageUrl() {
@@ -224,6 +260,9 @@ class PropertyMapperTest {
         assertThat(resp.primaryImageUrl()).isEqualTo("http://example.com/primary.jpg");
     }
 
+    /**
+     * toSummaryResponse_withNoPrimaryImage_returnsNull.
+     */
     @Test
     @DisplayName("toSummaryResponse_withNoPrimaryImage_returnsNull")
     void toSummaryResponse_withNoPrimaryImage_returnsNull() {
@@ -239,6 +278,9 @@ class PropertyMapperTest {
         assertThat(resp.primaryImageUrl()).isNull();
     }
 
+    /**
+     * toSummaryResponse_withRelevanceScore_setsScore.
+     */
     @Test
     @DisplayName("toSummaryResponse_withRelevanceScore_setsScore")
     void toSummaryResponse_withRelevanceScore_setsScore() {
@@ -251,6 +293,9 @@ class PropertyMapperTest {
         assertThat(resp.relevanceScore()).isEqualTo(42);
     }
 
+    /**
+     * toSummaryResponse_noScoreOverload_defaultsTo0.
+     */
     @Test
     @DisplayName("toSummaryResponse_noScoreOverload_defaultsTo0")
     void toSummaryResponse_noScoreOverload_defaultsTo0() {
@@ -263,6 +308,9 @@ class PropertyMapperTest {
         assertThat(resp.relevanceScore()).isEqualTo(0);
     }
 
+    /**
+     * toSummaryResponse_withNullMedia_returnsNullPrimaryImage.
+     */
     @Test
     @DisplayName("toSummaryResponse_withNullMedia_returnsNullPrimaryImage")
     void toSummaryResponse_withNullMedia_returnsNullPrimaryImage() {
@@ -286,6 +334,9 @@ class PropertyMapperTest {
     // waterConnection, sanitaryInstallation, electricityInstallation,
     // availability, rooms, media, exteriorFeatureIds
 
+    /**
+     * toEntity_withRentListingType_setsRentFields.
+     */
     @Test
     @DisplayName("toEntity_withRentListingType_setsRentFields")
     void toEntity_withRentListingType_setsRentFields() {
@@ -309,6 +360,9 @@ class PropertyMapperTest {
         assertThat(entity.getRentFrequency()).isEqualTo("MONTHLY");
     }
 
+    /**
+     * toEntity_withSaleListingType_doesNotSetRentFields.
+     */
     @Test
     @DisplayName("toEntity_withSaleListingType_doesNotSetRentFields")
     void toEntity_withSaleListingType_doesNotSetRentFields() {
@@ -331,6 +385,9 @@ class PropertyMapperTest {
         assertThat(entity.getRentCurrency()).isNull();
     }
 
+    /**
+     * toEntity_withGeoLocation_setsGeoLocation.
+     */
     @Test
     @DisplayName("toEntity_withGeoLocation_setsGeoLocation")
     void toEntity_withGeoLocation_setsGeoLocation() {
@@ -354,6 +411,9 @@ class PropertyMapperTest {
         assertThat(entity.getGeoLocation().getLng()).isEqualByComparingTo("-58.4");
     }
 
+    /**
+     * toEntity_withConstructionData_setsConstructionDetails.
+     */
     @Test
     @DisplayName("toEntity_withConstructionData_setsConstructionDetails")
     void toEntity_withConstructionData_setsConstructionDetails() {
@@ -377,6 +437,9 @@ class PropertyMapperTest {
         assertThat(entity.getConstruction().getFloorMaterial()).isEqualTo("Ceramico");
     }
 
+    /**
+     * toEntity_withNoConstructionData_constructionIsNull.
+     */
     @Test
     @DisplayName("toEntity_withNoConstructionData_constructionIsNull")
     void toEntity_withNoConstructionData_constructionIsNull() {
@@ -409,6 +472,9 @@ class PropertyMapperTest {
     // availability, visibility,  ← visibility is extra here
     // rooms, media, exteriorFeatureIds
 
+    /**
+     * updateEntity_switchFromRentToSale_clearsAllRentFields.
+     */
     @Test
     @DisplayName("updateEntity_switchFromRentToSale_clearsAllRentFields")
     void updateEntity_switchFromRentToSale_clearsAllRentFields() {
@@ -438,6 +504,9 @@ class PropertyMapperTest {
         assertThat(property.getRentBillingCycle()).isNull();
     }
 
+    /**
+     * updateEntity_withBothLatLngNull_clearsGeoLocation.
+     */
     @Test
     @DisplayName("updateEntity_withBothLatLngNull_clearsGeoLocation")
     void updateEntity_withBothLatLngNull_clearsGeoLocation() {
@@ -464,6 +533,9 @@ class PropertyMapperTest {
         assertThat(property.getGeoLocation()).isNull();
     }
 
+    /**
+     * updateEntity_withNewLatLng_updatesGeoLocation.
+     */
     @Test
     @DisplayName("updateEntity_withNewLatLng_updatesGeoLocation")
     void updateEntity_withNewLatLng_updatesGeoLocation() {
@@ -490,6 +562,9 @@ class PropertyMapperTest {
         assertThat(property.getGeoLocation().getLng()).isEqualByComparingTo("-58.5");
     }
 
+    /**
+     * updateEntity_withVisibilityPublic_updatesVisibility.
+     */
     @Test
     @DisplayName("updateEntity_withVisibilityPublic_updatesVisibility")
     void updateEntity_withVisibilityPublic_updatesVisibility() {

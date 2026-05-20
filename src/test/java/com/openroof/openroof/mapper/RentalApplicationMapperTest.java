@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code RentalApplicationMapper}.
+ */
 @DisplayName("RentalApplicationMapper")
 class RentalApplicationMapperTest {
 
@@ -26,6 +29,9 @@ class RentalApplicationMapperTest {
 
     // ─── toResponse ─────────────────────────────────────────────────────────
 
+    /**
+     * toResponse_withFullEntity_mapsAllFields.
+     */
     @Test
     @DisplayName("toResponse_withFullEntity_mapsAllFields")
     void toResponse_withFullEntity_mapsAllFields() {
@@ -69,6 +75,9 @@ class RentalApplicationMapperTest {
         assertThat(dto.reviewedAt()).isEqualTo(decided);
     }
 
+    /**
+     * toResponse_nullProperty_returnsNullPropertyFields.
+     */
     @Test
     @DisplayName("toResponse_nullProperty_returnsNullPropertyFields")
     void toResponse_nullProperty_returnsNullPropertyFields() {
@@ -89,6 +98,9 @@ class RentalApplicationMapperTest {
         assertThat(dto.applicantId()).isEqualTo(3L);
     }
 
+    /**
+     * toResponse_nullApplicant_returnsNullApplicantFields.
+     */
     @Test
     @DisplayName("toResponse_nullApplicant_returnsNullApplicantFields")
     void toResponse_nullApplicant_returnsNullApplicantFields() {
@@ -111,6 +123,9 @@ class RentalApplicationMapperTest {
 
     // ─── toSummaryResponse ──────────────────────────────────────────────────
 
+    /**
+     * toSummaryResponse_withFullEntity_mapsAllFields.
+     */
     @Test
     @DisplayName("toSummaryResponse_withFullEntity_mapsAllFields")
     void toSummaryResponse_withFullEntity_mapsAllFields() {
@@ -137,6 +152,9 @@ class RentalApplicationMapperTest {
         assertThat(dto.submittedAt()).isEqualTo(submitted);
     }
 
+    /**
+     * toSummaryResponse_nullPropertyAndApplicant_returnsNulls.
+     */
     @Test
     @DisplayName("toSummaryResponse_nullPropertyAndApplicant_returnsNulls")
     void toSummaryResponse_nullPropertyAndApplicant_returnsNulls() {
@@ -154,6 +172,9 @@ class RentalApplicationMapperTest {
 
     // ─── toEntity ───────────────────────────────────────────────────────────
 
+    /**
+     * toEntity_withScreeningConsentTrue_setsConsentAt.
+     */
     @Test
     @DisplayName("toEntity_withScreeningConsentTrue_setsConsentAt")
     void toEntity_withScreeningConsentTrue_setsConsentAt() {
@@ -175,6 +196,9 @@ class RentalApplicationMapperTest {
         assertThat(entity.getSubmittedAt()).isNotNull();
     }
 
+    /**
+     * toEntity_withScreeningConsentFalse_noConsentAt.
+     */
     @Test
     @DisplayName("toEntity_withScreeningConsentFalse_noConsentAt")
     void toEntity_withScreeningConsentFalse_noConsentAt() {
@@ -189,6 +213,9 @@ class RentalApplicationMapperTest {
         assertThat(entity.getScreeningConsentAt()).isNull();
     }
 
+    /**
+     * toEntity_withNullReferences_tenantReferencesNull.
+     */
     @Test
     @DisplayName("toEntity_withNullReferences_tenantReferencesNull")
     void toEntity_withNullReferences_tenantReferencesNull() {
@@ -202,6 +229,9 @@ class RentalApplicationMapperTest {
         assertThat(entity.getTenantReferences()).isNull();
     }
 
+    /**
+     * toEntity_withReferences_wrapsEachAsContactMap.
+     */
     @Test
     @DisplayName("toEntity_withReferences_wrapsEachAsContactMap")
     void toEntity_withReferences_wrapsEachAsContactMap() {

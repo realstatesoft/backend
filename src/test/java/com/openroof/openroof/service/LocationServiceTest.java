@@ -18,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@code LocationService}.
+ */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("LocationService")
 class LocationServiceTest {
@@ -33,6 +36,9 @@ class LocationServiceTest {
 
     // ─── matchByCity ─────────────────────────────────────────────────────────
 
+    /**
+     * matchByCity with null input returns empty list without hitting repository.
+     */
     @Test
     @DisplayName("matchByCity with null input returns empty list without hitting repository")
     void matchByCity_null_returnsEmpty() {
@@ -42,6 +48,9 @@ class LocationServiceTest {
         verifyNoInteractions(locationRepository);
     }
 
+    /**
+     * matchByCity with blank string returns empty list without hitting repository.
+     */
     @Test
     @DisplayName("matchByCity with blank string returns empty list without hitting repository")
     void matchByCity_blank_returnsEmpty() {
@@ -51,6 +60,9 @@ class LocationServiceTest {
         verifyNoInteractions(locationRepository);
     }
 
+    /**
+     * matchByCity delegates to repository and maps each result.
+     */
     @Test
     @DisplayName("matchByCity delegates to repository and maps each result")
     void matchByCity_validCity_returnsMappedDtos() {
@@ -68,6 +80,9 @@ class LocationServiceTest {
         verify(locationRepository).findByCityIgnoreCase("Asunción");
     }
 
+    /**
+     * matchByCity trims whitespace before calling repository.
+     */
     @Test
     @DisplayName("matchByCity trims whitespace before calling repository")
     void matchByCity_trimsInput() {
@@ -78,6 +93,9 @@ class LocationServiceTest {
         verify(locationRepository).findByCityIgnoreCase("Luque");
     }
 
+    /**
+     * matchByCity with no repository matches returns empty list.
+     */
     @Test
     @DisplayName("matchByCity with no repository matches returns empty list")
     void matchByCity_noMatches_returnsEmpty() {
@@ -90,6 +108,9 @@ class LocationServiceTest {
 
     // ─── findOrCreate ────────────────────────────────────────────────────────
 
+    /**
+     * findOrCreate with null city throws IllegalArgumentException.
+     */
     @Test
     @DisplayName("findOrCreate with null city throws IllegalArgumentException")
     void findOrCreate_nullCity_throwsIllegalArgumentException() {
@@ -98,6 +119,9 @@ class LocationServiceTest {
                 .hasMessageContaining("City is required");
     }
 
+    /**
+     * findOrCreate with blank city throws IllegalArgumentException.
+     */
     @Test
     @DisplayName("findOrCreate with blank city throws IllegalArgumentException")
     void findOrCreate_blankCity_throwsIllegalArgumentException() {
@@ -106,6 +130,9 @@ class LocationServiceTest {
                 .hasMessageContaining("City is required");
     }
 
+    /**
+     * findOrCreate returns existing location when city already exists.
+     */
     @Test
     @DisplayName("findOrCreate returns existing location when city already exists")
     void findOrCreate_existingCity_returnsExisting() {
@@ -128,6 +155,9 @@ class LocationServiceTest {
         verify(locationRepository, never()).save(any());
     }
 
+    /**
+     * findOrCreate creates and saves new location when city does not exist.
+     */
     @Test
     @DisplayName("findOrCreate creates and saves new location when city does not exist")
     void findOrCreate_newCity_savesAndReturnsWithIsNewTrue() {

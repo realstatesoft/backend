@@ -7,11 +7,17 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code MoneyRange — contains()}.
+ */
 @DisplayName("MoneyRange — contains()")
 class MoneyRangeTest {
 
     // ─── null value ──────────────────────────────────────────────────────────
 
+    /**
+     * null value always returns false.
+     */
     @Test
     @DisplayName("null value always returns false")
     void contains_nullValue_returnsFalse() {
@@ -21,6 +27,9 @@ class MoneyRangeTest {
 
     // ─── both bounds set ─────────────────────────────────────────────────────
 
+    /**
+     * value within [min, max] returns true.
+     */
     @Test
     @DisplayName("value within [min, max] returns true")
     void contains_valueInRange_returnsTrue() {
@@ -28,6 +37,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("300"))).isTrue();
     }
 
+    /**
+     * value equal to min returns true (inclusive lower bound).
+     */
     @Test
     @DisplayName("value equal to min returns true (inclusive lower bound)")
     void contains_valueEqualToMin_returnsTrue() {
@@ -35,6 +47,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("100"))).isTrue();
     }
 
+    /**
+     * value equal to max returns true (inclusive upper bound).
+     */
     @Test
     @DisplayName("value equal to max returns true (inclusive upper bound)")
     void contains_valueEqualToMax_returnsTrue() {
@@ -42,6 +57,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("500"))).isTrue();
     }
 
+    /**
+     * value below min returns false.
+     */
     @Test
     @DisplayName("value below min returns false")
     void contains_valueBelowMin_returnsFalse() {
@@ -49,6 +67,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("99.99"))).isFalse();
     }
 
+    /**
+     * value above max returns false.
+     */
     @Test
     @DisplayName("value above max returns false")
     void contains_valueAboveMax_returnsFalse() {
@@ -58,6 +79,9 @@ class MoneyRangeTest {
 
     // ─── null min (unbounded lower) ──────────────────────────────────────────
 
+    /**
+     * null min means no lower bound — very small value returns true.
+     */
     @Test
     @DisplayName("null min means no lower bound — very small value returns true")
     void contains_nullMin_noLowerBound_returnsTrue() {
@@ -65,6 +89,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("0.01"))).isTrue();
     }
 
+    /**
+     * null min — value above max still returns false.
+     */
     @Test
     @DisplayName("null min — value above max still returns false")
     void contains_nullMin_valueAboveMax_returnsFalse() {
@@ -74,6 +101,9 @@ class MoneyRangeTest {
 
     // ─── null max (unbounded upper) ──────────────────────────────────────────
 
+    /**
+     * null max means no upper bound — very large value returns true.
+     */
     @Test
     @DisplayName("null max means no upper bound — very large value returns true")
     void contains_nullMax_noUpperBound_returnsTrue() {
@@ -81,6 +111,9 @@ class MoneyRangeTest {
         assertThat(range.contains(new BigDecimal("999999999"))).isTrue();
     }
 
+    /**
+     * null max — value below min still returns false.
+     */
     @Test
     @DisplayName("null max — value below min still returns false")
     void contains_nullMax_valueBelowMin_returnsFalse() {
@@ -90,6 +123,9 @@ class MoneyRangeTest {
 
     // ─── both null (fully unbounded) ─────────────────────────────────────────
 
+    /**
+     * both bounds null — any non-null value returns true.
+     */
     @Test
     @DisplayName("both bounds null — any non-null value returns true")
     void contains_bothBoundsNull_anyValueReturnsTrue() {

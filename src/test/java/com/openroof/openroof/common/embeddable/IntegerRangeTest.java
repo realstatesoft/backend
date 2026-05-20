@@ -5,11 +5,17 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code IntegerRange — contains(int)}.
+ */
 @DisplayName("IntegerRange — contains(int)")
 class IntegerRangeTest {
 
     // ─── both bounds set ─────────────────────────────────────────────────────
 
+    /**
+     * value within [min, max] returns true.
+     */
     @Test
     @DisplayName("value within [min, max] returns true")
     void contains_valueInRange_returnsTrue() {
@@ -17,6 +23,9 @@ class IntegerRangeTest {
         assertThat(range.contains(3)).isTrue();
     }
 
+    /**
+     * value equal to min returns true (inclusive lower bound).
+     */
     @Test
     @DisplayName("value equal to min returns true (inclusive lower bound)")
     void contains_valueEqualToMin_returnsTrue() {
@@ -24,6 +33,9 @@ class IntegerRangeTest {
         assertThat(range.contains(2)).isTrue();
     }
 
+    /**
+     * value equal to max returns true (inclusive upper bound).
+     */
     @Test
     @DisplayName("value equal to max returns true (inclusive upper bound)")
     void contains_valueEqualToMax_returnsTrue() {
@@ -31,6 +43,9 @@ class IntegerRangeTest {
         assertThat(range.contains(5)).isTrue();
     }
 
+    /**
+     * value below min returns false.
+     */
     @Test
     @DisplayName("value below min returns false")
     void contains_valueBelowMin_returnsFalse() {
@@ -38,6 +53,9 @@ class IntegerRangeTest {
         assertThat(range.contains(1)).isFalse();
     }
 
+    /**
+     * value above max returns false.
+     */
     @Test
     @DisplayName("value above max returns false")
     void contains_valueAboveMax_returnsFalse() {
@@ -47,6 +65,9 @@ class IntegerRangeTest {
 
     // ─── null min (unbounded lower) ──────────────────────────────────────────
 
+    /**
+     * null min — value smaller than max returns true.
+     */
     @Test
     @DisplayName("null min — value smaller than max returns true")
     void contains_nullMin_valueUnderMax_returnsTrue() {
@@ -54,6 +75,9 @@ class IntegerRangeTest {
         assertThat(range.contains(Integer.MIN_VALUE)).isTrue();
     }
 
+    /**
+     * null min — value above max returns false.
+     */
     @Test
     @DisplayName("null min — value above max returns false")
     void contains_nullMin_valueAboveMax_returnsFalse() {
@@ -63,6 +87,9 @@ class IntegerRangeTest {
 
     // ─── null max (unbounded upper) ──────────────────────────────────────────
 
+    /**
+     * null max — value above min returns true.
+     */
     @Test
     @DisplayName("null max — value above min returns true")
     void contains_nullMax_valueAboveMin_returnsTrue() {
@@ -70,6 +97,9 @@ class IntegerRangeTest {
         assertThat(range.contains(Integer.MAX_VALUE)).isTrue();
     }
 
+    /**
+     * null max — value below min returns false.
+     */
     @Test
     @DisplayName("null max — value below min returns false")
     void contains_nullMax_valueBelowMin_returnsFalse() {
@@ -79,6 +109,9 @@ class IntegerRangeTest {
 
     // ─── both null (fully unbounded) ─────────────────────────────────────────
 
+    /**
+     * both bounds null — any integer returns true.
+     */
     @Test
     @DisplayName("both bounds null — any integer returns true")
     void contains_bothBoundsNull_anyValueReturnsTrue() {
@@ -90,6 +123,9 @@ class IntegerRangeTest {
 
     // ─── edge: min == max ────────────────────────────────────────────────────
 
+    /**
+     * min equals max — only that exact value returns true.
+     */
     @Test
     @DisplayName("min equals max — only that exact value returns true")
     void contains_minEqualsMax_onlyExactValueReturnsTrue() {

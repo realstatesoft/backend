@@ -16,6 +16,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code PropertyRelevanceService}.
+ */
 @DisplayName("PropertyRelevanceService")
 class PropertyRelevanceServiceTest {
 
@@ -44,6 +47,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Score = 0 (no preferences) ──────────────────────────────────────────
 
+    /**
+     * calculateScore_noSelectedOptions_returns0.
+     */
     @Test
     @DisplayName("calculateScore_noSelectedOptions_returns0")
     void calculateScore_noSelectedOptions_returns0() {
@@ -56,6 +62,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Criterion 1 – Property type (30 pts) ────────────────────────────────
 
+    /**
+     * calculateScore_propertyTypeMatch_adds30.
+     */
     @Test
     @DisplayName("calculateScore_propertyTypeMatch_adds30")
     void calculateScore_propertyTypeMatch_adds30() {
@@ -68,6 +77,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(30);
     }
 
+    /**
+     * calculateScore_propertyTypeNoMatch_adds0.
+     */
     @Test
     @DisplayName("calculateScore_propertyTypeNoMatch_adds0")
     void calculateScore_propertyTypeNoMatch_adds0() {
@@ -82,6 +94,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Criterion 2 – Zone / city (25 pts) ──────────────────────────────────
 
+    /**
+     * calculateScore_zoneMatchInAddress_adds25.
+     */
     @Test
     @DisplayName("calculateScore_zoneMatchInAddress_adds25")
     void calculateScore_zoneMatchInAddress_adds25() {
@@ -95,6 +110,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(25);
     }
 
+    /**
+     * calculateScore_zoneNoMatchInAddress_adds0.
+     */
     @Test
     @DisplayName("calculateScore_zoneNoMatchInAddress_adds0")
     void calculateScore_zoneNoMatchInAddress_adds0() {
@@ -108,6 +126,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isZero();
     }
 
+    /**
+     * calculateScore_zonePreference_nullAddress_adds0.
+     */
     @Test
     @DisplayName("calculateScore_zonePreference_nullAddress_adds0")
     void calculateScore_zonePreference_nullAddress_adds0() {
@@ -128,6 +149,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Criterion 3 – Price range (20 pts) ──────────────────────────────────
 
+    /**
+     * calculateScore_priceWithinRange_adds20.
+     */
     @Test
     @DisplayName("calculateScore_priceWithinRange_adds20")
     void calculateScore_priceWithinRange_adds20() {
@@ -140,6 +164,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(20);
     }
 
+    /**
+     * calculateScore_priceBelowMin_adds0.
+     */
     @Test
     @DisplayName("calculateScore_priceBelowMin_adds0")
     void calculateScore_priceBelowMin_adds0() {
@@ -152,6 +179,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isZero();
     }
 
+    /**
+     * calculateScore_priceAboveMax_adds0.
+     */
     @Test
     @DisplayName("calculateScore_priceAboveMax_adds0")
     void calculateScore_priceAboveMax_adds0() {
@@ -166,6 +196,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Criterion 4 – Bedrooms range (15 pts) ───────────────────────────────
 
+    /**
+     * calculateScore_bedroomsInRange_adds15.
+     */
     @Test
     @DisplayName("calculateScore_bedroomsInRange_adds15")
     void calculateScore_bedroomsInRange_adds15() {
@@ -178,6 +211,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(15);
     }
 
+    /**
+     * calculateScore_bedroomsLessThanMin_adds0.
+     */
     @Test
     @DisplayName("calculateScore_bedroomsLessThanMin_adds0")
     void calculateScore_bedroomsLessThanMin_adds0() {
@@ -192,6 +228,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Criterion 5 – Exterior features (5 pts each, capped at 10) ──────────
 
+    /**
+     * calculateScore_oneExteriorFeatureMatch_adds5.
+     */
     @Test
     @DisplayName("calculateScore_oneExteriorFeatureMatch_adds5")
     void calculateScore_oneExteriorFeatureMatch_adds5() {
@@ -210,6 +249,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(5);
     }
 
+    /**
+     * calculateScore_twoExteriorFeatureMatches_adds10.
+     */
     @Test
     @DisplayName("calculateScore_twoExteriorFeatureMatches_adds10")
     void calculateScore_twoExteriorFeatureMatches_adds10() {
@@ -231,6 +273,9 @@ class PropertyRelevanceServiceTest {
         assertThat(score).isEqualTo(10);
     }
 
+    /**
+     * calculateScore_moreExteriorFeatureMatches_cappedAt10.
+     */
     @Test
     @DisplayName("calculateScore_moreExteriorFeatureMatches_cappedAt10")
     void calculateScore_moreExteriorFeatureMatches_cappedAt10() {
@@ -258,6 +303,9 @@ class PropertyRelevanceServiceTest {
 
     // ─── Perfect match ────────────────────────────────────────────────────────
 
+    /**
+     * calculateScore_perfectMatch_returns100.
+     */
     @Test
     @DisplayName("calculateScore_perfectMatch_returns100")
     void calculateScore_perfectMatch_returns100() {

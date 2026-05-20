@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code LeaseMapper}.
+ */
 @DisplayName("LeaseMapper")
 class LeaseMapperTest {
 
@@ -30,6 +33,9 @@ class LeaseMapperTest {
 
     // ─── toResponse ─────────────────────────────────────────────────────────
 
+    /**
+     * toResponse_withSignedLease_mapsAllFields.
+     */
     @Test
     @DisplayName("toResponse_withSignedLease_mapsAllFields")
     void toResponse_withSignedLease_mapsAllFields() {
@@ -82,6 +88,9 @@ class LeaseMapperTest {
         assertThat(dto.activatedAt()).isEqualTo(activatedAt);
     }
 
+    /**
+     * toResponse_notYetSigned_signedAtIsNull.
+     */
     @Test
     @DisplayName("toResponse_notYetSigned_signedAtIsNull")
     void toResponse_notYetSigned_signedAtIsNull() {
@@ -103,6 +112,9 @@ class LeaseMapperTest {
         assertThat(dto.signedAt()).isNull();
     }
 
+    /**
+     * toResponse_onlyLandlordSigned_signedAtIsNull.
+     */
     @Test
     @DisplayName("toResponse_onlyLandlordSigned_signedAtIsNull")
     void toResponse_onlyLandlordSigned_signedAtIsNull() {
@@ -125,6 +137,9 @@ class LeaseMapperTest {
         assertThat(dto.signedAt()).isNull();
     }
 
+    /**
+     * toResponse_nullProperty_returnsNullPropertyFields.
+     */
     @Test
     @DisplayName("toResponse_nullProperty_returnsNullPropertyFields")
     void toResponse_nullProperty_returnsNullPropertyFields() {
@@ -146,6 +161,9 @@ class LeaseMapperTest {
         assertThat(dto.propertyAddress()).isNull();
     }
 
+    /**
+     * toResponse_nullPrimaryTenant_returnsNullTenantFields.
+     */
     @Test
     @DisplayName("toResponse_nullPrimaryTenant_returnsNullTenantFields")
     void toResponse_nullPrimaryTenant_returnsNullTenantFields() {
@@ -169,6 +187,9 @@ class LeaseMapperTest {
 
     // ─── toSummaryResponse ──────────────────────────────────────────────────
 
+    /**
+     * toSummaryResponse_withFullLease_mapsAllFields.
+     */
     @Test
     @DisplayName("toSummaryResponse_withFullLease_mapsAllFields")
     void toSummaryResponse_withFullLease_mapsAllFields() {
@@ -200,6 +221,9 @@ class LeaseMapperTest {
         assertThat(dto.endDate()).isEqualTo(LocalDate.of(2026, 1, 1));
     }
 
+    /**
+     * toSummaryResponse_nullPropertyAndTenant_returnsNulls.
+     */
     @Test
     @DisplayName("toSummaryResponse_nullPropertyAndTenant_returnsNulls")
     void toSummaryResponse_nullPropertyAndTenant_returnsNulls() {
@@ -223,6 +247,9 @@ class LeaseMapperTest {
 
     // ─── toEntity ───────────────────────────────────────────────────────────
 
+    /**
+     * toEntity_withValidArgs_setsStatusDraftAndAllFields.
+     */
     @Test
     @DisplayName("toEntity_withValidArgs_setsStatusDraftAndAllFields")
     void toEntity_withValidArgs_setsStatusDraftAndAllFields() {
@@ -244,6 +271,9 @@ class LeaseMapperTest {
         assertThat(lease.getLateFeeValue()).isEqualByComparingTo("50000");
     }
 
+    /**
+     * toEntity_nullDto_throwsNPE.
+     */
     @Test
     @DisplayName("toEntity_nullDto_throwsNPE")
     void toEntity_nullDto_throwsNPE() {
@@ -251,6 +281,9 @@ class LeaseMapperTest {
                 mapper.toEntity(null, mock(Property.class), mock(User.class), mock(User.class)));
     }
 
+    /**
+     * toEntity_nullProperty_throwsNPE.
+     */
     @Test
     @DisplayName("toEntity_nullProperty_throwsNPE")
     void toEntity_nullProperty_throwsNPE() {
@@ -262,6 +295,9 @@ class LeaseMapperTest {
                 mapper.toEntity(dto, null, mock(User.class), mock(User.class)));
     }
 
+    /**
+     * toEntity_nullTenant_throwsNPE.
+     */
     @Test
     @DisplayName("toEntity_nullTenant_throwsNPE")
     void toEntity_nullTenant_throwsNPE() {
@@ -275,6 +311,9 @@ class LeaseMapperTest {
 
     // ─── updateEntity ───────────────────────────────────────────────────────
 
+    /**
+     * updateEntity_updatesAllMutableFields.
+     */
     @Test
     @DisplayName("updateEntity_updatesAllMutableFields")
     void updateEntity_updatesAllMutableFields() {

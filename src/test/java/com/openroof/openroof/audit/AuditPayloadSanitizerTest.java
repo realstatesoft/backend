@@ -8,17 +8,26 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code AuditPayloadSanitizer}.
+ */
 @DisplayName("AuditPayloadSanitizer")
 class AuditPayloadSanitizerTest {
 
     // ─── null / empty ──────────────────────────────────────────────────────────
 
+    /**
+     * sanitize_nullSource_returnsNull.
+     */
     @Test
     @DisplayName("sanitize_nullSource_returnsNull")
     void sanitize_nullSource_returnsNull() {
         assertThat(AuditPayloadSanitizer.sanitize(null)).isNull();
     }
 
+    /**
+     * sanitize_emptyMap_returnsEmptyMap.
+     */
     @Test
     @DisplayName("sanitize_emptyMap_returnsEmptyMap")
     void sanitize_emptyMap_returnsEmptyMap() {
@@ -28,6 +37,9 @@ class AuditPayloadSanitizerTest {
 
     // ─── blocked keys (lowercase exact matches) ───────────────────────────────
 
+    /**
+     * sanitize_passwordKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_passwordKey_isRedacted")
     void sanitize_passwordKey_isRedacted() {
@@ -39,6 +51,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("password", "[redacted]");
     }
 
+    /**
+     * sanitize_passwordHashWithUnderscore_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_passwordHashWithUnderscore_isRedacted")
     void sanitize_passwordHashWithUnderscore_isRedacted() {
@@ -50,6 +65,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("password_hash", "[redacted]");
     }
 
+    /**
+     * sanitize_accessTokenKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_accessTokenKey_isRedacted")
     void sanitize_accessTokenKey_isRedacted() {
@@ -61,6 +79,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("accesstoken", "[redacted]");
     }
 
+    /**
+     * sanitize_accessTokenWithUnderscore_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_accessTokenWithUnderscore_isRedacted")
     void sanitize_accessTokenWithUnderscore_isRedacted() {
@@ -72,6 +93,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("access_token", "[redacted]");
     }
 
+    /**
+     * sanitize_refreshTokenKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_refreshTokenKey_isRedacted")
     void sanitize_refreshTokenKey_isRedacted() {
@@ -83,6 +107,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("refresh_token", "[redacted]");
     }
 
+    /**
+     * sanitize_tokenKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_tokenKey_isRedacted")
     void sanitize_tokenKey_isRedacted() {
@@ -94,6 +121,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("token", "[redacted]");
     }
 
+    /**
+     * sanitize_secretKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_secretKey_isRedacted")
     void sanitize_secretKey_isRedacted() {
@@ -105,6 +135,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("secret", "[redacted]");
     }
 
+    /**
+     * sanitize_authorizationKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_authorizationKey_isRedacted")
     void sanitize_authorizationKey_isRedacted() {
@@ -118,6 +151,9 @@ class AuditPayloadSanitizerTest {
 
     // ─── case-insensitive matching ─────────────────────────────────────────────
 
+    /**
+     * sanitize_upperCasePasswordKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_upperCasePasswordKey_isRedacted")
     void sanitize_upperCasePasswordKey_isRedacted() {
@@ -130,6 +166,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("PASSWORD", "[redacted]");
     }
 
+    /**
+     * sanitize_mixedCaseTokenKey_isRedacted.
+     */
     @Test
     @DisplayName("sanitize_mixedCaseTokenKey_isRedacted")
     void sanitize_mixedCaseTokenKey_isRedacted() {
@@ -143,6 +182,9 @@ class AuditPayloadSanitizerTest {
 
     // ─── non-sensitive keys pass through ──────────────────────────────────────
 
+    /**
+     * sanitize_nonSensitiveKey_passesThrough.
+     */
     @Test
     @DisplayName("sanitize_nonSensitiveKey_passesThrough")
     void sanitize_nonSensitiveKey_passesThrough() {
@@ -156,6 +198,9 @@ class AuditPayloadSanitizerTest {
         assertThat(result).containsEntry("email", "john@example.com");
     }
 
+    /**
+     * sanitize_mixedMap_redactsOnlySensitiveKeys.
+     */
     @Test
     @DisplayName("sanitize_mixedMap_redactsOnlySensitiveKeys")
     void sanitize_mixedMap_redactsOnlySensitiveKeys() {
@@ -176,6 +221,9 @@ class AuditPayloadSanitizerTest {
 
     // ─── null key is skipped ──────────────────────────────────────────────────
 
+    /**
+     * sanitize_nullKey_isSkipped.
+     */
     @Test
     @DisplayName("sanitize_nullKey_isSkipped")
     void sanitize_nullKey_isSkipped() {

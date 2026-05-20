@@ -5,11 +5,17 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code ApiResponse — static factories}.
+ */
 @DisplayName("ApiResponse — static factories")
 class ApiResponseTest {
 
     // ─── ok(data) ────────────────────────────────────────────────────────────
 
+    /**
+     * ok(data) sets success=true, data, and non-null timestamp.
+     */
     @Test
     @DisplayName("ok(data) sets success=true, data, and non-null timestamp")
     void ok_data_setsSuccessTrue() {
@@ -21,6 +27,9 @@ class ApiResponseTest {
         assertThat(resp.getMessage()).isNull();
     }
 
+    /**
+     * ok(null data) is still successful — null data is valid.
+     */
     @Test
     @DisplayName("ok(null data) is still successful — null data is valid")
     void ok_nullData_isSuccessful() {
@@ -30,6 +39,9 @@ class ApiResponseTest {
         assertThat(resp.getData()).isNull();
     }
 
+    /**
+     * ok(data) works with any generic type — Integer.
+     */
     @Test
     @DisplayName("ok(data) works with any generic type — Integer")
     void ok_data_worksWithIntegerType() {
@@ -41,6 +53,9 @@ class ApiResponseTest {
 
     // ─── ok(data, message) ───────────────────────────────────────────────────
 
+    /**
+     * ok(data, message) sets success=true, data, and message.
+     */
     @Test
     @DisplayName("ok(data, message) sets success=true, data, and message")
     void ok_dataAndMessage_setsAllFields() {
@@ -52,6 +67,9 @@ class ApiResponseTest {
         assertThat(resp.getTimestamp()).isNotNull();
     }
 
+    /**
+     * ok(data, message) with null message still returns success=true.
+     */
     @Test
     @DisplayName("ok(data, message) with null message still returns success=true")
     void ok_dataAndNullMessage_isSuccessful() {
@@ -63,6 +81,9 @@ class ApiResponseTest {
 
     // ─── error(message) ──────────────────────────────────────────────────────
 
+    /**
+     * error(message) sets success=false and the error message.
+     */
     @Test
     @DisplayName("error(message) sets success=false and the error message")
     void error_message_setsSuccessFalse() {
@@ -74,6 +95,9 @@ class ApiResponseTest {
         assertThat(resp.getData()).isNull();
     }
 
+    /**
+     * error(null) sets success=false with null message.
+     */
     @Test
     @DisplayName("error(null) sets success=false with null message")
     void error_nullMessage_setsSuccessFalse() {
@@ -85,6 +109,9 @@ class ApiResponseTest {
 
     // ─── ok vs error discriminator ───────────────────────────────────────────
 
+    /**
+     * ok and error are mutually exclusive on success flag.
+     */
     @Test
     @DisplayName("ok and error are mutually exclusive on success flag")
     void ok_and_error_haveOppositeSuccessFlags() {
@@ -97,6 +124,9 @@ class ApiResponseTest {
 
     // ─── builder ─────────────────────────────────────────────────────────────
 
+    /**
+     * builder allows constructing a fully custom response.
+     */
     @Test
     @DisplayName("builder allows constructing a fully custom response")
     void builder_constructsCustomResponse() {

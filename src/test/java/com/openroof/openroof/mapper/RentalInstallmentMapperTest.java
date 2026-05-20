@@ -15,6 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code RentalInstallmentMapper — toResponse / toResponseList}.
+ */
 @DisplayName("RentalInstallmentMapper — toResponse / toResponseList")
 class RentalInstallmentMapperTest {
 
@@ -42,6 +45,9 @@ class RentalInstallmentMapperTest {
 
     // ─── toResponse ──────────────────────────────────────────────────────────
 
+    /**
+     * totalAmount = baseRent + lateFee.
+     */
     @Test
     @DisplayName("totalAmount = baseRent + lateFee")
     void toResponse_totalAmount_isSumOfBaseAndLateFee() {
@@ -54,6 +60,9 @@ class RentalInstallmentMapperTest {
         assertThat(resp.lateFeeAmount()).isEqualByComparingTo("50.00");
     }
 
+    /**
+     * null baseRent and null lateFee both default to ZERO; total is ZERO.
+     */
     @Test
     @DisplayName("null baseRent and null lateFee both default to ZERO; total is ZERO")
     void toResponse_nullAmounts_defaultToZero() {
@@ -66,6 +75,9 @@ class RentalInstallmentMapperTest {
         assertThat(resp.totalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
+    /**
+     * leaseId is null when installment has no lease.
+     */
     @Test
     @DisplayName("leaseId is null when installment has no lease")
     void toResponse_noLease_leaseIdIsNull() {
@@ -76,6 +88,9 @@ class RentalInstallmentMapperTest {
         assertThat(resp.leaseId()).isNull();
     }
 
+    /**
+     * leaseId is populated when installment has a lease.
+     */
     @Test
     @DisplayName("leaseId is populated when installment has a lease")
     void toResponse_withLease_leaseIdMapped() {
@@ -86,6 +101,9 @@ class RentalInstallmentMapperTest {
         assertThat(resp.leaseId()).isEqualTo(42L);
     }
 
+    /**
+     * scalar fields are mapped verbatim.
+     */
     @Test
     @DisplayName("scalar fields are mapped verbatim")
     void toResponse_scalarFieldsMapped() {
@@ -101,6 +119,9 @@ class RentalInstallmentMapperTest {
 
     // ─── toResponseList ──────────────────────────────────────────────────────
 
+    /**
+     * toResponseList maps all elements preserving order.
+     */
     @Test
     @DisplayName("toResponseList maps all elements preserving order")
     void toResponseList_mapsAllElements() {
@@ -116,6 +137,9 @@ class RentalInstallmentMapperTest {
         assertThat(result.get(1).totalAmount()).isEqualByComparingTo("610");
     }
 
+    /**
+     * toResponseList on empty list returns empty list.
+     */
     @Test
     @DisplayName("toResponseList on empty list returns empty list")
     void toResponseList_empty_returnsEmpty() {

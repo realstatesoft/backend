@@ -25,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code AgentClientMapper}.
+ */
 @DisplayName("AgentClientMapper")
 class AgentClientMapperTest {
 
@@ -32,6 +35,9 @@ class AgentClientMapperTest {
 
     // ─── toResponse ──────────────────────────────────────────────────────────
 
+    /**
+     * toResponse_withFullData_mapsAllFields.
+     */
     @Test
     @DisplayName("toResponse_withFullData_mapsAllFields")
     void toResponse_withFullData_mapsAllFields() {
@@ -95,6 +101,9 @@ class AgentClientMapperTest {
         assertThat(resp.isSearchingProperty()).isTrue();
     }
 
+    /**
+     * toResponse_withNullUserAndAgent_returnsNullUserAgentFields.
+     */
     @Test
     @DisplayName("toResponse_withNullUserAndAgent_returnsNullUserAgentFields")
     void toResponse_withNullUserAndAgent_returnsNullUserAgentFields() {
@@ -110,6 +119,9 @@ class AgentClientMapperTest {
         assertThat(resp.agentName()).isNull();
     }
 
+    /**
+     * toResponse_withNullRanges_returnsNullRangeFields.
+     */
     @Test
     @DisplayName("toResponse_withNullRanges_returnsNullRangeFields")
     void toResponse_withNullRanges_returnsNullRangeFields() {
@@ -129,6 +141,9 @@ class AgentClientMapperTest {
         assertThat(resp.maxBathrooms()).isNull();
     }
 
+    /**
+     * toResponse_withAgentButNullAgentUser_returnsNullAgentName.
+     */
     @Test
     @DisplayName("toResponse_withAgentButNullAgentUser_returnsNullAgentName")
     void toResponse_withAgentButNullAgentUser_returnsNullAgentName() {
@@ -144,6 +159,9 @@ class AgentClientMapperTest {
         assertThat(resp.agentName()).isNull();
     }
 
+    /**
+     * toResponse_withNullEnums_returnsNullEnumStrings.
+     */
     @Test
     @DisplayName("toResponse_withNullEnums_returnsNullEnumStrings")
     void toResponse_withNullEnums_returnsNullEnumStrings() {
@@ -162,6 +180,9 @@ class AgentClientMapperTest {
 
     // ─── toSummaryResponse ───────────────────────────────────────────────────
 
+    /**
+     * toSummaryResponse_withFullUser_mapsAllFields.
+     */
     @Test
     @DisplayName("toSummaryResponse_withFullUser_mapsAllFields")
     void toSummaryResponse_withFullUser_mapsAllFields() {
@@ -193,6 +214,9 @@ class AgentClientMapperTest {
         assertThat(resp.lastContactAt()).isEqualTo(lastContact);
     }
 
+    /**
+     * toSummaryResponse_withNullUser_returnsNullUserFields.
+     */
     @Test
     @DisplayName("toSummaryResponse_withNullUser_returnsNullUserFields")
     void toSummaryResponse_withNullUser_returnsNullUserFields() {
@@ -208,6 +232,9 @@ class AgentClientMapperTest {
 
     // ─── toEntity ────────────────────────────────────────────────────────────
 
+    /**
+     * toEntity_withBudgetBedroomBathroomRanges_buildsRanges.
+     */
     @Test
     @DisplayName("toEntity_withBudgetBedroomBathroomRanges_buildsRanges")
     void toEntity_withBudgetBedroomBathroomRanges_buildsRanges() {
@@ -235,6 +262,9 @@ class AgentClientMapperTest {
         assertThat(entity.getBathroomRange().getMax()).isEqualTo(2);
     }
 
+    /**
+     * toEntity_withNullRanges_doesNotSetRanges.
+     */
     @Test
     @DisplayName("toEntity_withNullRanges_doesNotSetRanges")
     void toEntity_withNullRanges_doesNotSetRanges() {
@@ -254,6 +284,9 @@ class AgentClientMapperTest {
         assertThat(entity.getBathroomRange()).isNull();
     }
 
+    /**
+     * toEntity_withOptionalPersonalFields_mapsThemToEntity.
+     */
     @Test
     @DisplayName("toEntity_withOptionalPersonalFields_mapsThemToEntity")
     void toEntity_withOptionalPersonalFields_mapsThemToEntity() {
@@ -286,6 +319,9 @@ class AgentClientMapperTest {
 
     // ─── updateEntity ────────────────────────────────────────────────────────
 
+    /**
+     * updateEntity_withAllFields_updatesAllMutableFields.
+     */
     @Test
     @DisplayName("updateEntity_withAllFields_updatesAllMutableFields")
     void updateEntity_withAllFields_updatesAllMutableFields() {
@@ -322,6 +358,9 @@ class AgentClientMapperTest {
         assertThat(ac.getIsSearchingProperty()).isTrue();
     }
 
+    /**
+     * updateEntity_mergeBudgetRange_withExistingRange_updatesMinOnly.
+     */
     @Test
     @DisplayName("updateEntity_mergeBudgetRange_withExistingRange_updatesMinOnly")
     void updateEntity_mergeBudgetRange_withExistingRange_updatesMinOnly() {
@@ -341,6 +380,9 @@ class AgentClientMapperTest {
         assertThat(ac.getBudgetRange().getMax()).isEqualByComparingTo("300000"); // unchanged
     }
 
+    /**
+     * updateEntity_mergeBudgetRange_withBothNull_keepsExistingRange.
+     */
     @Test
     @DisplayName("updateEntity_mergeBudgetRange_withBothNull_keepsExistingRange")
     void updateEntity_mergeBudgetRange_withBothNull_keepsExistingRange() {
@@ -358,6 +400,9 @@ class AgentClientMapperTest {
         assertThat(ac.getBudgetRange()).isSameAs(original);
     }
 
+    /**
+     * updateEntity_mergeBedroomRange_withNullExisting_createsNewRange.
+     */
     @Test
     @DisplayName("updateEntity_mergeBedroomRange_withNullExisting_createsNewRange")
     void updateEntity_mergeBedroomRange_withNullExisting_createsNewRange() {

@@ -17,6 +17,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@code EmployerNameRequiredIfEmployedValidator}.
+ */
 @DisplayName("EmployerNameRequiredIfEmployedValidator")
 class EmployerNameRequiredIfEmployedValidatorTest {
 
@@ -52,6 +55,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
 
     // ─── EMPLOYED branch ─────────────────────────────────────────────────────
 
+    /**
+     * EMPLOYED with a non-blank employerName → valid.
+     */
     @Test
     @DisplayName("EMPLOYED with a non-blank employerName → valid")
     void employed_withEmployerName_isValid() {
@@ -64,6 +70,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
                 .isEmpty();
     }
 
+    /**
+     * EMPLOYED with null employerName → violation on employerName.
+     */
     @Test
     @DisplayName("EMPLOYED with null employerName → violation on employerName")
     void employed_withNullEmployerName_violatesConstraint() {
@@ -77,6 +86,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
                 .isNotEmpty();
     }
 
+    /**
+     * EMPLOYED with blank employerName → violation on employerName.
+     */
     @Test
     @DisplayName("EMPLOYED with blank employerName → violation on employerName")
     void employed_withBlankEmployerName_violatesConstraint() {
@@ -92,6 +104,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
 
     // ─── Non-EMPLOYED branches ───────────────────────────────────────────────
 
+    /**
+     * UNEMPLOYED with null employerName → no employerName violation.
+     */
     @Test
     @DisplayName("UNEMPLOYED with null employerName → no employerName violation")
     void unemployed_withNullEmployerName_isValid() {
@@ -105,6 +120,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
                 .isEmpty();
     }
 
+    /**
+     * SELF_EMPLOYED with null employerName → no employerName violation.
+     */
     @Test
     @DisplayName("SELF_EMPLOYED with null employerName → no employerName violation")
     void selfEmployed_withNullEmployerName_isValid() {
@@ -118,6 +136,9 @@ class EmployerNameRequiredIfEmployedValidatorTest {
                 .isEmpty();
     }
 
+    /**
+     * STUDENT with null employerName → no employerName violation.
+     */
     @Test
     @DisplayName("STUDENT with null employerName → no employerName violation")
     void student_withNullEmployerName_isValid() {

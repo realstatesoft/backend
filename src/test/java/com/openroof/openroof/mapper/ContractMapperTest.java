@@ -18,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code ContractMapper}.
+ */
 @DisplayName("ContractMapper")
 class ContractMapperTest {
 
@@ -25,6 +28,9 @@ class ContractMapperTest {
 
     // ─── toResponse — commission calculations ────────────────────────────────
 
+    /**
+     * toResponse_withAmount_calculatesCommissionAmountsCorrectly.
+     */
     @Test
     @DisplayName("toResponse_withAmount_calculatesCommissionAmountsCorrectly")
     void toResponse_withAmount_calculatesCommissionAmountsCorrectly() {
@@ -52,6 +58,9 @@ class ContractMapperTest {
         assertThat(dto.buyerAgentCommissionPct()).isEqualByComparingTo("2.50");
     }
 
+    /**
+     * toResponse_nullAmount_treatedAsZeroForCommissions.
+     */
     @Test
     @DisplayName("toResponse_nullAmount_treatedAsZeroForCommissions")
     void toResponse_nullAmount_treatedAsZeroForCommissions() {
@@ -71,6 +80,9 @@ class ContractMapperTest {
         assertThat(dto.listingAgentCommissionAmount()).isEqualByComparingTo("0.00");
     }
 
+    /**
+     * toResponse_nullCommissionPct_treatedAsZero.
+     */
     @Test
     @DisplayName("toResponse_nullCommissionPct_treatedAsZero")
     void toResponse_nullCommissionPct_treatedAsZero() {
@@ -91,6 +103,9 @@ class ContractMapperTest {
 
     // ─── toResponse — null FK guards ────────────────────────────────────────
 
+    /**
+     * toResponse_nullProperty_returnsNullPropertyFields.
+     */
     @Test
     @DisplayName("toResponse_nullProperty_returnsNullPropertyFields")
     void toResponse_nullProperty_returnsNullPropertyFields() {
@@ -110,6 +125,9 @@ class ContractMapperTest {
         assertThat(dto.propertyTitle()).isNull();
     }
 
+    /**
+     * toResponse_nullBuyerAndSeller_returnsNullPartyFields.
+     */
     @Test
     @DisplayName("toResponse_nullBuyerAndSeller_returnsNullPartyFields")
     void toResponse_nullBuyerAndSeller_returnsNullPartyFields() {
@@ -134,6 +152,9 @@ class ContractMapperTest {
         assertThat(dto.sellerEmail()).isNull();
     }
 
+    /**
+     * toResponse_nullAgents_returnsNullAgentFields.
+     */
     @Test
     @DisplayName("toResponse_nullAgents_returnsNullAgentFields")
     void toResponse_nullAgents_returnsNullAgentFields() {
@@ -156,6 +177,9 @@ class ContractMapperTest {
         assertThat(dto.buyerAgentName()).isNull();
     }
 
+    /**
+     * toResponse_withFullParties_mapsAllPartyFields.
+     */
     @Test
     @DisplayName("toResponse_withFullParties_mapsAllPartyFields")
     void toResponse_withFullParties_mapsAllPartyFields() {
@@ -214,6 +238,9 @@ class ContractMapperTest {
 
     // ─── toSummaryResponse ───────────────────────────────────────────────────
 
+    /**
+     * toSummaryResponse_hasSigned_true_mapsFlag.
+     */
     @Test
     @DisplayName("toSummaryResponse_hasSigned_true_mapsFlag")
     void toSummaryResponse_hasSigned_true_mapsFlag() {
@@ -236,6 +263,9 @@ class ContractMapperTest {
         assertThat(dto.status()).isEqualTo(ContractStatus.SIGNED);
     }
 
+    /**
+     * toSummaryResponse_hasSigned_false_mapsFlag.
+     */
     @Test
     @DisplayName("toSummaryResponse_hasSigned_false_mapsFlag")
     void toSummaryResponse_hasSigned_false_mapsFlag() {
@@ -253,6 +283,9 @@ class ContractMapperTest {
         assertThat(dto.currentUserHasSigned()).isFalse();
     }
 
+    /**
+     * toSummaryResponse_nullProperty_returnsNullPropertyFields.
+     */
     @Test
     @DisplayName("toSummaryResponse_nullProperty_returnsNullPropertyFields")
     void toSummaryResponse_nullProperty_returnsNullPropertyFields() {
@@ -272,6 +305,9 @@ class ContractMapperTest {
         assertThat(dto.propertyTitle()).isNull();
     }
 
+    /**
+     * toSummaryResponse_agentWithNullUser_returnsNullAgentName.
+     */
     @Test
     @DisplayName("toSummaryResponse_agentWithNullUser_returnsNullAgentName")
     void toSummaryResponse_agentWithNullUser_returnsNullAgentName() {

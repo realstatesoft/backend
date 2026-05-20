@@ -16,6 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@code TenantScreeningMapper}.
+ */
 @DisplayName("TenantScreeningMapper")
 class TenantScreeningMapperTest {
 
@@ -51,6 +54,9 @@ class TenantScreeningMapperTest {
 
     // ─── toResponse ──────────────────────────────────────────────────────────
 
+    /**
+     * toResponse maps all scalar fields verbatim.
+     */
     @Test
     @DisplayName("toResponse maps all scalar fields verbatim")
     void toResponse_mapsAllScalarFields() {
@@ -71,6 +77,9 @@ class TenantScreeningMapperTest {
         assertThat(resp.notes()).isEqualTo("Todo en orden");
     }
 
+    /**
+     * applicationId is null when screening has no application.
+     */
     @Test
     @DisplayName("applicationId is null when screening has no application")
     void toResponse_noApplication_applicationIdIsNull() {
@@ -81,6 +90,9 @@ class TenantScreeningMapperTest {
         assertThat(resp.applicationId()).isNull();
     }
 
+    /**
+     * evictionHistory and criminalRecords are null when not set.
+     */
     @Test
     @DisplayName("evictionHistory and criminalRecords are null when not set")
     void toResponse_noHistory_historyFieldsAreNull() {
@@ -94,6 +106,9 @@ class TenantScreeningMapperTest {
 
     // ─── updateEntity ────────────────────────────────────────────────────────
 
+    /**
+     * updateEntity applies all non-null request fields.
+     */
     @Test
     @DisplayName("updateEntity applies all non-null request fields")
     void updateEntity_allFieldsSet_allUpdated() {
@@ -117,6 +132,9 @@ class TenantScreeningMapperTest {
         assertThat(s.getNotes()).isEqualTo("Requiere revisión manual");
     }
 
+    /**
+     * updateEntity with all-null request leaves entity unchanged.
+     */
     @Test
     @DisplayName("updateEntity with all-null request leaves entity unchanged")
     void updateEntity_allNullRequest_entityUnchanged() {
@@ -132,6 +150,9 @@ class TenantScreeningMapperTest {
         assertThat(s.getRecommendation()).isEqualTo(ScreeningRecommendation.APPROVE);
     }
 
+    /**
+     * updateEntity applies only the fields that are non-null in request.
+     */
     @Test
     @DisplayName("updateEntity applies only the fields that are non-null in request")
     void updateEntity_partialRequest_onlyNonNullFieldsUpdated() {
