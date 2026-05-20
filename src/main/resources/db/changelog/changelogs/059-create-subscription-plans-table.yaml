@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 059-create-subscription-plans-table
+      author: tania
+      changes:
+        - createTable:
+            tableName: subscription_plans
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: price
+                  type: DECIMAL(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_months
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITHOUT TIME ZONE
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: subscription_plans
+            indexName: idx_subscription_plans_name
+            columns:
+              - column:
+                  name: name

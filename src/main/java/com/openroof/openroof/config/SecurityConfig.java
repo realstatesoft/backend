@@ -84,6 +84,8 @@ public class SecurityConfig {
                                                 .access((authentication, context) -> new AuthorizationDecision(true))
                                                 .requestMatchers(HttpMethod.GET, "/locations/**").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
+                                                // Catálogo público de planes de suscripción
+                                                .requestMatchers(new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/subscription-plans$|^/subscription-plans/\\d+$", "GET")).permitAll()
                                                 // Endpoints públicos de alquileres (catálogo)
                                                 .requestMatchers(HttpMethod.GET, "/leases/public/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leases/*/sign").permitAll()

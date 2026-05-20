@@ -10,6 +10,7 @@ import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.payment.Payment;
 import com.openroof.openroof.model.payment.PaymentMetadata;
+import com.openroof.openroof.model.subscription.SubscriptionPlan;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.repository.UserRepository;
@@ -34,6 +35,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,6 +48,8 @@ class PaymentServiceTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private UserRepository userRepository;
     @Mock private PropertyService propertyService;
+    @Mock private SubscriptionPlanService subscriptionPlanService;
+    @Mock private SubscriptionService subscriptionService;
 
     private PaymentService service;
 
@@ -53,7 +58,7 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentService(paymentRepository, userRepository, propertyService);
+        service = new PaymentService(paymentRepository, userRepository, propertyService, subscriptionPlanService, subscriptionService);
 
         user = User.builder().name("Juan Pérez").email("user@test.com").role(UserRole.USER).build();
         user.setId(1L);
@@ -72,6 +77,25 @@ class PaymentServiceTest {
                 .concept("Señal de reserva")
                 .amount(new BigDecimal("500.00"))
                 .transactionCode("uuid-test-" + id)
+                .build();
+        p.setId(id);
+        p.setCreatedAt(LocalDateTime.now());
+        p.setUpdatedAt(LocalDateTime.now());
+        return p;
+    }
+
+    private Payment buildSubscriptionPayment(Long id, User owner, PaymentStatus status, Long planId) {
+        PaymentMetadata metadata = PaymentMetadata.builder()
+                .subscriptionPlanId(planId)
+                .build();
+        Payment p = Payment.builder()
+                .user(owner)
+                .type(PaymentType.SUBSCRIPTION)
+                .status(status)
+                .concept("Suscripción Premium")
+                .amount(new BigDecimal("390000.00"))
+                .transactionCode("uuid-subscription-" + id)
+                .metadata(metadata)
                 .build();
         p.setId(id);
         p.setCreatedAt(LocalDateTime.now());
@@ -144,7 +168,7 @@ class PaymentServiceTest {
             });
 
             PaymentRequest request = new PaymentRequest(
-                    PaymentType.SUBSCRIPTION, new BigDecimal("100.00"), "  Suscripción mensual  ", null);
+                    PaymentType.OTHER, new BigDecimal("100.00"), "  Suscripción mensual  ", null);
 
             service.create(request, "user@test.com");
 
@@ -408,6 +432,34 @@ class PaymentServiceTest {
             service.approvePayment(1L);
 
             verify(propertyService).highlightPropertyWithPayment(eq(5L), eq(1L), eq(30));
+        }
+
+        @Test
+        @DisplayName("Aprobar SUBSCRIPTION dispara la activación de la suscripción")
+        void approvingSubscriptionPaymentTriggersActivation() {
+            Payment payment = buildSubscriptionPayment(1L, user, PaymentStatus.PENDING, 2L);
+            SubscriptionPlan plan = SubscriptionPlan.builder().active(true).build();
+            plan.setId(2L);
+            when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+            when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(subscriptionPlanService.getPlanOrThrow(2L)).thenReturn(plan);
+
+            service.approvePayment(1L);
+
+            verify(subscriptionService).activateSubscription(eq(user.getId()), eq(1L), eq(2L));
+            verify(propertyService, never()).highlightPropertyWithPayment(anyLong(), anyLong(), anyInt());
+        }
+
+        @Test
+        @DisplayName("Aprobar pago no-suscripción no invoca activación de suscripción")
+        void approvingNonSubscriptionPaymentDoesNotTriggerActivation() {
+            Payment payment = buildPayment(1L, user, PaymentStatus.PENDING);
+            when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+            when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.approvePayment(1L);
+
+            verify(subscriptionService, never()).activateSubscription(any(), any(), any());
         }
 
         @Test

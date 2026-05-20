@@ -19,5 +19,7 @@ public class PaymentMetadata {
     @Column(name = "highlight_days")
     private Integer highlightDays;
 
-    // agregar otros campos para otros tipos de pago si es necesario
+    // relacionado con Subscription Payment
+    @Column(name = "subscription_plan_id")
+    private Long subscriptionPlanId;
 }
