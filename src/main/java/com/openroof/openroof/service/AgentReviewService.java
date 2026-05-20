@@ -153,12 +153,6 @@ public class AgentReviewService {
         return reviewMapper.toSummaryResponse(agent, latestReviews, distribution);
     }
 
-    public AgentReviewResponse getMyReview(Long agentId, Long userId) {
-        return reviewRepository.findByAgent_IdAndUser_Id(agentId, userId)
-                .map(r -> reviewMapper.toResponse(r, userId))
-                .orElse(null);
-    }
-
     public void recalculateAgentRating(Long agentId) {
         AgentProfile agent = agentProfileRepository.findById(agentId)
                 .orElseThrow(() -> new ResourceNotFoundException("AgentProfile", "id", agentId));
