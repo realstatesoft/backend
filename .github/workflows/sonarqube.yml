@@ -31,4 +31,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=tu-project-key-aqui -Dmaven.test.failure.ignore=true -Djacoco.haltOnFailure=false
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=openroof -Dmaven.test.failure.ignore=true -Djacoco.haltOnFailure=false
