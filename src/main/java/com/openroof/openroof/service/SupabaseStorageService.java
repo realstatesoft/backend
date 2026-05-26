@@ -62,6 +62,7 @@ public class SupabaseStorageService implements StorageService {
 
         this.restClient = RestClient.builder()
                 .baseUrl(supabaseUrl + "/storage/v1")
+                .defaultHeader("apikey", serviceRoleKey)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceRoleKey)
                 .build();
     }

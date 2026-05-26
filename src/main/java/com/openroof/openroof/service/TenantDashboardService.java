@@ -9,12 +9,14 @@ import com.openroof.openroof.dto.dashboard.TenantInstallmentItem;
 import com.openroof.openroof.dto.dashboard.TenantMaintenanceResponse;
 import com.openroof.openroof.dto.dashboard.TenantMaintenanceTicketItem;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.dto.dashboard.CreateMaintenanceRequest;
 import com.openroof.openroof.dto.dashboard.RateMaintenanceRequest;
 import com.openroof.openroof.model.enums.*;
 import com.openroof.openroof.model.maintenance.MaintenanceRequest;
 import com.openroof.openroof.model.payment.Payment;
 import com.openroof.openroof.model.rental.Lease;
+import com.openroof.openroof.model.rental.LeasePayment;
 import com.openroof.openroof.model.rental.RentalInstallment;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
@@ -51,6 +53,7 @@ public class TenantDashboardService {
     private final MessageRepository messageRepository;
     private final PaymentRepository paymentRepository;
     private final LeasePaymentRepository leasePaymentRepository;
+    private final RentalDocumentPdfService rentalDocumentPdfService;
 
     public TenantDashboardResponse getDashboard(String email) {
         User tenant = userRepository.findByEmail(email)
@@ -272,6 +275,7 @@ public class TenantDashboardService {
                             i.getBalance(),
                             i.getStatus().name(),
                             i.getDueDate(),
+                            i.getInvoicePdfUrl(),
                             payments);
                 })
                 .toList();
@@ -325,6 +329,31 @@ public class TenantDashboardService {
                 installmentsPage.getTotalElements(),
                 installmentsPage.getTotalPages(),
                 installmentsPage.getNumber());
+    }
+
+    public byte[] generateInvoicePdf(String email, Long installmentId) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        RentalInstallment installment = rentalInstallmentRepository.findById(installmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
+        verifyTenantAccess(installment.getLease(), tenant);
+        return rentalDocumentPdfService.generateInvoice(installment);
+    }
+
+    public byte[] generateReceiptPdf(String email, Long paymentId) {
+        User tenant = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        LeasePayment payment = leasePaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
+        verifyTenantAccess(payment.getLease(), tenant);
+        return rentalDocumentPdfService.generateReceipt(payment);
+    }
+
+    private void verifyTenantAccess(Lease lease, User tenant) {
+        boolean isTenant = lease.getPrimaryTenant() != null && lease.getPrimaryTenant().getId().equals(tenant.getId());
+        if (!isTenant) {
+            throw new ForbiddenException("No tiene acceso a este contrato");
+        }
     }
 
     public TenantMaintenanceResponse getMaintenance(String email, Pageable pageable) {
