@@ -171,6 +171,10 @@ public class AuthService {
         @Transactional
         public AuthResponse refreshToken(String oldRefreshToken, HttpServletRequest httpRequest) {
 
+                if (oldRefreshToken == null || oldRefreshToken.isBlank()) {
+                        throw new BadRequestException("Refresh token no proporcionado");
+                }
+
                 // 1. Buscar y bloquear la sesión en una sola transacción
                 var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshToken)
                                 .orElseThrow(() -> new BadRequestException("Sesión inválida o ya utilizada"));
@@ -227,12 +231,11 @@ public class AuthService {
 
         /*
          * * Desc: Invalida la sesión actual eliminando el registro del Refresh Token de
-         * la DB.
+         * la DB. El refresh token proviene de la cookie HttpOnly (no del header).
          */
         @Transactional
-        public void logout(String authHeader) {
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                        String refreshToken = authHeader.substring(7);
+        public void logout(String refreshToken) {
+                if (refreshToken != null && !refreshToken.isBlank()) {
                         userSessionRepository.deleteByTokenHash(refreshToken);
                 }
         }
