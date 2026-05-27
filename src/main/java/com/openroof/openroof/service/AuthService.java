@@ -28,6 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -175,8 +179,10 @@ public class AuthService {
                         throw new BadRequestException("Refresh token no proporcionado");
                 }
 
+                String oldRefreshTokenHash = hashRefreshToken(oldRefreshToken);
+
                 // 1. Buscar y bloquear la sesión en una sola transacción
-                var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshToken)
+                var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshTokenHash)
                                 .orElseThrow(() -> new BadRequestException("Sesión inválida o ya utilizada"));
 
                 // 2. Obtener el usuario desde la sesión bloqueada
@@ -236,7 +242,7 @@ public class AuthService {
         @Transactional
         public void logout(String refreshToken) {
                 if (refreshToken != null && !refreshToken.isBlank()) {
-                        userSessionRepository.deleteByTokenHash(refreshToken);
+                        userSessionRepository.deleteByTokenHash(hashRefreshToken(refreshToken));
                 }
         }
 
@@ -282,11 +288,21 @@ public class AuthService {
                 // 4. Guardar la sesión con sus metadatos
                 var session = UserSession.builder()
                                 .user(user)
-                                .tokenHash(refreshToken)
+                                .tokenHash(hashRefreshToken(refreshToken))
                                 .expiresAt(LocalDateTime.now().plusDays(7))
                                 .requestMetadata(metadata)
                                 .build();
 
                 userSessionRepository.save(session);
+        }
+
+        private String hashRefreshToken(String refreshToken) {
+                try {
+                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                        byte[] hash = digest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
+                        return HexFormat.of().formatHex(hash);
+                } catch (NoSuchAlgorithmException ex) {
+                        throw new IllegalStateException("SHA-256 not available", ex);
+                }
         }
 }
