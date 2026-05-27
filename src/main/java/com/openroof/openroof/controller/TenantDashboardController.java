@@ -79,6 +79,34 @@ public class TenantDashboardController {
                 tenantDashboardService.getPayments(auth.getName(), pageable)));
     }
 
+    @GetMapping(value = "/payments/installments/{id}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Descargar factura de una cuota del tenant")
+    public ResponseEntity<byte[]> downloadTenantInvoice(Authentication auth, @PathVariable Long id) {
+        byte[] pdfBytes = tenantDashboardService.generateInvoicePdf(auth.getName(), id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+                .filename("factura-" + id + ".pdf")
+                .build());
+        headers.setContentLength(pdfBytes.length);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/payments/{id}/receipt.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Descargar recibo de pago del tenant")
+    public ResponseEntity<byte[]> downloadTenantReceipt(Authentication auth, @PathVariable Long id) {
+        byte[] pdfBytes = tenantDashboardService.generateReceiptPdf(auth.getName(), id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+                .filename("recibo-" + id + ".pdf")
+                .build());
+        headers.setContentLength(pdfBytes.length);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+    }
+
     @GetMapping("/maintenance")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Tickets de mantenimiento del tenant")
