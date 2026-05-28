@@ -68,6 +68,11 @@ springdoc:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}
 
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:true}
+    same-site: ${APP_COOKIE_SAME_SITE:Lax}
+
 openroof:
   reservation:
     ttl-hours: ${RESERVATION_TTL_HOURS:48}
@@ -107,6 +112,8 @@ supabase:
 upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:15MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
+  tour:
+    max-config-size: ${UPLOAD_TOUR_MAX_CONFIG_SIZE:5MB}
   documents:
     max-file-size: ${UPLOAD_DOCUMENTS_MAX_FILE_SIZE:10MB}
     allowed-types: ${UPLOAD_DOCUMENTS_ALLOWED_TYPES:application/pdf,image/jpeg,image/png,image/webp}
@@ -148,3 +155,7 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+app:
+  cookie:
+    secure: false
