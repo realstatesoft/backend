@@ -38,7 +38,7 @@ class PropertyTourServiceTest {
         ReflectionTestUtils.setField(propertyTourService, "objectMapper", new ObjectMapper());
         ReflectionTestUtils.setField(propertyTourService, "fileUploadValidator", new FileUploadValidator());
         ReflectionTestUtils.setField(propertyTourService, "maxImageSizeRaw", "15MB");
-        ReflectionTestUtils.setField(propertyTourService, "maxTourConfigSizeRaw", "2MB");
+        ReflectionTestUtils.setField(propertyTourService, "maxTourConfigSizeRaw", "5MB");
         propertyTourService.initConfig();
     }
 

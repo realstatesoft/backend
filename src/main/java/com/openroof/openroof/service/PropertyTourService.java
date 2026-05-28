@@ -40,7 +40,7 @@ public class PropertyTourService {
     @Value("${upload.max-file-size:15MB}")
     private String maxImageSizeRaw;
 
-    @Value("${upload.tour.max-config-size:2MB}")
+    @Value("${upload.tour.max-config-size:5MB}")
     private String maxTourConfigSizeRaw;
 
     private long maxImageSizeBytes;

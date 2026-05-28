@@ -74,8 +74,8 @@ public class SupabaseStorageService implements StorageService {
             throw new IllegalArgumentException("El archivo está vacío o no fue proporcionado.");
         }
 
-        FileUploadValidator.sanitizeFilename(file.getOriginalFilename());
-        String extension = extractExtension(file.getOriginalFilename());
+        String sanitizedFilename = FileUploadValidator.sanitizeFilename(file.getOriginalFilename());
+        String extension = extractExtension(sanitizedFilename);
 
         // Permitimos sobrepasar el límite global para documentos KYC, PDFs, Modelos 3D y Planos,
         // ya que sus servicios específicos aplican sus propias reglas de tamaño.

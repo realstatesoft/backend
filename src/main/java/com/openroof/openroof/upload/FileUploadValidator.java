@@ -95,8 +95,12 @@ public class FileUploadValidator {
             return fromName;
         }
         if (fallbackExtension != null && !fallbackExtension.isBlank()) {
-            return fallbackExtension.startsWith(".") ? fallbackExtension.toLowerCase(Locale.ROOT)
+            String normalized = fallbackExtension.startsWith(".")
+                    ? fallbackExtension.toLowerCase(Locale.ROOT)
                     : "." + fallbackExtension.toLowerCase(Locale.ROOT);
+            if (!BLOCKED_EXTENSIONS.contains(normalized)) {
+                return normalized;
+            }
         }
         return "";
     }

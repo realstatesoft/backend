@@ -83,4 +83,9 @@ class FileUploadValidatorTest {
     void normalizeExtensionForStorage_rejectsBlockedExtension() {
         assertEquals("", FileUploadValidator.normalizeExtensionForStorage("malware.exe", ""));
     }
+
+    @Test
+    void normalizeExtensionForStorage_rejectsBlockedFallbackExtension() {
+        assertEquals("", FileUploadValidator.normalizeExtensionForStorage("file", ".exe"));
+    }
 }
