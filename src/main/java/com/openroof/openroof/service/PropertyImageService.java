@@ -8,9 +8,13 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.repository.PropertyMediaRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.unit.DataSize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,9 +33,23 @@ public class PropertyImageService {
     private final StorageService storageService;
     private final PropertyRepository propertyRepository;
     private final PropertyMediaRepository propertyMediaRepository;
+    private final FileUploadValidator fileUploadValidator;
+
+    @Value("${upload.max-file-size:15MB}")
+    private String maxFileSizeRaw;
+
+    @Value("${upload.allowed-types:image/jpeg,image/png,image/webp}")
+    private String allowedTypesRaw;
 
     private static final String STORAGE_FOLDER = "properties";
     private static final int MAX_IMAGES_PER_PROPERTY = 20;
+
+    private long maxFileSizeBytes;
+
+    @PostConstruct
+    void initConfig() {
+        maxFileSizeBytes = DataSize.parse(maxFileSizeRaw.trim()).toBytes();
+    }
 
     // ─── UPLOAD (una o varias imágenes) ──────────────────────────
 
@@ -73,6 +91,7 @@ public class PropertyImageService {
 
         for (int i = 0; i < files.size(); i++) {
             MultipartFile file = files.get(i);
+            validateImageFile(file);
             String folder = STORAGE_FOLDER + "/" + propertyId;
 
             // Subir a Storage
@@ -172,6 +191,14 @@ public class PropertyImageService {
     }
 
     // ─── Helpers ─────────────────────────────────────────────────
+
+    private void validateImageFile(MultipartFile file) {
+        var allowedKinds = FileUploadValidator.kindsFromCsv(allowedTypesRaw);
+        if (allowedKinds.isEmpty()) {
+            allowedKinds = FileUploadValidator.imageKinds();
+        }
+        fileUploadValidator.validate(file, maxFileSizeBytes, maxFileSizeRaw.trim(), allowedKinds);
+    }
 
     private Property findPropertyOrThrow(Long id) {
         return propertyRepository.findById(id)

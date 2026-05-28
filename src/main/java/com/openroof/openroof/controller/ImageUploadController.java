@@ -5,6 +5,10 @@ import com.openroof.openroof.dto.ImageUploadResponse;
 import com.openroof.openroof.model.image.Image;
 import com.openroof.openroof.repository.ImageRepository;
 import com.openroof.openroof.service.StorageService;
+import com.openroof.openroof.upload.FileUploadValidator;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.unit.DataSize;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,6 +38,20 @@ public class ImageUploadController {
 
     private final StorageService storageService;
     private final ImageRepository imageRepository;
+    private final FileUploadValidator fileUploadValidator;
+
+    @Value("${upload.max-file-size:15MB}")
+    private String maxFileSizeRaw;
+
+    @Value("${upload.allowed-types:image/jpeg,image/png,image/webp}")
+    private String allowedTypesRaw;
+
+    private long maxFileSizeBytes;
+
+    @PostConstruct
+    void initConfig() {
+        maxFileSizeBytes = DataSize.parse(maxFileSizeRaw.trim()).toBytes();
+    }
 
     /**
      * Sube una imagen a Supabase Storage, persiste metadatos y devuelve la URL pública.
@@ -71,6 +89,12 @@ public class ImageUploadController {
     ) {
         log.info("Upload solicitado por {} — archivo: {}, tamaño: {} bytes",
                 user.getUsername(), file.getOriginalFilename(), file.getSize());
+
+        var allowedKinds = FileUploadValidator.kindsFromCsv(allowedTypesRaw);
+        if (allowedKinds.isEmpty()) {
+            allowedKinds = FileUploadValidator.imageKinds();
+        }
+        fileUploadValidator.validate(file, maxFileSizeBytes, maxFileSizeRaw.trim(), allowedKinds);
 
         // 1. Subir a Storage
         StorageService.UploadResult result = storageService.upload(file, folder);

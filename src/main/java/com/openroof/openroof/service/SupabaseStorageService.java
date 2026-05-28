@@ -2,6 +2,7 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.StorageException;
+import com.openroof.openroof.upload.FileUploadValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -73,8 +74,8 @@ public class SupabaseStorageService implements StorageService {
             throw new IllegalArgumentException("El archivo está vacío o no fue proporcionado.");
         }
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = extractExtension(originalFilename);
+        FileUploadValidator.sanitizeFilename(file.getOriginalFilename());
+        String extension = extractExtension(file.getOriginalFilename());
 
         // Permitimos sobrepasar el límite global para documentos KYC, PDFs, Modelos 3D y Planos,
         // ya que sus servicios específicos aplican sus propias reglas de tamaño.
@@ -157,10 +158,7 @@ public class SupabaseStorageService implements StorageService {
     // ─── Helpers ─────────────────────────────────────────────────────────
 
     private String extractExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf('.'));
+        return FileUploadValidator.normalizeExtensionForStorage(filename, "");
     }
 
     private String buildKey(String folder, String extension) {

@@ -8,6 +8,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.repository.PropertyMediaRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +49,7 @@ class PropertyFloorPlanServiceTest {
         ReflectionTestUtils.setField(service, "allowedTypesRaw",
                 "application/pdf,image/jpeg,image/png,image/webp");
         ReflectionTestUtils.setField(service, "maxPerProperty", 5);
+        ReflectionTestUtils.setField(service, "fileUploadValidator", new FileUploadValidator());
         service.initConfig();
 
         property = new Property();
@@ -157,7 +159,7 @@ class PropertyFloorPlanServiceTest {
                 when(mediaRepository.save(any())).thenReturn(saved);
 
                 PropertyMediaResponse response = service.upload(1L,
-                        new MockMultipartFile("file", "foto.jpg", "image/jpeg", "data".getBytes()));
+                        com.openroof.openroof.upload.UploadTestFixtures.jpeg("foto.jpg"));
 
                 assertNotNull(response);
                 assertEquals(MediaType.FLOOR_PLAN, response.getType());
@@ -324,6 +326,6 @@ class PropertyFloorPlanServiceTest {
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private MockMultipartFile pdf(String name) {
-        return new MockMultipartFile("file", name, "application/pdf", "pdf-content".getBytes());
+        return com.openroof.openroof.upload.UploadTestFixtures.pdf(name);
     }
 }
