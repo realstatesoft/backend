@@ -28,6 +28,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.AuthRateLimitingFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class SecurityConfig {
         private String allowedPreviewOriginsRaw;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
+        private final AuthRateLimitingFilter authRateLimitingFilter;
         private final PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
         private final SecurityHeadersFilter securityHeadersFilter;
         private final UserDetailsService userDetailsService;
@@ -106,6 +108,7 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
+                                .addFilterBefore(authRateLimitingFilter, PropertyViewRateLimitingFilter.class)
                                 .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class)

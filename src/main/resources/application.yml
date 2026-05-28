@@ -78,6 +78,20 @@ openroof:
     ttl-hours: ${RESERVATION_TTL_HOURS:48}
     default-percent: ${RESERVATION_DEFAULT_PERCENT:10.00}
 
+# ── Auth rate limiting (valores por defecto para desarrollo) ──
+auth:
+  rate-limit:
+    login:
+      max-per-ip: ${AUTH_RATE_LIMIT_LOGIN_MAX_IP:20}
+      max-per-email: ${AUTH_RATE_LIMIT_LOGIN_MAX_EMAIL:10}
+      window-minutes: ${AUTH_RATE_LIMIT_LOGIN_WINDOW:15}
+    register:
+      max-per-ip: ${AUTH_RATE_LIMIT_REGISTER_MAX_IP:10}
+      window-minutes: ${AUTH_RATE_LIMIT_REGISTER_WINDOW:60}
+    refresh:
+      max-per-ip: ${AUTH_RATE_LIMIT_REFRESH_MAX_IP:30}
+      window-minutes: ${AUTH_RATE_LIMIT_REFRESH_WINDOW:15}
+
 application:
   security:
     jwt:
