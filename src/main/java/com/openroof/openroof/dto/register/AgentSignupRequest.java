@@ -9,8 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * DTO específico para el registro de agentes.
- * Hereda la misma estructura que RegisterRequest pero está diseñado específicamente 
- * para simplificar el registro de agentes desde el frontend, forzando automáticamente el Role.AGENT.
+ * Este registro crea una solicitud de agente pendiente de aprobación administrativa.
  */
 @Data
 @Builder
@@ -37,7 +36,8 @@ public class AgentSignupRequest {
     private Integer experienceYears;
 
     /**
-     * Convierte este DTO a RegisterRequest estableciendo automáticamente el role como AGENT.
+     * Convierte este DTO a RegisterRequest solicitando rol AGENT.
+     * El backend lo transforma a AGENT_PENDING hasta aprobación.
      */
     public RegisterRequest toRegisterRequest() {
         return RegisterRequest.builder()

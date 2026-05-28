@@ -33,7 +33,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.Map;
 
 /* * Auth: Enrique Rios
@@ -92,12 +91,16 @@ public class AuthService {
                         }
                 }
 
+                UserRole effectiveRole = selectedRole == UserRole.AGENT
+                                ? UserRole.AGENT_PENDING
+                                : selectedRole;
+
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(selectedRole)
+                                .role(effectiveRole)
                                 .build();
 
                 userRepository.save(user);
@@ -114,13 +117,13 @@ public class AuthService {
 
                 var response = generateFullAuthResponse(user, httpRequest);
                 auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.REGISTER, null,
-                                Map.of("email", user.getEmail(), "role", selectedRole.name()));
+                                Map.of("email", user.getEmail(), "requestedRole", selectedRole.name(), "effectiveRole", effectiveRole.name()));
                 return response;
         }
 
         /**
          * Registra un nuevo agente usando la misma lógica que el registro estándar,
-         * pero forzando el Role.AGENT y permitiendo campos adicionales específicos de agente.
+         * pero dejando el rol en estado AGENT_PENDING hasta aprobación administrativa.
          */
         @Transactional
         public AuthResponse registerAgent(AgentSignupRequest request, HttpServletRequest httpRequest) {
@@ -129,13 +132,13 @@ public class AuthService {
                         throw new BadRequestException("El email ya está registrado");
                 }
 
-                // Crear usuario con role AGENT forzado
+                // Crear usuario con role AGENT_PENDING hasta aprobación
                 var user = User.builder()
                                 .email(request.getEmail())
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                                 .name(request.getName())
                                 .phone(request.getPhone())
-                                .role(UserRole.AGENT) // Forzar role AGENT
+                                .role(UserRole.AGENT_PENDING)
                                 .build();
 
                 userRepository.save(user);
@@ -163,8 +166,42 @@ public class AuthService {
 
                 var response = generateFullAuthResponse(user, httpRequest);
                 auditService.log(user, AuditEntityType.USER, user.getId(), AuditAction.REGISTER, null,
-                                Map.of("email", user.getEmail(), "role", "AGENT", "registrationType", "agent-signup"));
+                                Map.of("email", user.getEmail(), "requestedRole", "AGENT", "effectiveRole", "AGENT_PENDING", "registrationType", "agent-signup"));
                 return response;
+        }
+
+        @Transactional
+        public void approveAgentRequest(Long requestedUserId, String adminEmail) {
+                User admin = requireAdmin(adminEmail);
+                User requestedUser = userRepository.findById(requestedUserId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", requestedUserId));
+
+                if (requestedUser.getRole() != UserRole.AGENT_PENDING) {
+                        throw new BadRequestException("La solicitud no está pendiente de aprobación");
+                }
+
+                requestedUser.setRole(UserRole.AGENT);
+                userRepository.save(requestedUser);
+
+                auditService.log(admin, AuditEntityType.USER, requestedUser.getId(), AuditAction.STATUS_CHANGE, null,
+                                Map.of("fromRole", UserRole.AGENT_PENDING.name(), "toRole", UserRole.AGENT.name()));
+        }
+
+        @Transactional
+        public void rejectAgentRequest(Long requestedUserId, String adminEmail) {
+                User admin = requireAdmin(adminEmail);
+                User requestedUser = userRepository.findById(requestedUserId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "id", requestedUserId));
+
+                if (requestedUser.getRole() != UserRole.AGENT_PENDING) {
+                        throw new BadRequestException("La solicitud no está pendiente de aprobación");
+                }
+
+                requestedUser.setRole(UserRole.USER);
+                userRepository.save(requestedUser);
+
+                auditService.log(admin, AuditEntityType.USER, requestedUser.getId(), AuditAction.STATUS_CHANGE, null,
+                                Map.of("fromRole", UserRole.AGENT_PENDING.name(), "toRole", UserRole.USER.name()));
         }
 
         /*
@@ -305,5 +342,14 @@ public class AuthService {
                 } catch (NoSuchAlgorithmException ex) {
                         throw new IllegalStateException("SHA-256 not available", ex);
                 }
+        }
+
+        private User requireAdmin(String adminEmail) {
+                User admin = userRepository.findByEmail(adminEmail)
+                                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "email", adminEmail));
+                if (admin.getRole() != UserRole.ADMIN) {
+                        throw new BadRequestException("Solo administradores pueden gestionar solicitudes de agente");
+                }
+                return admin;
         }
 }
