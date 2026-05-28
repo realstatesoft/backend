@@ -28,6 +28,7 @@ import java.util.HexFormat;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -279,6 +280,22 @@ class AuthServiceTest {
         authService.logout("logout-refresh-token");
 
         verify(userSessionRepository).deleteByTokenHash(hash("logout-refresh-token"));
+    }
+
+    @Test
+    void logoutAllSessions_deletesAllSessionsForUser() {
+        User user = User.builder()
+                .email("all-sessions@test.com")
+                .passwordHash("encoded")
+                .name("All Sessions")
+                .role(UserRole.USER)
+                .build();
+
+        when(userRepository.findByEmail("all-sessions@test.com")).thenReturn(Optional.of(user));
+
+        authService.logoutAllSessions("all-sessions@test.com");
+
+        verify(userSessionRepository).deleteByUser(user);
     }
 
     private String hash(String value) {
