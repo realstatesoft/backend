@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.subscription;
 
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -16,11 +17,13 @@ public record SubscriptionPlanRequest(
         @NotNull(message = "El precio es obligatorio")
         @DecimalMin(value = "0.01", message = "El precio debe ser mayor a cero")
         @Digits(integer = 10, fraction = 2, message = "El precio no puede tener más de 2 decimales")
+        @MaxDigits(integer = 20)
         BigDecimal price,
 
         @NotNull(message = "La duración en meses es obligatoria")
         @Min(value = 1, message = "La duración mínima es 1 mes")
         @Max(value = 120, message = "La duración máxima es 120 meses")
+        @MaxDigits(integer = 20)
         Integer durationMonths,
 
         Boolean active

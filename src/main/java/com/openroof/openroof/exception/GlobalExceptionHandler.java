@@ -80,16 +80,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
+        boolean hasMaxDigitsViolation = false;
+
+        for (org.springframework.validation.ObjectError error : ex.getBindingResult().getAllErrors()) {
+            String field = error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName();
             String message = error.getDefaultMessage();
             errors.put(field, message);
-        });
+            
+            if (error.getCode() != null && error.getCode().equals("MaxDigits")) {
+                hasMaxDigitsViolation = true;
+            }
+        }
+
+        HttpStatus status = hasMaxDigitsViolation ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.BAD_REQUEST;
+        String message = hasMaxDigitsViolation ? "El campo numérico excede la longitud máxima permitida" : "Error de validación";
+
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(status)
                 .body(ApiResponse.<Map<String, String>>builder()
                         .success(false)
-                        .message("Error de validación")
+                        .message(message)
                         .data(errors)
                         .build());
     }

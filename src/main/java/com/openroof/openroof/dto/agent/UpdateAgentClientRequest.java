@@ -4,6 +4,7 @@ import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ContactMethod;
 import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -29,20 +30,26 @@ public record UpdateAgentClientRequest(
 
         // Budget range
         @DecimalMin(value = "0.0", message = "El presupuesto mínimo no puede ser negativo")
+        @MaxDigits(integer = 20)
         BigDecimal minBudget,
         @DecimalMin(value = "0.0", message = "El presupuesto máximo no puede ser negativo")
+        @MaxDigits(integer = 20)
         BigDecimal maxBudget,
 
         // Bedroom range
         @Min(value = 0, message = "El número mínimo de habitaciones no puede ser negativo")
+        @MaxDigits(integer = 20)
         Integer minBedrooms,
         @Min(value = 0, message = "El número máximo de habitaciones no puede ser negativo")
+        @MaxDigits(integer = 20)
         Integer maxBedrooms,
 
         // Bathroom range
         @Min(value = 0, message = "El número mínimo de baños no puede ser negativo")
+        @MaxDigits(integer = 20)
         Integer minBathrooms,
         @Min(value = 0, message = "El número máximo de baños no puede ser negativo")
+        @MaxDigits(integer = 20)
         Integer maxBathrooms,
 
         ContactMethod preferredContactMethod,
@@ -54,6 +61,7 @@ public record UpdateAgentClientRequest(
         String occupation,
         @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo")
         @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales")
+        @MaxDigits(integer = 20)
         BigDecimal annualIncome,
         String address,
         String sourceChannel,

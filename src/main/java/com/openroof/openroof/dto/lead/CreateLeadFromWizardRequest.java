@@ -2,6 +2,7 @@ package com.openroof.openroof.dto.lead;
 
 import com.openroof.openroof.model.enums.PropertyCategory;
 import com.openroof.openroof.model.enums.PropertyType;
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,7 +41,9 @@ public record CreateLeadFromWizardRequest(
         @NotBlank(message = "La dirección es requerida")
         String address,
         
+        @MaxDigits(integer = 20)
         Double latitude,
+        @MaxDigits(integer = 20)
         Double longitude,
 
         @NotNull(message = "El tipo de propiedad es requerido")
@@ -53,13 +56,18 @@ public record CreateLeadFromWizardRequest(
         String surfaceArea,
         String builtArea,
         String yearBuilt,
+        @MaxDigits(integer = 20)
         Integer bedrooms,
+        @MaxDigits(integer = 20)
         Integer halfBath,
+        @MaxDigits(integer = 20)
         Integer threeQuarterBath,
+        @MaxDigits(integer = 20)
         Integer floors,
 
         // Features
         Boolean hasPool,
+        @MaxDigits(integer = 20)
         Integer parkingSpaces,
         Boolean hasSecureEntry,
         Boolean hasBasement,

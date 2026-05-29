@@ -4,6 +4,7 @@ import com.openroof.openroof.model.enums.ClientStatus;
 import com.openroof.openroof.model.enums.ContactMethod;
 import com.openroof.openroof.model.enums.MaritalStatus;
 import com.openroof.openroof.model.enums.Priority;
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -31,16 +32,16 @@ public record CreateAgentClientRequest(
         List<String> tags,
 
         // Budget range
-        @PositiveOrZero(message = "El presupuesto mínimo no puede ser negativo") BigDecimal minBudget,
-        @PositiveOrZero(message = "El presupuesto máximo no puede ser negativo") BigDecimal maxBudget,
+        @MaxDigits(integer = 20) @PositiveOrZero(message = "El presupuesto mínimo no puede ser negativo") BigDecimal minBudget,
+        @MaxDigits(integer = 20) @PositiveOrZero(message = "El presupuesto máximo no puede ser negativo") BigDecimal maxBudget,
 
         // Bedroom range
-        @Min(value = 0, message = "El número mínimo de habitaciones no puede ser negativo") Integer minBedrooms,
-        @Min(value = 0, message = "El número máximo de habitaciones no puede ser negativo") Integer maxBedrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "El número mínimo de habitaciones no puede ser negativo") Integer minBedrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "El número máximo de habitaciones no puede ser negativo") Integer maxBedrooms,
 
         // Bathroom range
-        @Min(value = 0, message = "El número mínimo de baños no puede ser negativo") Integer minBathrooms,
-        @Min(value = 0, message = "El número máximo de baños no puede ser negativo") Integer maxBathrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "El número mínimo de baños no puede ser negativo") Integer minBathrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "El número máximo de baños no puede ser negativo") Integer maxBathrooms,
 
         ContactMethod preferredContactMethod,
 
@@ -48,7 +49,7 @@ public record CreateAgentClientRequest(
         @PastOrPresent(message = "La fecha de nacimiento no puede ser una fecha futura") LocalDate birthDate,
         MaritalStatus maritalStatus,
         String occupation,
-        @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo") @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales") BigDecimal annualIncome,
+        @MaxDigits(integer = 20) @DecimalMin(value = "0.00", message = "El ingreso anual no puede ser negativo") @Digits(integer = 12, fraction = 2, message = "El ingreso anual debe tener máximo 2 decimales") BigDecimal annualIncome,
         String address,
         String sourceChannel,
 
