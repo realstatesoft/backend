@@ -3,6 +3,8 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.register.RegisterRequest;
 import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
+import com.openroof.openroof.dto.security.LoginRequest;
+import com.openroof.openroof.exception.TooManyRequestsException;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
@@ -12,6 +14,7 @@ import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.security.AuthRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +60,8 @@ class AuthServiceTest {
     @Mock
     private AuditService auditService;
     @Mock
+    private AuthRateLimiter authRateLimiter;
+    @Mock
     private HttpServletRequest httpRequest;
 
     private AuthService authService;
@@ -71,8 +76,11 @@ class AuthServiceTest {
                 userSessionRepository,
                 agentProfileRepository,
                 emailService,
-                auditService
+                auditService,
+                authRateLimiter
         );
+
+        lenient().when(authRateLimiter.isLoginAllowedForEmail(any())).thenReturn(true);
 
         lenient().when(passwordEncoder.encode(any())).thenReturn("encoded");
         lenient().when(jwtService.generateToken(any(User.class))).thenReturn("access-token");
@@ -374,5 +382,17 @@ class AuthServiceTest {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 not available", ex);
         }
+    }
+
+    @Test
+    void login_blocksWhenEmailRateLimitExceeded() {
+        when(authRateLimiter.isLoginAllowedForEmail("blocked@test.com")).thenReturn(false);
+
+        LoginRequest request = LoginRequest.builder()
+                .email("blocked@test.com")
+                .password("anyPassword")
+                .build();
+
+        assertThrows(TooManyRequestsException.class, () -> authService.login(request, httpRequest));
     }
 }

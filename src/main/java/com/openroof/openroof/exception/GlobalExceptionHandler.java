@@ -14,6 +14,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.TransactionSystemException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,16 +35,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<ApiResponse<Void>> handleStorage(StorageException ex) {
+        log.error("Error de almacenamiento: ", ex);
         return ResponseEntity
                 .status(HttpStatus.BAD_GATEWAY)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error("Error en el servicio de almacenamiento"));
     }
 
     @ExceptionHandler(InvalidConfigurationException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidConfiguration(InvalidConfigurationException ex) {
+        log.error("Error de configuración interna: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error("Error interno del servidor"));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -104,6 +108,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Credenciales inválidas"));
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(TooManyRequestsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException ex) {
         return ResponseEntity
@@ -125,11 +136,34 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Acceso denegado"));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Violación de integridad de datos: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("Operación no permitida: conflicto de datos"));
+    }
+
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTransactionSystem(TransactionSystemException ex) {
+        Throwable cause = ex.getRootCause();
+        if (cause instanceof ConstraintViolationException cve) {
+            log.warn("Violación de restricción en transacción: {}", cve.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Error de validación"));
+        }
+        log.error("Error del sistema de transacciones: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Error interno del servidor"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Unhandled exception: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor: " + ex.getMessage()));
+                .body(ApiResponse.error("Error interno del servidor"));
     }
 }
