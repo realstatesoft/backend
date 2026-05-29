@@ -63,8 +63,9 @@ public class UserService {
 
     /**
      * Sube una imagen como foto de perfil del usuario y la guarda en Supabase Storage.
+     * La carga al storage externo ocurre fuera de cualquier transacción; el save
+     * a BD corre en su propia transacción (SimpleJpaRepository.save es @Transactional).
      */
-    @Transactional
     public UserProfileResponse uploadAvatar(String email, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
