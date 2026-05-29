@@ -218,6 +218,93 @@ class PropertyMapperTest {
     }
 
     /**
+     * toResponse_withOwnerHavingAvatar_mapsOwnerAvatarUrl.
+     */
+    @Test
+    @DisplayName("toResponse_withOwnerHavingAvatar_mapsOwnerAvatarUrl")
+    void toResponse_withOwnerHavingAvatar_mapsOwnerAvatarUrl() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(10L);
+        when(owner.getName()).thenReturn("Cesar Ayala");
+        when(owner.getAvatarUrl()).thenReturn("https://example.com/avatars/cesar.jpg");
+
+        when(agentProfileRepository.findByUser_Id(10L)).thenReturn(Optional.empty());
+
+        Property p = Property.builder()
+                .title("T").propertyType(PropertyType.HOUSE).address("A").price(BigDecimal.ONE)
+                .owner(owner).build();
+
+        var resp = mapper.toResponse(p);
+
+        assertThat(resp.ownerAvatarUrl()).isEqualTo("https://example.com/avatars/cesar.jpg");
+        assertThat(resp.ownerAgentProfileId()).isNull();
+    }
+
+    /**
+     * toResponse_withOwnerNoAvatar_ownerAvatarUrlIsNull.
+     */
+    @Test
+    @DisplayName("toResponse_withOwnerNoAvatar_ownerAvatarUrlIsNull")
+    void toResponse_withOwnerNoAvatar_ownerAvatarUrlIsNull() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(11L);
+        when(owner.getName()).thenReturn("No Avatar User");
+        when(owner.getAvatarUrl()).thenReturn(null);
+
+        when(agentProfileRepository.findByUser_Id(11L)).thenReturn(Optional.empty());
+
+        Property p = Property.builder()
+                .title("T").propertyType(PropertyType.HOUSE).address("A").price(BigDecimal.ONE)
+                .owner(owner).build();
+
+        var resp = mapper.toResponse(p);
+
+        assertThat(resp.ownerAvatarUrl()).isNull();
+        assertThat(resp.ownerAgentProfileId()).isNull();
+    }
+
+    /**
+     * toResponse_withOwnerThatIsAgent_mapsOwnerAgentProfileId.
+     */
+    @Test
+    @DisplayName("toResponse_withOwnerThatIsAgent_mapsOwnerAgentProfileId")
+    void toResponse_withOwnerThatIsAgent_mapsOwnerAgentProfileId() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(20L);
+        when(owner.getName()).thenReturn("Agent Owner");
+        when(owner.getAvatarUrl()).thenReturn("https://example.com/avatars/agent.jpg");
+
+        AgentProfile agentProfile = mock(AgentProfile.class);
+        when(agentProfile.getId()).thenReturn(99L);
+        when(agentProfileRepository.findByUser_Id(20L)).thenReturn(Optional.of(agentProfile));
+
+        Property p = Property.builder()
+                .title("T").propertyType(PropertyType.HOUSE).address("A").price(BigDecimal.ONE)
+                .owner(owner).build();
+
+        var resp = mapper.toResponse(p);
+
+        assertThat(resp.ownerAvatarUrl()).isEqualTo("https://example.com/avatars/agent.jpg");
+        assertThat(resp.ownerAgentProfileId()).isEqualTo(99L);
+    }
+
+    /**
+     * toResponse_withNullOwner_ownerAvatarUrlAndAgentProfileIdAreNull.
+     */
+    @Test
+    @DisplayName("toResponse_withNullOwner_ownerAvatarUrlAndAgentProfileIdAreNull")
+    void toResponse_withNullOwner_ownerAvatarUrlAndAgentProfileIdAreNull() {
+        Property p = Property.builder()
+                .title("T").propertyType(PropertyType.HOUSE).address("A").price(BigDecimal.ONE)
+                .owner(null).build();
+
+        var resp = mapper.toResponse(p);
+
+        assertThat(resp.ownerAvatarUrl()).isNull();
+        assertThat(resp.ownerAgentProfileId()).isNull();
+    }
+
+    /**
      * toResponse_withMediaList_mapsMediaCorrectly.
      */
     @Test
