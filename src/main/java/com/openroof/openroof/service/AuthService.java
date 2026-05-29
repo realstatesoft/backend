@@ -12,6 +12,8 @@ import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.exception.TooManyRequestsException;
+import com.openroof.openroof.security.AuthRateLimiter;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
@@ -52,12 +54,19 @@ public class AuthService {
         private final AgentProfileRepository agentProfileRepository;
         private final EmailService emailService;
         private final AuditService auditService;
+        private final AuthRateLimiter authRateLimiter;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
          */
         @Transactional
         public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+                // Rate limit por email antes de intentar autenticar.
+                if (!authRateLimiter.isLoginAllowedForEmail(request.getEmail())) {
+                        throw new TooManyRequestsException(
+                                        "Demasiados intentos para este correo. Por favor, intente más tarde.");
+                }
+
                 // Autenticar.
                 var auth = authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
