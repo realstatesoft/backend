@@ -137,12 +137,20 @@ mail:
 screening:
   provider: ${SCREENING_PROVIDER:INTERNAL}
 
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:true}
+    same-site: ${APP_COOKIE_SAME_SITE:Lax}
 ---
 # Developer profile: activate with -Dspring.profiles.active=dev
 spring:
   config:
     activate:
       on-profile: dev
+
+app:
+  cookie:
+    secure: false
 
 logging:
   level:

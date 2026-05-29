@@ -16,12 +16,14 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.user.User;
+import com.openroof.openroof.repository.AgentProfileRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -33,7 +35,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("PropertyMapper")
 class PropertyMapperTest {
 
-    private final PropertyMapper mapper = new PropertyMapper();
+    private final AgentProfileRepository agentProfileRepository = mock(AgentProfileRepository.class);
+    private final PropertyMapper mapper = new PropertyMapper(agentProfileRepository);
 
     // ─── toResponse ──────────────────────────────────────────────────────────
 

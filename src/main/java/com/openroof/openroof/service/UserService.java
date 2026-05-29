@@ -3,6 +3,7 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.user.UpdateUserRequest;
 import com.openroof.openroof.dto.user.UserProfileResponse;
 import com.openroof.openroof.dto.user.UserSearchResponse;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
@@ -10,8 +11,10 @@ import com.openroof.openroof.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
+import java.util.Set;
 import java.time.LocalDateTime;
 
 @Service
@@ -20,7 +23,13 @@ public class UserService {
 
     public static final LocalDateTime INDEFINITE_SUSPENSION_DATE = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
+    private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif"
+    );
+    private static final long MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
     private final UserRepository userRepository;
+    private final StorageService storageService;
 
     /**
      * Retorna el perfil del usuario autenticado.
@@ -48,6 +57,29 @@ public class UserService {
             user.setAvatarUrl(request.getAvatarUrl());
         }
 
+        userRepository.save(user);
+        return UserProfileResponse.from(user);
+    }
+
+    /**
+     * Sube una imagen como foto de perfil del usuario y la guarda en Supabase Storage.
+     */
+    @Transactional
+    public UserProfileResponse uploadAvatar(String email, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_AVATAR_TYPES.contains(contentType)) {
+            throw new BadRequestException("Tipo de imagen no permitido. Use JPEG, PNG, WebP o GIF.");
+        }
+        if (file.getSize() > MAX_AVATAR_SIZE_BYTES) {
+            throw new BadRequestException("La imagen no puede superar 5 MB.");
+        }
+
+        User user = findByEmail(email);
+        StorageService.UploadResult result = storageService.upload(file, "avatars");
+        user.setAvatarUrl(result.url());
         userRepository.save(user);
         return UserProfileResponse.from(user);
     }

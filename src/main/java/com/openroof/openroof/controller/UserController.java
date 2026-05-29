@@ -14,9 +14,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 
@@ -45,6 +47,17 @@ public class UserController {
 
         UserProfileResponse updated = userService.updatePersonalData(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.ok(updated, "Datos personales actualizados exitosamente"));
+    }
+
+    @Operation(summary = "Subir foto de perfil", description = "Sube una imagen como foto de perfil del usuario autenticado (JPEG, PNG, WebP, GIF — máx. 5 MB)")
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+
+        UserProfileResponse updated = userService.uploadAvatar(principal.getName(), file);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Foto de perfil actualizada exitosamente"));
     }
 
     @Operation(summary = "Buscar usuario por email",
