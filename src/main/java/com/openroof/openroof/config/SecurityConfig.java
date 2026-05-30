@@ -74,9 +74,10 @@ public class SecurityConfig {
         };
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(AbstractHttpConfigurer::disable)
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+                try {
+                        http
+                                .csrf(csrf -> csrf.ignoringRequestMatchers("/**"))
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -108,10 +109,10 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
-                                .addFilterBefore(authRateLimitingFilter, PropertyViewRateLimitingFilter.class)
-                                .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class)
+                                 .addFilterBefore(securityHeadersFilter, org.springframework.security.web.header.HeaderWriterFilter.class)
+                                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                                 .addFilterBefore(propertyViewRateLimitingFilter, org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter.class)
+                                 .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .headers(headers -> headers
                                         .httpStrictTransportSecurity(hsts -> hsts
                                                 .includeSubDomains(true)
@@ -119,7 +120,10 @@ public class SecurityConfig {
                                         .frameOptions(frame -> frame.sameOrigin())
                                         .contentTypeOptions(content -> {}));
 
-                return http.build();
+                        return http.build();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo configurar la cadena de seguridad", e);
+                }
         }
 
         @Bean
@@ -130,8 +134,12 @@ public class SecurityConfig {
         }
 
         @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-                return config.getAuthenticationManager();
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+                try {
+                        return config.getAuthenticationManager();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo obtener el administrador de autenticación", e);
+                }
         }
 
         @Bean

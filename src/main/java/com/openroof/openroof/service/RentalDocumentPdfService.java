@@ -7,6 +7,8 @@ import com.lowagie.text.FontFactory;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -109,12 +112,12 @@ public class RentalDocumentPdfService {
 
             document.close();
             return out.toByteArray();
-        } catch (Exception e) {
+        } catch (DocumentException | IOException e) {
             throw new IllegalStateException("No se pudo generar el PDF", e);
         }
     }
 
-    private void addHeader(Document document, String documentType, String title, String number) throws Exception {
+    private void addHeader(Document document, String documentType, String title, String number) throws DocumentException {
         PdfPTable header = new PdfPTable(2);
         header.setWidthPercentage(100);
         header.setWidths(new float[]{1.4f, 1f});
@@ -147,7 +150,7 @@ public class RentalDocumentPdfService {
     }
 
     private void addParties(Document document, String leftTitle, String leftName, String leftEmail,
-                            String rightTitle, String rightName, String rightEmail) throws Exception {
+                            String rightTitle, String rightName, String rightEmail) throws DocumentException {
         PdfPTable parties = new PdfPTable(2);
         parties.setWidthPercentage(100);
         parties.setWidths(new float[]{1f, 1f});
@@ -166,7 +169,7 @@ public class RentalDocumentPdfService {
         return cell;
     }
 
-    private PdfPTable infoTable() throws Exception {
+    private PdfPTable infoTable() throws DocumentException {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{1f, 2.5f});
@@ -181,14 +184,14 @@ public class RentalDocumentPdfService {
         table.addCell(valueCell);
     }
 
-    private void addSectionTitle(Document document, String title) throws Exception {
+    private void addSectionTitle(Document document, String title) throws DocumentException {
         Paragraph paragraph = new Paragraph(title, font(FontFactory.HELVETICA_BOLD, 12, DARK));
         paragraph.setSpacingBefore(4);
         paragraph.setSpacingAfter(8);
         document.add(paragraph);
     }
 
-    private PdfPTable detailTable() throws Exception {
+    private PdfPTable detailTable() throws DocumentException {
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{3.2f, 0.7f, 1.2f, 1.2f});
@@ -210,7 +213,7 @@ public class RentalDocumentPdfService {
         addBodyCell(table, total, Element.ALIGN_RIGHT);
     }
 
-    private void addTotals(Document document, String currency, BigDecimal total, BigDecimal paid, BigDecimal balance) throws Exception {
+    private void addTotals(Document document, String currency, BigDecimal total, BigDecimal paid, BigDecimal balance) throws DocumentException {
         PdfPTable table = totalsTable();
         addTotalRow(table, "Subtotal", money(total, currency), false);
         addTotalRow(table, "Pagado", money(paid, currency), false);
@@ -218,13 +221,13 @@ public class RentalDocumentPdfService {
         document.add(table);
     }
 
-    private void addPaidSummary(Document document, String currency, BigDecimal amount) throws Exception {
+    private void addPaidSummary(Document document, String currency, BigDecimal amount) throws DocumentException {
         PdfPTable table = totalsTable();
         addTotalRow(table, "Total recibido", money(amount, currency), true);
         document.add(table);
     }
 
-    private PdfPTable totalsTable() throws Exception {
+    private PdfPTable totalsTable() throws DocumentException {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(48);
         table.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -245,7 +248,7 @@ public class RentalDocumentPdfService {
         table.addCell(valueCell);
     }
 
-    private void addFooter(Document document) throws Exception {
+    private void addFooter(Document document) throws DocumentException {
         Paragraph thanks = new Paragraph("Gracias por utilizar OpenRoof.", font(FontFactory.HELVETICA_BOLD, 10, DARK));
         thanks.setSpacingBefore(8);
         thanks.setAlignment(Element.ALIGN_CENTER);
@@ -271,7 +274,7 @@ public class RentalDocumentPdfService {
 
     private PdfPCell noBorderCell() {
         PdfPCell cell = new PdfPCell();
-        cell.setBorder(PdfPCell.NO_BORDER);
+        cell.setBorder(Rectangle.NO_BORDER);
         cell.setPadding(0);
         return cell;
     }
@@ -349,6 +352,6 @@ public class RentalDocumentPdfService {
 
     @FunctionalInterface
     private interface DocumentWriter {
-        void write(Document document) throws Exception;
+        void write(Document document) throws DocumentException;
     }
 }

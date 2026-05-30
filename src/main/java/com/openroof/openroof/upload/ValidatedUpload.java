@@ -6,7 +6,6 @@ package com.openroof.openroof.upload;
 public record ValidatedUpload(
         DetectedFileKind kind,
         String normalizedExtension,
-        String resolvedContentType,
-        byte[] content
+        String resolvedContentType
 ) {
 }

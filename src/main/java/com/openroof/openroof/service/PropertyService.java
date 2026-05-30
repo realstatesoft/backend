@@ -10,19 +10,33 @@ import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.AuditAction;
 import com.openroof.openroof.model.enums.AuditEntityType;
 import com.openroof.openroof.model.enums.PropertyStatus;
+import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.payment.Payment;
 import com.openroof.openroof.model.enums.PaymentStatus;
+import com.openroof.openroof.model.preference.PreferenceOption;
+import com.openroof.openroof.model.preference.UserPreference;
+import com.openroof.openroof.model.preference.UserPreferenceRange;
 import com.openroof.openroof.model.property.*;
 import com.openroof.openroof.repository.PaymentRepository;
 import com.openroof.openroof.model.search.PropertySpecification;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -50,14 +64,18 @@ import java.util.Set;
 @Slf4j
 public class PropertyService {
 
+    private record ScoredPropertyRow(Property property, int score) {}
+
     private static final int MAX_IP_ADDRESS_LENGTH = 45;
+    private static final String CREATED_AT_FIELD = "createdAt";
+    private static final String SCORE_ALIAS = "score";
 
     /**
      * Campos permitidos para ordenar. Cualquier otro valor se reemplaza por
      * 'createdAt'.
      */
     private static final Set<String> VALID_SORT_FIELDS = Set.of(
-            "createdAt", "price", "bedrooms", "bathrooms", "surfaceArea", "title");
+            CREATED_AT_FIELD, "price", "bedrooms", "bathrooms", "surfaceArea", "title");
 
     private final PropertyRepository propertyRepository;
     private final PropertyViewRepository propertyViewRepository;
@@ -73,6 +91,7 @@ public class PropertyService {
     private final AuditService auditService;
     private final UserPreferenceRepository userPreferenceRepository;
     private final PropertyRelevanceService propertyRelevanceService;
+    private final EntityManager entityManager;
 
     private static final double EARTH_RADIUS = 6371;
 
@@ -684,7 +703,7 @@ public class PropertyService {
         if (pageable.getSort().isUnsorted()) return true;
         // Consideramos "default" si ordena por createdAt DESC
         return pageable.getSort().stream().anyMatch(o -> 
-            "createdAt".equals(o.getProperty()) && o.getDirection() == Sort.Direction.DESC);
+            CREATED_AT_FIELD.equals(o.getProperty()) && o.getDirection() == Sort.Direction.DESC);
     }
 
     private Page<PropertySummaryResponse> getPageWithRelevance(Specification<Property> spec, Pageable pageable, Long userId) {
@@ -697,33 +716,159 @@ public class PropertyService {
                     .map(propertyMapper::toSummaryResponse);
         }
 
-        // 2. Obtener TODAS las propiedades que matchean el filtro (limitado a 500 para performance)
-        // Nota: En una app real esto se haría con un Score en SQL, pero aquí lo hacemos en memoria.
-        List<Property> allMatches = propertyRepository.findAll(spec);
+        List<ScoredPropertyRow> properties = findRelevancePage(spec, pageable, pref);
+        long total = propertyRepository.count(spec);
 
-        // 3. Calcular score y mapear
-        List<PropertySummaryResponse> scoredList = allMatches.stream()
-                .map(p -> {
-                    int score = propertyRelevanceService.calculateScore(p, pref);
-                    return propertyMapper.toSummaryResponse(p, score);
-                })
-                // 4. Ordenar por score (DESC) y luego por fecha (DESC)
-                .sorted((a, b) -> {
-                    int res = Integer.compare(b.relevanceScore(), a.relevanceScore());
-                    return res != 0 ? res : b.id().compareTo(a.id()); // id como fallback
-                })
+        List<PropertySummaryResponse> content = properties.stream()
+                .map(p -> propertyMapper.toSummaryResponse(p.property(), p.score()))
                 .toList();
 
-        // 5. Paginar manualmente la lista resultante
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), scoredList.size());
-        
-        List<PropertySummaryResponse> content = (start <= scoredList.size()) 
-                ? scoredList.subList(start, end) 
-                : List.of();
+        return new PageImpl<>(content, pageable, total);
+    }
 
-        return new org.springframework.data.domain.PageImpl<>(
-                content, pageable, scoredList.size());
+    private List<ScoredPropertyRow> findRelevancePage(Specification<Property> spec, Pageable pageable, UserPreference pref) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Tuple> query = cb.createTupleQuery();
+        Root<Property> root = query.from(Property.class);
+
+        Predicate predicate = spec.toPredicate(root, query, cb);
+        if (predicate != null) {
+            query.where(predicate);
+        }
+
+        Expression<Integer> score = buildRelevanceScoreExpression(cb, query, root, pref);
+        query.multiselect(root.alias("property"), score.alias(SCORE_ALIAS))
+                .orderBy(cb.desc(score), cb.desc(root.get("id")));
+
+        List<Tuple> results = entityManager.createQuery(query)
+                .setFirstResult(Math.toIntExact(pageable.getOffset()))
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        return results.stream()
+                .map(tuple -> new ScoredPropertyRow(
+                        tuple.get("property", Property.class),
+                        tuple.get(SCORE_ALIAS, Integer.class) != null ? tuple.get(SCORE_ALIAS, Integer.class) : 0
+                ))
+                .toList();
+    }
+
+    private Expression<Integer> buildRelevanceScoreExpression(
+            CriteriaBuilder cb,
+            CriteriaQuery<?> query,
+            Root<Property> root,
+            UserPreference pref
+    ) {
+        Expression<Integer> score = cb.literal(0);
+
+        List<PropertyType> propertyTypes = pref.getSelectedOptions().stream()
+                .filter(option -> hasCategory(option, "PROPERTY_TYPE"))
+                .map(PreferenceOption::getValue)
+                .map(this::parsePropertyType)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!propertyTypes.isEmpty()) {
+            score = cb.sum(score, cb.<Integer>selectCase()
+                    .when(root.get("propertyType").in(propertyTypes), 30)
+                    .otherwise(0));
+        }
+
+        List<String> zones = pref.getSelectedOptions().stream()
+                .filter(option -> hasCategory(option, "ZONE"))
+                .map(PreferenceOption::getLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .map(String::toLowerCase)
+                .toList();
+        if (!zones.isEmpty()) {
+            Expression<String> address = cb.lower(cb.coalesce(root.get("address"), ""));
+            Predicate zonePredicate = cb.disjunction();
+            for (String zone : zones) {
+                zonePredicate = cb.or(zonePredicate, cb.like(address, "%" + zone + "%"));
+            }
+            score = cb.sum(score, cb.<Integer>selectCase().when(zonePredicate, 25).otherwise(0));
+        }
+
+        score = addRangeScore(cb, root, score, pref, "PRICE", "price", 20);
+        score = addRangeScore(cb, root, score, pref, "BEDROOMS", "bedrooms", 15);
+        score = addExteriorFeatureScore(cb, query, root, score, pref);
+
+        return score;
+    }
+
+    private Expression<Integer> addExteriorFeatureScore(
+            CriteriaBuilder cb,
+            CriteriaQuery<?> query,
+            Root<Property> root,
+            Expression<Integer> score,
+            UserPreference pref
+    ) {
+        List<String> featureNames = pref.getSelectedOptions().stream()
+                .filter(option -> hasCategory(option, "EXTERIOR_FEATURE"))
+                .map(PreferenceOption::getLabel)
+                .filter(label -> label != null && !label.isBlank())
+                .map(String::toLowerCase)
+                .toList();
+        if (featureNames.isEmpty()) {
+            return score;
+        }
+
+        Subquery<Long> matchCount = query.subquery(Long.class);
+        Root<Property> propertySubquery = matchCount.from(Property.class);
+        Join<Property, ExteriorFeature> feature = propertySubquery.join("exteriorFeatures");
+
+        matchCount.select(cb.count(feature));
+        matchCount.where(
+                cb.equal(propertySubquery.get("id"), root.get("id")),
+                cb.lower(feature.get("name")).in(featureNames)
+        );
+
+        Expression<Integer> exteriorScore = cb.<Integer>selectCase()
+                .when(cb.greaterThanOrEqualTo(matchCount, 2L), 10)
+                .when(cb.equal(matchCount, 1L), 5)
+                .otherwise(0);
+
+        return cb.sum(score, exteriorScore);
+    }
+
+    private Expression<Integer> addRangeScore(
+            CriteriaBuilder cb,
+            Root<Property> root,
+            Expression<Integer> score,
+            UserPreference pref,
+            String preferenceField,
+            String propertyField,
+            int weight
+    ) {
+        UserPreferenceRange range = pref.getRanges().stream()
+                .filter(r -> preferenceField.equals(r.getFieldName()))
+                .findFirst()
+                .orElse(null);
+        if (range == null) {
+            return score;
+        }
+
+        Expression<Double> value = root.get(propertyField).as(Double.class);
+        Predicate predicate = cb.conjunction();
+        if (range.getMinValue() != null) {
+            predicate = cb.and(predicate, cb.greaterThanOrEqualTo(value, range.getMinValue()));
+        }
+        if (range.getMaxValue() != null) {
+            predicate = cb.and(predicate, cb.lessThanOrEqualTo(value, range.getMaxValue()));
+        }
+
+        return cb.sum(score, cb.<Integer>selectCase().when(predicate, weight).otherwise(0));
+    }
+
+    private boolean hasCategory(PreferenceOption option, String categoryCode) {
+        return option.getCategory() != null && categoryCode.equals(option.getCategory().getCode());
+    }
+
+    private PropertyType parsePropertyType(String value) {
+        try {
+            return value == null ? null : PropertyType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     // ─── Destacar propiedad ───────────────────────────────────────
@@ -815,7 +960,7 @@ public class PropertyService {
             }
         }
         Sort safeSort = safeOrders.isEmpty()
-                ? Sort.by(Sort.Direction.DESC, "createdAt")
+                ? Sort.by(Sort.Direction.DESC, CREATED_AT_FIELD)
                 : Sort.by(safeOrders);
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), safeSort);
     }
