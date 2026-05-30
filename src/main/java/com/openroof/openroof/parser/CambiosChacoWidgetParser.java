@@ -34,7 +34,7 @@ public class CambiosChacoWidgetParser {
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final Pattern CELL_PATTERN = Pattern.compile("<td(?:\\s+[^>]*)?>(.*?)</td>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-    private static final Pattern ICON_CLASS_PATTERN = Pattern.compile("class=\"moneda\\s+([^\"]+)\"",
+    private static final Pattern ICON_CLASS_PATTERN = Pattern.compile("class=\"moneda\\s+([a-zA-Z0-9_-]+)\"",
             Pattern.CASE_INSENSITIVE);
 
     private static final DateTimeFormatter UPDATED_AT_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
