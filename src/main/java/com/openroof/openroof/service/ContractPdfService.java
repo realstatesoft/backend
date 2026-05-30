@@ -105,33 +105,32 @@ public class ContractPdfService {
     // ─── Construcción del PDF ─────────────────────────────────────────────────
 
     private byte[] buildPdf(Contract contract, List<ContractSignature> signatures) throws DocumentException {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            try (Document doc = new Document(PageSize.A4, 50, 50, 60, 50)) {
-                PdfWriter.getInstance(doc, baos);
-                doc.open();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (Document doc = new Document(PageSize.A4, 50, 50, 60, 50)) {
+            PdfWriter.getInstance(doc, baos);
+            doc.open();
 
-                Font bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
-                Font regular = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
-                Font italic = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10, Color.BLACK);
+            Font bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
+            Font regular = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
+            Font italic = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10, Color.BLACK);
 
-                LocalDateTime now = LocalDateTime.now();
-                String generatedAt = now.format(DATETIME_FMT);
+            LocalDateTime now = LocalDateTime.now();
+            String generatedAt = now.format(DATETIME_FMT);
 
-                addHeader(doc, contract, bold, regular);
-                addDivider(doc);
-                addInfoSection(doc, contract, generatedAt, bold, regular);
-                addPartiesSection(doc, contract, bold, regular);
-                
-                doc.newPage();
-                addTermsSection(doc, contract, bold, regular);
-                
-                doc.newPage();
-                addSignaturesSection(doc, signatures, bold, regular, italic);
-                
-                addFooter(doc, contract, generatedAt, regular);
-            }
-            return baos.toByteArray();
+            addHeader(doc, contract, bold, regular);
+            addDivider(doc);
+            addInfoSection(doc, contract, generatedAt, bold, regular);
+            addPartiesSection(doc, contract, bold, regular);
+            
+            doc.newPage();
+            addTermsSection(doc, contract, bold, regular);
+            
+            doc.newPage();
+            addSignaturesSection(doc, signatures, bold, regular, italic);
+            
+            addFooter(doc, contract, generatedAt, regular);
         }
+        return baos.toByteArray();
     }
 
     // ─── Secciones del documento ──────────────────────────────────────────────
