@@ -2,7 +2,6 @@ package com.openroof.openroof.dto.payment;
 
 import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.model.payment.PaymentMetadata;
-import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -18,7 +17,6 @@ public record PaymentRequest(
         @NotNull(message = "El monto es obligatorio")
         @DecimalMin(value = "0.01", message = "El monto debe ser mayor a cero")
         @Digits(integer = 10, fraction = 2, message = "El monto no puede tener más de 2 decimales")
-        @MaxDigits(integer = 20)
         BigDecimal amount,
 
         @NotBlank(message = "El concepto no puede estar vacío")

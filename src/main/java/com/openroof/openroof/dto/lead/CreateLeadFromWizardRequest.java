@@ -56,18 +56,13 @@ public record CreateLeadFromWizardRequest(
         String surfaceArea,
         String builtArea,
         String yearBuilt,
-        @MaxDigits(integer = 20)
         Integer bedrooms,
-        @MaxDigits(integer = 20)
         Integer halfBath,
-        @MaxDigits(integer = 20)
         Integer threeQuarterBath,
-        @MaxDigits(integer = 20)
         Integer floors,
 
         // Features
         Boolean hasPool,
-        @MaxDigits(integer = 20)
         Integer parkingSpaces,
         Boolean hasSecureEntry,
         Boolean hasBasement,
