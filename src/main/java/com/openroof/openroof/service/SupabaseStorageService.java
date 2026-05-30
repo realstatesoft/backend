@@ -178,6 +178,11 @@ public class SupabaseStorageService implements StorageService {
         if (folder == null || folder.isBlank()) {
             return uuid + extension;
         }
-        return folder.replaceAll("/+$", "") + "/" + uuid + extension;
+        int len = folder.length();
+        while (len > 0 && folder.charAt(len - 1) == '/') {
+            len--;
+        }
+        String cleanedFolder = folder.substring(0, len);
+        return cleanedFolder + "/" + uuid + extension;
     }
 }

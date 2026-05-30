@@ -25,12 +25,11 @@ public class CambiosChacoWidgetParser {
     public static final String USD = "USD";
     public static final String BRL = "BRL";
 
-    private static final Pattern LAST_UPDATED_PATTERN = Pattern.compile(
-            "Última Actualización:\\s*<span class=\"time\">.*?(\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2})",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern DATE_PATTERN = Pattern.compile(
+            "(\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2})");
 
     private static final Pattern ROW_PATTERN = Pattern.compile(
-            "<tr>\\s*<td><i class=\"moneda\\s+([^\"]+)\"></i>\\s*([^<]+?)</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+).*?</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+).*?</td>\\s*</tr>",
+            "<tr>\\s*<td>\\s*<i class=\"moneda\\s+([a-zA-Z0-9_-]+)\"></i>\\s*([^<\\s][^<]*?)</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+)(?:\\s*<[^>]+>)*\\s*</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+)(?:\\s*<[^>]+>)*\\s*</td>\\s*</tr>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private static final DateTimeFormatter UPDATED_AT_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -70,7 +69,19 @@ public class CambiosChacoWidgetParser {
     }
 
     private Optional<LocalDateTime> parseLastUpdated(String html) {
-        Matcher matcher = LAST_UPDATED_PATTERN.matcher(html);
+        int index = html.indexOf("Última Actualización:");
+        if (index == -1) {
+            index = html.toLowerCase(Locale.ROOT).indexOf("última actualización:");
+        }
+        if (index == -1) {
+            return Optional.empty();
+        }
+
+        int start = index + "Última Actualización:".length();
+        int end = Math.min(start + 150, html.length());
+        String window = html.substring(start, end);
+
+        Matcher matcher = DATE_PATTERN.matcher(window);
         if (!matcher.find()) {
             return Optional.empty();
         }
