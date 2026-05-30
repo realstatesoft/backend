@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -49,42 +51,49 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String jwt = authHeader.substring(7);
-        final String userEmail = jwtService.extractUsername(jwt);
+        try {
+            final String userEmail = jwtService.extractUsername(jwt);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                // ─── Bloqueo por suspensión ───────────────────────────
-                if (userDetails instanceof User user && user.getRole() != UserRole.ADMIN
-                        && userService.isUserSuspended(user)) {
+                    // ─── Bloqueo por suspensión ───────────────────────────
+                    if (userDetails instanceof User user && user.getRole() != UserRole.ADMIN
+                            && userService.isUserSuspended(user)) {
 
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.setContentType("application/json;charset=UTF-8");
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
 
-                    Map<String, String> body = Map.of(
-                            "error", "ACCOUNT_SUSPENDED",
-                            "message", "Tu cuenta ha sido suspendida. Contacta al administrador.",
-                            "suspendedUntil", user.getSuspendedUntil().equals(LocalDateTime.MAX)
-                                    ? "indefinido"
-                                    : user.getSuspendedUntil().toString()
+                        Map<String, String> body = Map.of(
+                                "error", "ACCOUNT_SUSPENDED",
+                                "message", "Tu cuenta ha sido suspendida. Contacta al administrador.",
+                                "suspendedUntil", user.getSuspendedUntil().equals(LocalDateTime.MAX)
+                                        ? "indefinido"
+                                        : user.getSuspendedUntil().toString()
+                        );
+                        new ObjectMapper().writeValue(response.getOutputStream(), body);
+                        return;
+                    }
+                    // ─────────────────────────────────────────────────────
+
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
                     );
-                    new ObjectMapper().writeValue(response.getOutputStream(), body);
-                    return;
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-                // ─────────────────────────────────────────────────────
-
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.info("JWT token is expired: {}", e.getMessage());
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            log.warn("JWT token is invalid: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 }
+

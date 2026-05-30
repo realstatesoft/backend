@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PropertyViewRateLimitingFilter extends OncePerRequestFilter {
 
-    private static final Pattern PROPERTY_VIEW_PATH = Pattern.compile("^/properties/([^/]+)/views$");
+    private static final Pattern PROPERTY_VIEW_PATH = Pattern.compile("^(?:/api)?/properties/([^/]+)/views$");
 
     private final PropertyViewRateLimiter propertyViewRateLimiter;
     private final ObjectMapper objectMapper;
