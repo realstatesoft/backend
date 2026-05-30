@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -69,11 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         Map<String, String> body = Map.of(
                                 "error", "ACCOUNT_SUSPENDED",
                                 "message", "Tu cuenta ha sido suspendida. Contacta al administrador.",
-                                "suspendedUntil", user.getSuspendedUntil().equals(LocalDateTime.MAX)
+                                "suspendedUntil", user.getSuspendedUntil() != null && user.getSuspendedUntil().equals(LocalDateTime.MAX)
                                         ? "indefinido"
-                                        : user.getSuspendedUntil().toString()
+                                        : (user.getSuspendedUntil() != null ? user.getSuspendedUntil().toString() : "indefinido")
                         );
-                        new ObjectMapper().writeValue(response.getOutputStream(), body);
+                        objectMapper.writeValue(response.getOutputStream(), body);
                         return;
                     }
                     // ─────────────────────────────────────────────────────

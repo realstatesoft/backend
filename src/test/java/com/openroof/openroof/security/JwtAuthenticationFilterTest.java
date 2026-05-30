@@ -1,11 +1,13 @@
 package com.openroof.openroof.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.UserService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -16,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.*;
@@ -25,6 +29,7 @@ class JwtAuthenticationFilterTest {
     private JwtService jwtService;
     private UserDetailsService userDetailsService;
     private UserService userService;
+    private ObjectMapper objectMapper;
     private JwtAuthenticationFilter filter;
 
     private HttpServletRequest request;
@@ -36,7 +41,8 @@ class JwtAuthenticationFilterTest {
         jwtService = mock(JwtService.class);
         userDetailsService = mock(UserDetailsService.class);
         userService = mock(UserService.class);
-        filter = new JwtAuthenticationFilter(jwtService, userDetailsService, userService);
+        objectMapper = new ObjectMapper();
+        filter = new JwtAuthenticationFilter(jwtService, userDetailsService, userService, objectMapper);
 
         request = mock(HttpServletRequest.class);
         response = mock(HttpServletResponse.class);
@@ -109,5 +115,29 @@ class JwtAuthenticationFilterTest {
 
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    @Test
+    void shouldReturn403WhenUserIsSuspended() throws Exception {
+        when(request.getHeader("Authorization")).thenReturn("Bearer valid_token");
+        when(jwtService.extractUsername("valid_token")).thenReturn("suspended@test.com");
+
+        User suspendedUser = mock(User.class);
+        when(suspendedUser.getRole()).thenReturn(UserRole.USER);
+        when(suspendedUser.getSuspendedUntil()).thenReturn(LocalDateTime.MAX);
+
+        when(userDetailsService.loadUserByUsername("suspended@test.com")).thenReturn(suspendedUser);
+        when(jwtService.isTokenValid("valid_token", suspendedUser)).thenReturn(true);
+        when(userService.isUserSuspended(suspendedUser)).thenReturn(true);
+
+        ServletOutputStream outputStream = mock(ServletOutputStream.class);
+        when(response.getOutputStream()).thenReturn(outputStream);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        verify(response).setContentType("application/json;charset=UTF-8");
+        verify(filterChain, never()).doFilter(request, response);
+        verify(response).getOutputStream();
     }
 }
