@@ -5,6 +5,7 @@ import com.openroof.openroof.exception.StorageException;
 import com.openroof.openroof.upload.FileUploadValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -110,13 +111,24 @@ public class SupabaseStorageService implements StorageService {
         String key = buildKey(folder, extension);
 
         try {
-            byte[] fileBytes = file.getBytes();
+            InputStreamResource fileResource = new InputStreamResource(file.getInputStream()) {
+                @Override
+                public long contentLength() {
+                    return file.getSize();
+                }
+
+                @Override
+                public String getFilename() {
+                    return sanitizedFilename;
+                }
+            };
 
             restClient.post()
                     .uri("/object/{bucket}/{key}", bucket, key)
                     .header("x-upsert", "true")
                     .contentType(MediaType.parseMediaType(file.getContentType()))
-                    .body(fileBytes)
+                    .contentLength(file.getSize())
+                    .body(fileResource)
                     .retrieve()
                     .toBodilessEntity();
 

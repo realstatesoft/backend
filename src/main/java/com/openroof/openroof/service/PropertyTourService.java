@@ -181,14 +181,14 @@ public class PropertyTourService {
     }
 
     private void validateJsonConfig(MultipartFile file) {
-        var validated = fileUploadValidator.validate(
+        fileUploadValidator.validate(
                 file,
                 maxTourConfigSizeBytes,
                 maxTourConfigSizeRaw.trim(),
                 Set.of(DetectedFileKind.JSON)
         );
         try {
-            objectMapper.readTree(validated.content());
+            objectMapper.readTree(file.getInputStream());
         } catch (Exception e) {
             log.error("Error validando JSON del tour: {}", e.getMessage());
             throw new BadRequestException("Sintaxis JSON inválida en el archivo de configuración.");

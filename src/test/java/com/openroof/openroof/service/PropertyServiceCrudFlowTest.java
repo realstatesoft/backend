@@ -7,6 +7,7 @@ import com.openroof.openroof.mapper.PropertyMapper;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.PropertyType;
 import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.preference.UserPreference;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.AgentProfileRepository;
@@ -19,11 +20,24 @@ import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,6 +86,8 @@ class PropertyServiceCrudFlowTest {
     private UserPreferenceRepository userPreferenceRepository;
     @Mock
     private PropertyRelevanceService propertyRelevanceService;
+    @Mock
+    private EntityManager entityManager;
 
     private PropertyService propertyService;
 
@@ -89,7 +107,8 @@ class PropertyServiceCrudFlowTest {
                 notificationService,
                 auditService,
                 userPreferenceRepository,
-                propertyRelevanceService
+                propertyRelevanceService,
+                entityManager
         );
     }
 
@@ -231,6 +250,50 @@ class PropertyServiceCrudFlowTest {
         assertNotNull(property.getDeletedAt());
 
         verify(propertyRepository, times(4)).save(any(Property.class));
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void search_withCompletedPreferencesPaginatesRelevanceInDatabase() {
+        Long userId = 99L;
+        UserPreference preference = UserPreference.builder()
+                .onboardingCompleted(true)
+                .build();
+
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        CriteriaQuery<Property> query = mock(CriteriaQuery.class);
+        Root<Property> root = mock(Root.class);
+        Predicate predicate = mock(Predicate.class);
+        Expression<Integer> score = mock(Expression.class);
+        Path<Object> idPath = mock(Path.class);
+        Order scoreOrder = mock(Order.class);
+        Order idOrder = mock(Order.class);
+        TypedQuery<Property> typedQuery = mock(TypedQuery.class);
+
+        when(userPreferenceRepository.findByUserId(userId)).thenReturn(Optional.of(preference));
+        when(entityManager.getCriteriaBuilder()).thenReturn(cb);
+        when(cb.createQuery(Property.class)).thenReturn(query);
+        when(query.from(Property.class)).thenReturn(root);
+        when(cb.conjunction()).thenReturn(predicate);
+        when(query.where(predicate)).thenReturn(query);
+        when(cb.literal(0)).thenReturn(score);
+        when(root.get("id")).thenReturn(idPath);
+        when(cb.desc(score)).thenReturn(scoreOrder);
+        when(cb.desc(idPath)).thenReturn(idOrder);
+        when(query.select(root)).thenReturn(query);
+        when(query.orderBy(scoreOrder, idOrder)).thenReturn(query);
+        when(entityManager.createQuery(query)).thenReturn(typedQuery);
+        when(typedQuery.setFirstResult(20)).thenReturn(typedQuery);
+        when(typedQuery.setMaxResults(10)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(List.of());
+        when(propertyRepository.count(any(Specification.class))).thenReturn(25L);
+
+        Pageable pageable = PageRequest.of(2, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        propertyService.search(null, pageable, userId);
+
+        verify(typedQuery).setFirstResult(20);
+        verify(typedQuery).setMaxResults(10);
+        verify(propertyRepository, never()).findAll(any(Specification.class), any(Pageable.class));
     }
 
     private PropertyResponse simpleResponse(Long id, String title, Long ownerId) {

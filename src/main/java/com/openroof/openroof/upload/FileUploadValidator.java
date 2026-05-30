@@ -39,14 +39,10 @@ public class FileUploadValidator {
                     "El archivo supera el tamaño máximo permitido de " + maxSizeLabel + ".");
         }
 
-        byte[] content = readContent(file);
-        if (content.length == 0) {
+        byte[] header = readHeader(file);
+        if (header.length == 0) {
             throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
         }
-
-        byte[] header = content.length <= HEADER_BYTES
-                ? content
-                : Arrays.copyOf(content, HEADER_BYTES);
 
         DetectedFileKind detected = FileMagicSniffer.detect(header)
                 .orElseThrow(() -> new BadRequestException(
@@ -83,7 +79,7 @@ public class FileUploadValidator {
         }
 
         String resolvedContentType = resolveContentType(detected, declaredMime);
-        return new ValidatedUpload(detected, normalizedExtension, resolvedContentType, content);
+        return new ValidatedUpload(detected, normalizedExtension, resolvedContentType);
     }
 
     /**
@@ -148,9 +144,9 @@ public class FileUploadValidator {
                 .findFirst();
     }
 
-    private byte[] readContent(MultipartFile file) {
+    private byte[] readHeader(MultipartFile file) {
         try {
-            return file.getBytes();
+            return FileMagicSniffer.readHeader(file.getInputStream(), HEADER_BYTES);
         } catch (IOException e) {
             throw new BadRequestException("No se pudo leer el archivo subido.");
         }

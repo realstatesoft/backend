@@ -6,6 +6,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.stereotype.Component;
 
@@ -15,8 +16,10 @@ public class PropertyViewRateLimiter {
     private static final int MAX_REQUESTS_PER_WINDOW = 5;
     private static final Duration WINDOW = Duration.ofMinutes(1);
     private static final Duration DEDUPLICATION_WINDOW = Duration.ofSeconds(10);
+    private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(1);
 
     private final Map<String, AttemptBucket> buckets = new ConcurrentHashMap<>();
+    private final AtomicReference<Instant> lastCleanupAt = new AtomicReference<>(Instant.EPOCH);
 
     public boolean isAllowed(String ip, String propertyId) {
         if (ip == null || ip.isBlank() || propertyId == null || propertyId.isBlank()) {
@@ -24,8 +27,19 @@ public class PropertyViewRateLimiter {
         }
 
         Instant now = Instant.now();
+        cleanupExpiredBuckets(now);
         AttemptBucket bucket = buckets.computeIfAbsent(buildKey(ip, propertyId), ignored -> new AttemptBucket());
         return bucket.recordAttempt(now);
+    }
+
+    private void cleanupExpiredBuckets(Instant now) {
+        Instant lastCleanup = lastCleanupAt.get();
+        if (now.isBefore(lastCleanup.plus(CLEANUP_INTERVAL))
+                || !lastCleanupAt.compareAndSet(lastCleanup, now)) {
+            return;
+        }
+
+        buckets.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
     }
 
     private String buildKey(String ip, String propertyId) {
@@ -61,6 +75,12 @@ public class PropertyViewRateLimiter {
             if (attempts.isEmpty()) {
                 lastAcceptedAt = null;
             }
+        }
+
+        synchronized boolean isExpired(Instant now) {
+            pruneExpired(now);
+            return attempts.isEmpty()
+                    && (lastAcceptedAt == null || !now.isBefore(lastAcceptedAt.plus(WINDOW)));
         }
     }
 }
