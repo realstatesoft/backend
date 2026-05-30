@@ -20,22 +20,25 @@ import com.openroof.openroof.exception.ExchangeRateUnavailableException;
 
 /**
  * Parser tolerante al HTML del widget público de Cambios Chaco.
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.openroof.openroof.exception.ExchangeRateUnavailableException;
+
+/**
+ * Parser tolerante al HTML del widget público de Cambios Chaco.
  */
 @Component
 public class CambiosChacoWidgetParser {
 
     public static final String USD = "USD";
     public static final String BRL = "BRL";
-
     private static final Pattern DATE_PATTERN = Pattern.compile(
             "(\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2})");
-
-    private static final Pattern ROW_PATTERN = Pattern.compile("<tr[^>]*>(.*?)</tr>",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-    private static final Pattern CELL_PATTERN = Pattern.compile("<td(?:\\s+[^>]*)?>(.*?)</td>",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-    private static final Pattern ICON_CLASS_PATTERN = Pattern.compile("class=\"moneda\\s+([a-zA-Z0-9_-]+)\"",
-            Pattern.CASE_INSENSITIVE);
 
     private static final DateTimeFormatter UPDATED_AT_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -48,10 +51,10 @@ public class CambiosChacoWidgetParser {
         LocalDateTime sourceUpdatedAt = parseLastUpdated(normalizedHtml).orElse(null);
 
         Map<String, ParsedRate> rates = new LinkedHashMap<>();
-        Matcher matcher = ROW_PATTERN.matcher(normalizedHtml);
+        List<String> rows = extractRows(normalizedHtml);
 
-        while (matcher.find()) {
-            List<String> cells = extractCells(matcher.group(1));
+        for (String row : rows) {
+            List<String> cells = extractCells(row);
             if (cells.size() < 3) {
                 continue;
             }
@@ -103,18 +106,69 @@ public class CambiosChacoWidgetParser {
         }
     }
 
+    private List<String> extractRows(String html) {
+        List<String> rows = new ArrayList<>();
+        String lowerHtml = html.toLowerCase(Locale.ROOT);
+        int pos = 0;
+        while (true) {
+            int startTr = lowerHtml.indexOf("<tr", pos);
+            if (startTr == -1) {
+                break;
+            }
+            int closeTag = lowerHtml.indexOf(">", startTr);
+            if (closeTag == -1) {
+                break;
+            }
+            int endTr = lowerHtml.indexOf("</tr>", closeTag);
+            if (endTr == -1) {
+                break;
+            }
+            rows.add(html.substring(closeTag + 1, endTr));
+            pos = endTr + 5;
+        }
+        return rows;
+    }
+
     private List<String> extractCells(String rowHtml) {
         List<String> cells = new ArrayList<>();
-        Matcher matcher = CELL_PATTERN.matcher(rowHtml);
-        while (matcher.find()) {
-            cells.add(matcher.group(1));
+        String lowerRow = rowHtml.toLowerCase(Locale.ROOT);
+        int pos = 0;
+        while (true) {
+            int startTd = lowerRow.indexOf("<td", pos);
+            if (startTd == -1) {
+                break;
+            }
+            int closeTag = lowerRow.indexOf(">", startTd);
+            if (closeTag == -1) {
+                break;
+            }
+            int endTd = lowerRow.indexOf("</td>", closeTag);
+            if (endTd == -1) {
+                break;
+            }
+            cells.add(rowHtml.substring(closeTag + 1, endTd));
+            pos = endTd + 5;
         }
         return cells;
     }
 
     private String extractIconClass(String cellHtml) {
-        Matcher matcher = ICON_CLASS_PATTERN.matcher(cellHtml);
-        return matcher.find() ? matcher.group(1) : "";
+        String lower = cellHtml.toLowerCase(Locale.ROOT);
+        int index = lower.indexOf("class=\"moneda ");
+        char quote = '"';
+        if (index == -1) {
+            index = lower.indexOf("class='moneda ");
+            quote = '\'';
+        }
+        if (index == -1) {
+            return "";
+        }
+        int start = index + "class=\"moneda ".length();
+        int end = cellHtml.indexOf(quote, start);
+        if (end == -1) {
+            return "";
+        }
+        return cellHtml.substring(start, end).trim();
     }
 
     private String stripTags(String html) {
@@ -136,7 +190,6 @@ public class CambiosChacoWidgetParser {
     private Optional<String> detectCurrencyCode(String iconClass, String label) {
         String normalizedIcon = normalizeText(iconClass);
         String normalizedLabel = normalizeText(label);
-
         if (normalizedIcon.contains("dolarus") || normalizedLabel.contains("dólar americano")
                 || normalizedLabel.contains("us dollar") || normalizedLabel.contains("dolar americano")) {
             return Optional.of(USD);
