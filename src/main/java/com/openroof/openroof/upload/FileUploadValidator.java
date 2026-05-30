@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
@@ -145,8 +146,8 @@ public class FileUploadValidator {
     }
 
     private byte[] readHeader(MultipartFile file) {
-        try {
-            return FileMagicSniffer.readHeader(file.getInputStream(), HEADER_BYTES);
+        try (InputStream in = file.getInputStream()) {
+            return FileMagicSniffer.readHeader(in, HEADER_BYTES);
         } catch (IOException e) {
             throw new BadRequestException("No se pudo leer el archivo subido.");
         }

@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -187,8 +188,8 @@ public class PropertyTourService {
                 maxTourConfigSizeRaw.trim(),
                 Set.of(DetectedFileKind.JSON)
         );
-        try {
-            objectMapper.readTree(file.getInputStream());
+        try (InputStream inputStream = file.getInputStream()) {
+            objectMapper.readTree(inputStream);
         } catch (Exception e) {
             log.error("Error validando JSON del tour: {}", e.getMessage());
             throw new BadRequestException("Sintaxis JSON inválida en el archivo de configuración.");

@@ -78,9 +78,11 @@ public class PropertyViewRateLimiter {
         }
 
         synchronized boolean isExpired(Instant now) {
+            Instant lastAccepted = this.lastAcceptedAt;
             pruneExpired(now);
-            return attempts.isEmpty()
-                    && (lastAcceptedAt == null || !now.isBefore(lastAcceptedAt.plus(WINDOW)));
+            return lastAccepted != null
+                    && attempts.isEmpty()
+                    && !now.isBefore(lastAccepted.plus(WINDOW));
         }
     }
 }

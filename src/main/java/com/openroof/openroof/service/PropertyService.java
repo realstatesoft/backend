@@ -23,6 +23,7 @@ import com.openroof.openroof.model.search.PropertySpecification;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.*;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -62,6 +63,8 @@ import java.util.Set;
 @Transactional
 @Slf4j
 public class PropertyService {
+
+    private record ScoredPropertyRow(Property property, int score) {}
 
     private static final int MAX_IP_ADDRESS_LENGTH = 45;
 
@@ -711,22 +714,19 @@ public class PropertyService {
                     .map(propertyMapper::toSummaryResponse);
         }
 
-        List<Property> properties = findRelevancePage(spec, pageable, pref);
+        List<ScoredPropertyRow> properties = findRelevancePage(spec, pageable, pref);
         long total = propertyRepository.count(spec);
 
         List<PropertySummaryResponse> content = properties.stream()
-                .map(p -> {
-                    int score = propertyRelevanceService.calculateScore(p, pref);
-                    return propertyMapper.toSummaryResponse(p, score);
-                })
+                .map(p -> propertyMapper.toSummaryResponse(p.property(), p.score()))
                 .toList();
 
         return new PageImpl<>(content, pageable, total);
     }
 
-    private List<Property> findRelevancePage(Specification<Property> spec, Pageable pageable, UserPreference pref) {
+    private List<ScoredPropertyRow> findRelevancePage(Specification<Property> spec, Pageable pageable, UserPreference pref) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Property> query = cb.createQuery(Property.class);
+        CriteriaQuery<Tuple> query = cb.createTupleQuery();
         Root<Property> root = query.from(Property.class);
 
         Predicate predicate = spec.toPredicate(root, query, cb);
@@ -735,12 +735,20 @@ public class PropertyService {
         }
 
         Expression<Integer> score = buildRelevanceScoreExpression(cb, query, root, pref);
-        query.select(root).orderBy(cb.desc(score), cb.desc(root.get("id")));
+        query.multiselect(root.alias("property"), score.alias("score"))
+                .orderBy(cb.desc(score), cb.desc(root.get("id")));
 
-        return entityManager.createQuery(query)
+        List<Tuple> results = entityManager.createQuery(query)
                 .setFirstResult(Math.toIntExact(pageable.getOffset()))
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
+
+        return results.stream()
+                .map(tuple -> new ScoredPropertyRow(
+                        tuple.get("property", Property.class),
+                        tuple.get("score", Integer.class) != null ? tuple.get("score", Integer.class) : 0
+                ))
+                .toList();
     }
 
     private Expression<Integer> buildRelevanceScoreExpression(

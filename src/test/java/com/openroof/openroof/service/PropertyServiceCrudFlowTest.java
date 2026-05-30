@@ -21,8 +21,10 @@ import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Selection;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Order;
@@ -261,18 +263,18 @@ class PropertyServiceCrudFlowTest {
                 .build();
 
         CriteriaBuilder cb = mock(CriteriaBuilder.class);
-        CriteriaQuery<Property> query = mock(CriteriaQuery.class);
+        CriteriaQuery<Tuple> query = mock(CriteriaQuery.class);
         Root<Property> root = mock(Root.class);
         Predicate predicate = mock(Predicate.class);
         Expression<Integer> score = mock(Expression.class);
         Path<Object> idPath = mock(Path.class);
         Order scoreOrder = mock(Order.class);
         Order idOrder = mock(Order.class);
-        TypedQuery<Property> typedQuery = mock(TypedQuery.class);
+        TypedQuery<Tuple> typedQuery = mock(TypedQuery.class);
 
         when(userPreferenceRepository.findByUserId(userId)).thenReturn(Optional.of(preference));
         when(entityManager.getCriteriaBuilder()).thenReturn(cb);
-        when(cb.createQuery(Property.class)).thenReturn(query);
+        when(cb.createTupleQuery()).thenReturn(query);
         when(query.from(Property.class)).thenReturn(root);
         when(cb.conjunction()).thenReturn(predicate);
         when(query.where(predicate)).thenReturn(query);
@@ -280,12 +282,24 @@ class PropertyServiceCrudFlowTest {
         when(root.get("id")).thenReturn(idPath);
         when(cb.desc(score)).thenReturn(scoreOrder);
         when(cb.desc(idPath)).thenReturn(idOrder);
-        when(query.select(root)).thenReturn(query);
+        
+        Selection rootSel = mock(Selection.class);
+        Selection scoreSel = mock(Selection.class);
+        when(root.alias("property")).thenReturn(rootSel);
+        when(score.alias("score")).thenReturn(scoreSel);
+        
+        when(query.multiselect(rootSel, scoreSel)).thenReturn(query);
         when(query.orderBy(scoreOrder, idOrder)).thenReturn(query);
         when(entityManager.createQuery(query)).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(20)).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(10)).thenReturn(typedQuery);
-        when(typedQuery.getResultList()).thenReturn(List.of());
+        
+        Tuple tuple = mock(Tuple.class);
+        Property property = Property.builder().build();
+        when(tuple.get("property", Property.class)).thenReturn(property);
+        when(tuple.get("score", Integer.class)).thenReturn(10);
+        
+        when(typedQuery.getResultList()).thenReturn(List.of(tuple));
         when(propertyRepository.count(any(Specification.class))).thenReturn(25L);
 
         Pageable pageable = PageRequest.of(2, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
