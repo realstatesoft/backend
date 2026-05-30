@@ -67,13 +67,15 @@ public class PropertyService {
     private record ScoredPropertyRow(Property property, int score) {}
 
     private static final int MAX_IP_ADDRESS_LENGTH = 45;
+    private static final String CREATED_AT_FIELD = "createdAt";
+    private static final String SCORE_ALIAS = "score";
 
     /**
      * Campos permitidos para ordenar. Cualquier otro valor se reemplaza por
      * 'createdAt'.
      */
     private static final Set<String> VALID_SORT_FIELDS = Set.of(
-            "createdAt", "price", "bedrooms", "bathrooms", "surfaceArea", "title");
+            CREATED_AT_FIELD, "price", "bedrooms", "bathrooms", "surfaceArea", "title");
 
     private final PropertyRepository propertyRepository;
     private final PropertyViewRepository propertyViewRepository;
@@ -701,7 +703,7 @@ public class PropertyService {
         if (pageable.getSort().isUnsorted()) return true;
         // Consideramos "default" si ordena por createdAt DESC
         return pageable.getSort().stream().anyMatch(o -> 
-            "createdAt".equals(o.getProperty()) && o.getDirection() == Sort.Direction.DESC);
+            CREATED_AT_FIELD.equals(o.getProperty()) && o.getDirection() == Sort.Direction.DESC);
     }
 
     private Page<PropertySummaryResponse> getPageWithRelevance(Specification<Property> spec, Pageable pageable, Long userId) {
@@ -735,7 +737,7 @@ public class PropertyService {
         }
 
         Expression<Integer> score = buildRelevanceScoreExpression(cb, query, root, pref);
-        query.multiselect(root.alias("property"), score.alias("score"))
+        query.multiselect(root.alias("property"), score.alias(SCORE_ALIAS))
                 .orderBy(cb.desc(score), cb.desc(root.get("id")));
 
         List<Tuple> results = entityManager.createQuery(query)
@@ -746,7 +748,7 @@ public class PropertyService {
         return results.stream()
                 .map(tuple -> new ScoredPropertyRow(
                         tuple.get("property", Property.class),
-                        tuple.get("score", Integer.class) != null ? tuple.get("score", Integer.class) : 0
+                        tuple.get(SCORE_ALIAS, Integer.class) != null ? tuple.get(SCORE_ALIAS, Integer.class) : 0
                 ))
                 .toList();
     }
@@ -958,7 +960,7 @@ public class PropertyService {
             }
         }
         Sort safeSort = safeOrders.isEmpty()
-                ? Sort.by(Sort.Direction.DESC, "createdAt")
+                ? Sort.by(Sort.Direction.DESC, CREATED_AT_FIELD)
                 : Sort.by(safeOrders);
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), safeSort);
     }

@@ -26,6 +26,8 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Error interno del servidor";
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity
@@ -46,7 +48,7 @@ public class GlobalExceptionHandler {
         log.error("Error de configuración interna: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor"));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -156,7 +158,7 @@ public class GlobalExceptionHandler {
         log.error("Error del sistema de transacciones: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor"));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
     }
 
     @ExceptionHandler(Exception.class)
@@ -164,6 +166,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor"));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
     }
 }

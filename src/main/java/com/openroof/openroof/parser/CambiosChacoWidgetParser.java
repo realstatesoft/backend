@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -28,9 +30,12 @@ public class CambiosChacoWidgetParser {
     private static final Pattern DATE_PATTERN = Pattern.compile(
             "(\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2})");
 
-    private static final Pattern ROW_PATTERN = Pattern.compile(
-            "<tr>\\s*<td>\\s*<i class=\"moneda\\s+([a-zA-Z0-9_-]+)\"></i>\\s*([^<\\s][^<]*?)</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+)(?:\\s*<[^>]+>)*\\s*</td>\\s*<td class=\"text-right\">\\s*([\\d.,]+)(?:\\s*<[^>]+>)*\\s*</td>\\s*</tr>",
+    private static final Pattern ROW_PATTERN = Pattern.compile("<tr[^>]*>(.*?)</tr>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern CELL_PATTERN = Pattern.compile("<td(?:\\s+[^>]*)?>(.*?)</td>",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern ICON_CLASS_PATTERN = Pattern.compile("class=\"moneda\\s+([^\"]+)\"",
+            Pattern.CASE_INSENSITIVE);
 
     private static final DateTimeFormatter UPDATED_AT_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -46,10 +51,15 @@ public class CambiosChacoWidgetParser {
         Matcher matcher = ROW_PATTERN.matcher(normalizedHtml);
 
         while (matcher.find()) {
-            String iconClass = matcher.group(1);
-            String label = normalizeText(matcher.group(2));
-            BigDecimal buyRate = parseNumber(matcher.group(3));
-            BigDecimal sellRate = parseNumber(matcher.group(4));
+            List<String> cells = extractCells(matcher.group(1));
+            if (cells.size() < 3) {
+                continue;
+            }
+
+            String iconClass = extractIconClass(cells.get(0));
+            String label = normalizeText(stripTags(cells.get(0)));
+            BigDecimal buyRate = parseNumber(stripTags(cells.get(1)));
+            BigDecimal sellRate = parseNumber(stripTags(cells.get(2)));
 
             detectCurrencyCode(iconClass, label).ifPresent(currencyCode -> {
                 String currencyName = switch (currencyCode) {
@@ -91,6 +101,36 @@ public class CambiosChacoWidgetParser {
         } catch (DateTimeParseException ex) {
             throw new ExchangeRateUnavailableException("No se pudo interpretar la fecha de actualización del widget", ex);
         }
+    }
+
+    private List<String> extractCells(String rowHtml) {
+        List<String> cells = new ArrayList<>();
+        Matcher matcher = CELL_PATTERN.matcher(rowHtml);
+        while (matcher.find()) {
+            cells.add(matcher.group(1));
+        }
+        return cells;
+    }
+
+    private String extractIconClass(String cellHtml) {
+        Matcher matcher = ICON_CLASS_PATTERN.matcher(cellHtml);
+        return matcher.find() ? matcher.group(1) : "";
+    }
+
+    private String stripTags(String html) {
+        StringBuilder text = new StringBuilder(html.length());
+        boolean insideTag = false;
+        for (int i = 0; i < html.length(); i++) {
+            char current = html.charAt(i);
+            if (current == '<') {
+                insideTag = true;
+            } else if (current == '>') {
+                insideTag = false;
+            } else if (!insideTag) {
+                text.append(current);
+            }
+        }
+        return text.toString();
     }
 
     private Optional<String> detectCurrencyCode(String iconClass, String label) {
