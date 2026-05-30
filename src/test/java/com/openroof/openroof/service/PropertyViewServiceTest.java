@@ -64,28 +64,24 @@ class PropertyViewServiceTest {
         User user = user(1L);
         Property property = property(10L, "Casa 1");
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property));
-        when(propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(1L, 10L))
-                .thenReturn(Optional.empty());
 
         propertyViewService.registerRecentView(10L, user);
 
+        verify(propertyViewRepository).deleteByUserIdAndPropertyId(1L, 10L);
         verify(propertyViewRepository).save(argThat(view ->
                 view.getUser().getId().equals(1L) && view.getProperty().getId().equals(10L)));
     }
 
     @Test
-    @DisplayName("Registrar vista reciente reemplaza una vista previa de la misma propiedad")
-    void registerRecentView_replacesExistingView() {
+    @DisplayName("Registrar vista reciente intenta eliminar vista previa de la misma propiedad")
+    void registerRecentView_deletesPreviousView() {
         User user = user(1L);
         Property property = property(10L, "Casa 1");
-        PropertyView existing = PropertyView.builder().property(property).user(user).build();
         when(propertyRepository.findById(10L)).thenReturn(Optional.of(property));
-        when(propertyViewRepository.findFirstByUser_IdAndProperty_IdOrderByCreatedAtDesc(1L, 10L))
-                .thenReturn(Optional.of(existing));
 
         propertyViewService.registerRecentView(10L, user);
 
-        verify(propertyViewRepository).delete(existing);
+        verify(propertyViewRepository).deleteByUserIdAndPropertyId(1L, 10L);
         verify(propertyViewRepository).save(any(PropertyView.class));
     }
 
