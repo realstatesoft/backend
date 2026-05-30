@@ -74,8 +74,9 @@ public class SecurityConfig {
         };
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+                try {
+                        http
                                 .csrf(csrf -> csrf.ignoringRequestMatchers("/**"))
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
@@ -119,7 +120,10 @@ public class SecurityConfig {
                                         .frameOptions(frame -> frame.sameOrigin())
                                         .contentTypeOptions(content -> {}));
 
-                return http.build();
+                        return http.build();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo configurar la cadena de seguridad", e);
+                }
         }
 
         @Bean
@@ -130,8 +134,12 @@ public class SecurityConfig {
         }
 
         @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-                return config.getAuthenticationManager();
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+                try {
+                        return config.getAuthenticationManager();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo obtener el administrador de autenticación", e);
+                }
         }
 
         @Bean

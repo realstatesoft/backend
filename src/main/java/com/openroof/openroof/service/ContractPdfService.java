@@ -25,6 +25,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -43,6 +44,15 @@ public class ContractPdfService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final List<String> CLAUSE_HEADER_PREFIXES = List.of(
+            "CLÁUSULA ", "DECIMA", "DÉCIMA", "DECIMO", "DÉCIMO", "PRIMERA", "PRIMERO", "SEGUNDA",
+            "SEGUNDO", "TERCERA", "TERCERO", "CUARTA", "CUARTO", "QUINTA", "QUINTO", "SEXTA",
+            "SEXTO", "SÉPTIMA", "SEPTIMA", "SÉPTIMO", "SEPTIMO", "OCTAVA", "OCTAVO", "NOVENA",
+            "NOVENO", "UNDÉCIMA", "UNDECIMA", "UNDÉCIMO", "UNDECIMO", "DUODÉCIMA", "DUODECIMA",
+            "DUODÉCIMO", "DUODECIMO");
+    private static final String[] FIRST_CLAUSE_HEADER_PREFIXES = {
+            "DÉCIMA PRIMERA", "DECIMA PRIMERA", "DÉCIMO PRIMERO", "DECIMO PRIMERO"
+    };
 
     private final ContractRepository contractRepository;
     private final ContractSignatureRepository signatureRepository;
@@ -69,7 +79,7 @@ public class ContractPdfService {
 
         try {
             return buildPdf(contract, signatures);
-        } catch (Exception e) {
+        } catch (DocumentException e) {
             log.error("Error inesperado generando PDF para contrato {}: {}", contractId, e.getMessage(), e);
             throw new BadRequestException("No se pudo generar el PDF del contrato: " + e.getMessage());
         }
@@ -94,10 +104,9 @@ public class ContractPdfService {
 
     // ─── Construcción del PDF ─────────────────────────────────────────────────
 
-    private byte[] buildPdf(Contract contract, List<ContractSignature> signatures) throws Exception {
+    private byte[] buildPdf(Contract contract, List<ContractSignature> signatures) throws DocumentException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            Document doc = new Document(PageSize.A4, 50, 50, 60, 50);
-            try {
+            try (Document doc = new Document(PageSize.A4, 50, 50, 60, 50)) {
                 PdfWriter.getInstance(doc, baos);
                 doc.open();
 
@@ -111,7 +120,7 @@ public class ContractPdfService {
                 addHeader(doc, contract, bold, regular);
                 addDivider(doc);
                 addInfoSection(doc, contract, generatedAt, bold, regular);
-                addPartiesSection(doc, contract, bold, regular, italic);
+                addPartiesSection(doc, contract, bold, regular);
                 
                 doc.newPage();
                 addTermsSection(doc, contract, bold, regular);
@@ -119,11 +128,7 @@ public class ContractPdfService {
                 doc.newPage();
                 addSignaturesSection(doc, signatures, bold, regular, italic);
                 
-                addFooter(doc, contract, generatedAt, regular, italic);
-            } finally {
-                if (doc.isOpen()) {
-                    doc.close();
-                }
+                addFooter(doc, contract, generatedAt, regular);
             }
             return baos.toByteArray();
         }
@@ -187,7 +192,7 @@ public class ContractPdfService {
         PdfPCell cell = new PdfPCell();
         cell.setFixedHeight(2);
         cell.setBackgroundColor(PRIMARY_COLOR);
-        cell.setBorder(PdfPCell.NO_BORDER);
+        cell.setBorder(Rectangle.NO_BORDER);
         divider.addCell(cell);
         divider.setSpacingAfter(16);
         doc.add(divider);
@@ -218,7 +223,7 @@ public class ContractPdfService {
     }
 
     private void addPartiesSection(Document doc, Contract contract,
-            Font bold, Font regular, Font italic) {
+            Font bold, Font regular) {
         addSectionTitle(doc, "2. Partes del Contrato", bold);
 
         PdfPTable table = new PdfPTable(3);
@@ -278,7 +283,7 @@ public class ContractPdfService {
                 continue;
             }
 
-            boolean isClauseHeader = line.matches("(?i)^(CLÁUSULA\\s|DÉCIM[OA](\\s+PRIMER[OA])?|PRIMER[OA]|SEGUND[OA]|TERCER[OA]|CUART[OA]|QUINT[OA]|SEXT[OA]|SÉPTIM[OA]|OCTAV[OA]|NOVEN[OA]|UNDÉCIM[OA]|DUODÉCIM[OA]|\\d+[\\.\\)]).*");
+            boolean isClauseHeader = isClauseHeader(line);
             
             Paragraph p = new Paragraph(line, isClauseHeader ? bold : regular);
             p.setAlignment(Element.ALIGN_JUSTIFIED);
@@ -323,7 +328,7 @@ public class ContractPdfService {
         for (String h : headers) {
             PdfPCell cell = new PdfPCell(new Paragraph(h, headerFont));
             cell.setBackgroundColor(PRIMARY_COLOR);
-            cell.setBorder(PdfPCell.NO_BORDER);
+            cell.setBorder(Rectangle.NO_BORDER);
             cell.setPadding(6);
             table.addCell(cell);
         }
@@ -355,7 +360,7 @@ public class ContractPdfService {
         doc.add(note);
     }
 
-    private void addFooter(Document doc, Contract contract, String generatedAt, Font regular, Font italic) {
+    private void addFooter(Document doc, Contract contract, String generatedAt, Font regular) {
         addDivider(doc);
 
         PdfPTable footer = new PdfPTable(2);
@@ -366,13 +371,13 @@ public class ContractPdfService {
         footerFont.setColor(MUTED_TEXT);
 
         PdfPCell leftCell = new PdfPCell(new Paragraph("OpenRoof · Plataforma Inmobiliaria", footerFont));
-        leftCell.setBorder(PdfPCell.NO_BORDER);
+        leftCell.setBorder(Rectangle.NO_BORDER);
         footer.addCell(leftCell);
 
         Paragraph rightP = new Paragraph("Contrato N° " + contract.getId() + " · " +
                 "Generado: " + generatedAt, footerFont);
         PdfPCell rightCell = new PdfPCell(rightP);
-        rightCell.setBorder(PdfPCell.NO_BORDER);
+        rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         footer.addCell(rightCell);
 
@@ -427,7 +432,7 @@ public class ContractPdfService {
         for (String l : labels) {
             PdfPCell cell = new PdfPCell(new Paragraph(l, headerFont));
             cell.setBackgroundColor(ACCENT_COLOR);
-            cell.setBorder(PdfPCell.NO_BORDER);
+            cell.setBorder(Rectangle.NO_BORDER);
             cell.setPadding(7);
             table.addCell(cell);
         }
@@ -453,6 +458,19 @@ public class ContractPdfService {
         cell.setBorderWidth(0.5f);
         cell.setPadding(6);
         return cell;
+    }
+
+    private boolean isClauseHeader(String line) {
+        String normalized = line.strip().toUpperCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            return false;
+        }
+        char first = normalized.charAt(0);
+        if (Character.isDigit(first)) {
+            return normalized.length() > 1 && (normalized.charAt(1) == '.' || normalized.charAt(1) == ')');
+        }
+        return Arrays.stream(FIRST_CLAUSE_HEADER_PREFIXES).anyMatch(normalized::startsWith)
+                || CLAUSE_HEADER_PREFIXES.stream().anyMatch(normalized::startsWith);
     }
 
     // ─── Helpers de formato ───────────────────────────────────────────────────
