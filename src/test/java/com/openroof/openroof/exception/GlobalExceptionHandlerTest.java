@@ -169,4 +169,25 @@ class GlobalExceptionHandlerTest {
         assertEquals("El campo numérico excede la longitud máxima permitida", response.getBody().getMessage());
         assertEquals("El campo no puede tener más de 20 dígitos enteros", response.getBody().getData().get("amount"));
     }
+
+    @Test
+    @DisplayName("handleValidation - Con violaciones de Digits debería retornar HTTP 422")
+    void handleValidation_withDigitsViolations_returns422() {
+        MethodArgumentNotValidException ex = Mockito.mock(MethodArgumentNotValidException.class);
+        BindingResult bindingResult = Mockito.mock(BindingResult.class);
+        
+        FieldError fieldError = new FieldError("objectName", "amount", null, false, new String[]{"Digits"}, null, "El monto excede el límite permitido");
+        
+        Mockito.when(bindingResult.getAllErrors()).thenReturn(List.of(fieldError));
+        Mockito.when(ex.getBindingResult()).thenReturn(bindingResult);
+
+        ResponseEntity<ApiResponse<Map<String, String>>> response = handler.handleValidation(ex);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isSuccess());
+        assertEquals("El campo numérico excede la longitud máxima permitida", response.getBody().getMessage());
+        assertEquals("El monto excede el límite permitido", response.getBody().getData().get("amount"));
+    }
 }
