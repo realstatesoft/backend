@@ -87,8 +87,14 @@ public class GlobalExceptionHandler {
             String message = error.getDefaultMessage();
             errors.put(field, message);
             
-            if (error.getCode() != null && (error.getCode().equals("MaxDigits") || error.getCode().equals("Digits"))) {
-                hasDigitsOrMaxDigitsViolation = true;
+            if (error.getCodes() != null) {
+                for (String code : error.getCodes()) {
+                    if (code != null && (code.equals("MaxDigits") || code.equals("Digits") ||
+                            code.startsWith("MaxDigits.") || code.startsWith("Digits."))) {
+                        hasDigitsOrMaxDigitsViolation = true;
+                        break;
+                    }
+                }
             }
         }
 
