@@ -94,7 +94,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("User One")
                 .email("user1@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000001")
                 .role("USER")
                 .build();
@@ -117,7 +117,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("Agent One")
                 .email("agent1@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000002")
                 .role("AGENT")
                 .build();
@@ -143,7 +143,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("User Two")
                 .email("user2@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000003")
                 .role("USER")
                 .build();
@@ -165,7 +165,7 @@ class AuthServiceTest {
         AgentSignupRequest request = AgentSignupRequest.builder()
                 .name("Agent Professional")
                 .email("agent.pro@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000004")
                 .companyName("Pro Real Estate")
                 .licenseNumber("LIC-2024-001")
@@ -204,7 +204,7 @@ class AuthServiceTest {
         AgentSignupRequest request = AgentSignupRequest.builder()
                 .name("Simple Agent")
                 .email("simple@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000005")
                 // Sin campos adicionales opcionales
                 .build();
