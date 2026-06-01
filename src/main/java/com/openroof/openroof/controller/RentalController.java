@@ -17,6 +17,8 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.service.PaymentService;
 import com.openroof.openroof.service.RentalPaymentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +61,13 @@ public class RentalController {
     @GetMapping("/installments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener las cuotas de un contrato")
-    public ResponseEntity<ApiResponse<List<RentalInstallment>>> getInstallments(@RequestParam Long leaseId, Principal principal) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cuotas obtenidas correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
+    public ResponseEntity<ApiResponse<List<RentalInstallment>>> getInstallments(
+            @Parameter(description = "ID del contrato") @RequestParam Long leaseId, Principal principal) {
         Lease lease = leaseRepository.findById(leaseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
         verifyLeaseAccess(lease, principal.getName());
@@ -70,7 +78,13 @@ public class RentalController {
     @GetMapping("/payments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener los pagos de un contrato")
-    public ResponseEntity<ApiResponse<List<LeasePayment>>> getPayments(@RequestParam Long leaseId, Principal principal) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
+    public ResponseEntity<ApiResponse<List<LeasePayment>>> getPayments(
+            @Parameter(description = "ID del contrato") @RequestParam Long leaseId, Principal principal) {
         Lease lease = leaseRepository.findById(leaseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
         verifyLeaseAccess(lease, principal.getName());
@@ -81,11 +95,17 @@ public class RentalController {
     @PostMapping("/installments/{id}/payments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Registrar un pago para una cuota")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Pago registrado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Idempotency-Key es obligatorio o datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cuota no encontrada")
+    })
     @Transactional
     public ResponseEntity<ApiResponse<com.openroof.openroof.dto.rental.LeasePaymentResponse>> registerManualPayment(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la cuota") @PathVariable Long id,
             @Valid @RequestBody InstallmentPaymentRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Parameter(description = "Clave de idempotencia para evitar pagos duplicados") @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Principal principal) {
         RentalInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
@@ -117,7 +137,13 @@ public class RentalController {
     @GetMapping({"/installments/{id}/invoice-url", "/installments/{id}/invoice.pdf"})
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL de la factura de una cuota")
-    public ResponseEntity<ApiResponse<String>> downloadInvoice(@PathVariable Long id, Principal principal) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "URL de la factura obtenida"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Factura no generada o cuota no encontrada")
+    })
+    public ResponseEntity<ApiResponse<String>> downloadInvoice(
+            @Parameter(description = "ID de la cuota") @PathVariable Long id, Principal principal) {
         RentalInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
         verifyLeaseAccess(installment.getLease(), principal.getName());
@@ -132,7 +158,13 @@ public class RentalController {
     @GetMapping({"/payments/{id}/receipt-url", "/payments/{id}/receipt.pdf"})
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Obtener URL del recibo de un pago")
-    public ResponseEntity<ApiResponse<String>> downloadReceipt(@PathVariable Long id, Principal principal) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "URL del recibo obtenida"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Recibo no generado o pago no encontrado")
+    })
+    public ResponseEntity<ApiResponse<String>> downloadReceipt(
+            @Parameter(description = "ID del pago") @PathVariable Long id, Principal principal) {
         LeasePayment payment = leasePaymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
         verifyLeaseAccess(payment.getLease(), principal.getName());

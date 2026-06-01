@@ -8,6 +8,8 @@ import com.openroof.openroof.dto.rental.RentalApplicationResponse;
 import com.openroof.openroof.model.enums.RentalApplicationStatus;
 import com.openroof.openroof.service.RentalApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -42,6 +44,11 @@ public class RentalApplicationController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Enviar una solicitud de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Solicitud enviada correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para solicitar")
+    })
     public ResponseEntity<ApiResponse<RentalApplicationResponse>> submit(
             @Valid @RequestBody CreateRentalApplicationRequest request,
             Principal principal) {
@@ -53,8 +60,13 @@ public class RentalApplicationController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Ver detalle de una solicitud")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Solicitud encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+    })
     public ResponseEntity<ApiResponse<RentalApplicationResponse>> getById(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
                 rentalApplicationService.getApplication(id, principal.getName())));
@@ -63,9 +75,13 @@ public class RentalApplicationController {
     @GetMapping("/property/{propertyId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Listar solicitudes de una propiedad (owner/agent/admin)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Solicitudes obtenidas"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado a la propiedad")
+    })
     public ResponseEntity<ApiResponse<Page<RentalApplicationResponse>>> listByProperty(
-            @PathVariable Long propertyId,
-            @RequestParam(required = false) RentalApplicationStatus status,
+            @Parameter(description = "ID de la propiedad") @PathVariable Long propertyId,
+            @Parameter(description = "Filtrar por estado (PENDING, APPROVED, REJECTED, CONVERTED)") @RequestParam(required = false) RentalApplicationStatus status,
             @PageableDefault(size = 10, sort = "submittedAt", direction = Sort.Direction.DESC) Pageable pageable,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
@@ -75,8 +91,14 @@ public class RentalApplicationController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Aprobar una solicitud de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Solicitud aprobada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "La solicitud no está en estado PENDING"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para aprobar"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+    })
     public ResponseEntity<ApiResponse<RentalApplicationResponse>> approve(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
                 rentalApplicationService.approveApplication(id, principal.getName()),
@@ -86,9 +108,15 @@ public class RentalApplicationController {
     @PostMapping("/{id}/reject")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Rechazar una solicitud de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Solicitud rechazada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "La solicitud no está en estado PENDING o falta el motivo"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para rechazar"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+    })
     public ResponseEntity<ApiResponse<RentalApplicationResponse>> reject(
-            @PathVariable Long id,
-            @NotBlank @RequestParam String reason,
+            @Parameter(description = "ID de la solicitud") @PathVariable Long id,
+            @Parameter(description = "Motivo del rechazo") @NotBlank @RequestParam String reason,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
                 rentalApplicationService.rejectApplication(id, reason, principal.getName()),
@@ -98,8 +126,14 @@ public class RentalApplicationController {
     @PostMapping("/{id}/convert-to-lease")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Convertir solicitud aprobada en contrato de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Contrato creado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "La solicitud no está en estado APPROVED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para convertir"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Solicitud no encontrada")
+    })
     public ResponseEntity<ApiResponse<LeaseResponse>> convertToLease(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             @Valid @RequestBody CreateLeaseRequest leaseRequest,
             Principal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
