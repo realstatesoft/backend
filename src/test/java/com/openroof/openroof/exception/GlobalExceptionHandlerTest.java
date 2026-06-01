@@ -8,11 +8,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GlobalExceptionHandlerTest {
 
@@ -31,12 +35,29 @@ class GlobalExceptionHandlerTest {
 
         assertNotNull(response);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        
+
         ApiResponse<Void> body = response.getBody();
         assertNotNull(body);
         assertFalse(body.isSuccess());
         assertEquals("Error interno del servidor", body.getMessage());
         assertNull(body.getData());
+    }
+
+    @Test
+    @DisplayName("handleGeneral - No debe incluir stack trace ni mensaje interno en la respuesta")
+    void handleGeneral_doesNotExposeStackTraceOrInternalDetails() {
+        Exception ex = new RuntimeException("Detalle altamente confidencial del servidor");
+        ex.initCause(new IllegalStateException("at com.openroof.internal.SecretService.process(SecretService.java:42)"));
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleGeneral(ex);
+        ApiResponse<Void> body = response.getBody();
+
+        assertNotNull(body);
+        assertEquals("Error interno del servidor", body.getMessage());
+        assertNull(body.getData());
+        assertFalse(body.getMessage().contains("confidencial"));
+        assertFalse(body.getMessage().contains("SecretService"));
+        assertFalse(body.getMessage().contains("at com.openroof"));
     }
 
     @Test
@@ -72,9 +93,37 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("handleDataIntegrityViolation - Debería retornar 409 y mensaje genérico de conflicto de datos")
+    @DisplayName("handleMessageNotReadable - Debería ocultar la causa interna de Jackson")
+    void handleMessageNotReadable_hidesInternalCause() {
+        HttpMessageNotReadableException ex = mock(HttpMessageNotReadableException.class);
+        when(ex.getMessage()).thenReturn("JSON parse error: Unrecognized field \"secretColumn\"");
+        when(ex.getMostSpecificCause()).thenReturn(new IllegalArgumentException("column users.secret_column does not exist"));
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleMessageNotReadable(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Solicitud inválida", response.getBody().getMessage());
+        assertFalse(response.getBody().getMessage().contains("secretColumn"));
+    }
+
+    @Test
+    @DisplayName("handleConstraintViolation - Debería retornar mensaje genérico de validación")
+    void handleConstraintViolation_returnsGenericValidationMessage() {
+        ConstraintViolationException ex = new ConstraintViolationException(
+                "violates check constraint \"fk_tenant_user\"", Collections.emptySet());
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleConstraintViolation(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Error de validación", response.getBody().getMessage());
+        assertFalse(response.getBody().getMessage().contains("fk_tenant_user"));
+    }
+
+    @Test
+    @DisplayName("handleDataIntegrityViolation - Debería retornar 409 y mensaje genérico")
     void handleDataIntegrityViolation_returns409() {
-        DataIntegrityViolationException ex = new DataIntegrityViolationException("violates foreign key constraint 'fk_tenant_user'");
+        DataIntegrityViolationException ex = new DataIntegrityViolationException(
+                "violates foreign key constraint 'fk_tenant_user'");
         ResponseEntity<ApiResponse<Void>> response = handler.handleDataIntegrityViolation(ex);
 
         assertNotNull(response);
@@ -83,8 +132,44 @@ class GlobalExceptionHandlerTest {
         ApiResponse<Void> body = response.getBody();
         assertNotNull(body);
         assertFalse(body.isSuccess());
-        assertEquals("Operación no permitida: conflicto de datos", body.getMessage());
+        assertEquals("Operación no permitida", body.getMessage());
         assertNull(body.getData());
+    }
+
+    @Test
+    @DisplayName("handleMaxUploadSize - Debería retornar mensaje genérico de archivo")
+    void handleMaxUploadSize_returnsFileProcessingMessage() {
+        MaxUploadSizeExceededException ex = new MaxUploadSizeExceededException(5_000_000L);
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleMaxUploadSize(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Error al procesar el archivo", response.getBody().getMessage());
+    }
+
+    @Test
+    @DisplayName("handleIllegalArgument - Mensaje de archivo no debe filtrar detalle interno")
+    void handleIllegalArgument_fileRelated_returnsGenericFileMessage() {
+        IllegalArgumentException ex = new IllegalArgumentException(
+                "Content-Type inválido: application/x-msdownload; tabla storage_keys");
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleIllegalArgument(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Error al procesar el archivo", response.getBody().getMessage());
+        assertFalse(response.getBody().getMessage().contains("storage_keys"));
+    }
+
+    @Test
+    @DisplayName("handleIllegalArgument - Otros argumentos inválidos retornan operación no permitida")
+    void handleIllegalArgument_nonFile_returnsOperationNotAllowed() {
+        IllegalArgumentException ex = new IllegalArgumentException("commission_pct es nulo; datos incompletos");
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleIllegalArgument(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Operación no permitida", response.getBody().getMessage());
+        assertFalse(response.getBody().getMessage().contains("commission_pct"));
     }
 
     @Test

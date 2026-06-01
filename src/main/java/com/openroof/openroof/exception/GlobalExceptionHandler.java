@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.TransactionSystemException;
@@ -27,6 +28,10 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Error interno del servidor";
+    private static final String OPERATION_NOT_ALLOWED_MESSAGE = "Operación no permitida";
+    private static final String FILE_PROCESSING_ERROR_MESSAGE = "Error al procesar el archivo";
+    private static final String VALIDATION_ERROR_MESSAGE = "Error de validación";
+    private static final String INVALID_REQUEST_MESSAGE = "Solicitud inválida";
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
@@ -53,9 +58,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Solicitud no legible: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Solicitud inválida: " + ex.getMostSpecificCause().getMessage()));
+                .body(ApiResponse.error(INVALID_REQUEST_MESSAGE));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -98,9 +104,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        log.warn("Violación de restricción: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(VALIDATION_ERROR_MESSAGE));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -143,7 +150,7 @@ public class GlobalExceptionHandler {
         log.error("Violación de integridad de datos: ", ex);
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error("Operación no permitida: conflicto de datos"));
+                .body(ApiResponse.error(OPERATION_NOT_ALLOWED_MESSAGE));
     }
 
     @ExceptionHandler(TransactionSystemException.class)
@@ -153,12 +160,44 @@ public class GlobalExceptionHandler {
             log.warn("Violación de restricción en transacción: {}", cve.getMessage());
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("Error de validación"));
+                    .body(ApiResponse.error(VALIDATION_ERROR_MESSAGE));
         }
         log.error("Error del sistema de transacciones: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("Archivo demasiado grande: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(FILE_PROCESSING_ERROR_MESSAGE));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Argumento inválido: {}", ex.getMessage());
+        if (isFileRelatedMessage(ex.getMessage())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(FILE_PROCESSING_ERROR_MESSAGE));
+        }
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(OPERATION_NOT_ALLOWED_MESSAGE));
+    }
+
+    private static boolean isFileRelatedMessage(String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains("archivo")
+                || lower.contains("content-type")
+                || lower.contains("multipart")
+                || lower.contains("upload");
     }
 
     @ExceptionHandler(Exception.class)
