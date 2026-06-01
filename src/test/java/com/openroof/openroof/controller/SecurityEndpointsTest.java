@@ -66,6 +66,8 @@ class SecurityEndpointsTest {
     private StorageService storageService;
     @MockitoBean
     private ImageRepository imageRepository;
+    @MockitoBean
+    private com.openroof.openroof.upload.FileUploadValidator fileUploadValidator;
 
     @MockitoBean
     private PropertySecurity propertySecurity;
