@@ -1,6 +1,7 @@
 package com.openroof.openroof.security;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import com.openroof.openroof.model.enums.UserRole;
@@ -9,7 +10,7 @@ import com.openroof.openroof.repository.PropertyRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import com.openroof.openroof.model.property.Property;;;;
+import com.openroof.openroof.model.property.Property;
 
 @Component("propertySecurity")
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class PropertySecurity {
 
     private final PropertyRepository propertyRepository;
 
+    @Transactional(readOnly = true)
     public boolean canModify(Long propertyId, User currentUser) {
         // 1. Regla ADMIN: Si es administrador, tiene vía libre.
         if (currentUser.getRole() == UserRole.ADMIN) return true;
@@ -26,7 +28,7 @@ public class PropertySecurity {
 
         // 2. Regla AGENT: Solo puede modificar si su perfil de agente está asignado a la propiedad
         if (currentUser.getRole() == UserRole.AGENT) {
-            return property.getAgent() != null && 
+            return property.getAgent() != null &&
                    property.getAgent().getUser().getId().equals(currentUser.getId());
         }
 

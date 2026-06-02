@@ -32,6 +32,8 @@ public interface PropertyAssignmentRepository extends JpaRepository<PropertyAssi
 
     Optional<PropertyAssignment> findTopByProperty_IdAndStatusOrderByAssignedAtDesc(Long propertyId, AssignmentStatus status);
 
+    Optional<PropertyAssignment> findTopByProperty_IdAndStatusInOrderByAssignedAtDesc(Long propertyId, List<AssignmentStatus> statuses);
+
     @Query("""
             SELECT pa FROM PropertyAssignment pa
             WHERE pa.property.id = :propertyId

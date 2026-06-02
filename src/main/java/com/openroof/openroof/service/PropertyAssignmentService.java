@@ -1,12 +1,14 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.property.AssignPropertyRequest;
+import com.openroof.openroof.dto.property.AssignmentStatusResponse;
 import com.openroof.openroof.dto.property.PropertyAssignmentResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.model.enums.AssignmentStatus;
 import com.openroof.openroof.model.enums.UserRole;
+import com.openroof.openroof.model.enums.MediaType;
 import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyAssignment;
 import com.openroof.openroof.model.user.User;
@@ -162,6 +164,38 @@ public class PropertyAssignmentService {
         return toResponse(assignmentRepository.save(assignment));
     }
 
+    // ─── ASSIGNMENT STATUS (owner) ──────────────────────────────
+
+    @Transactional(readOnly = true)
+    public AssignmentStatusResponse getAssignmentStatus(Long propertyId, String currentUserEmail) {
+        User currentUser = getUserByEmail(currentUserEmail);
+        Property property = getProperty(propertyId);
+
+        if (!isOwnerOrAdmin(property, currentUser)) {
+            throw new BadRequestException("No tienes permiso para ver el estado de asignación de esta propiedad");
+        }
+
+        return assignmentRepository
+                .findTopByProperty_IdAndStatusInOrderByAssignedAtDesc(
+                    propertyId,
+                    List.of(AssignmentStatus.PENDING, AssignmentStatus.ACCEPTED, AssignmentStatus.REJECTED))
+                .map(this::toStatusResponse)
+                .orElse(null);
+    }
+
+    private AssignmentStatusResponse toStatusResponse(PropertyAssignment a) {
+        return new AssignmentStatusResponse(
+                a.getId(),
+                a.getStatus(),
+                a.getAgent().getId(),
+                a.getAgent().getUser().getName(),
+                a.getAgent().getUser().getAvatarUrl(),
+                a.getAgent().getAvgRating(),
+                a.getAgent().getTotalReviews(),
+                a.getAssignedAt()
+        );
+    }
+
     // ─── QUERIES ──────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -244,18 +278,26 @@ public class PropertyAssignmentService {
     }
 
     private PropertyAssignmentResponse toResponse(PropertyAssignment a) {
+        Property property = a.getProperty();
+        String propertyImage = property.getMedia().stream()
+                .filter(m -> m.getType() == MediaType.PHOTO)
+                .sorted(java.util.Comparator.comparingInt(m -> m.getOrderIndex() != null ? m.getOrderIndex() : 0))
+                .findFirst()
+                .map(m -> m.getUrl())
+                .orElse(null);
         return new PropertyAssignmentResponse(
                 a.getId(),
-                a.getProperty().getId(),
-                a.getProperty().getTitle(),
+                property.getId(),
+                property.getTitle(),
+                property.getAddress(),
+                propertyImage,
                 a.getAgent().getId(),
                 a.getAgent().getUser().getId(),
                 a.getAgent().getUser().getName(),
                 a.getAssignedBy().getId(),
                 a.getAssignedBy().getName(),
                 a.getStatus(),
-                a.getAssignedAt(),
-                a.getCreatedAt()
+                a.getAssignedAt()
         );
     }
 }

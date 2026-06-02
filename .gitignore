@@ -19,6 +19,7 @@
 
 # Logs
 *.log
+logs/
 
 # Operating system
 .DS_Store

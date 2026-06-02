@@ -994,19 +994,31 @@ public class PropertyService {
     /**
      * Verifica que el llamante tenga permiso para operar sobre la propiedad dada.
      * - ADMIN: acceso irrestricto.
-     * - USER / AGENT: solo si es el propietario (owner) de la propiedad.
+     * - USER: solo si es el propietario (owner) de la propiedad.
+     * - AGENT: solo si está asignado a la propiedad (con asignación ACCEPTED).
      *
      * @throws ResourceNotFoundException si la propiedad no existe.
-     * @throws ForbiddenException        si el llamante no es el propietario.
+     * @throws ForbiddenException        si el llamante no tiene permiso.
      */
     private void checkOwnership(Long propertyId, Long callerId, UserRole callerRole) {
-        if (callerRole == UserRole.ADMIN) return;   // ADMIN siempre puede
+        if (callerRole == UserRole.ADMIN) return;
         Property property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Propiedad no encontrada con ID: " + propertyId));
-        if (!property.getOwner().getId().equals(callerId)) {
-            throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
+        if (callerRole == UserRole.USER) {
+            if (!property.getOwner().getId().equals(callerId)) {
+                throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
+            }
+            return;
         }
+        if (callerRole == UserRole.AGENT) {
+            if (property.getAgent() == null
+                    || !property.getAgent().getUser().getId().equals(callerId)) {
+                throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
+            }
+            return;
+        }
+        throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
     }
 
     private List<PropertyRoom> buildRooms(List<PropertyRoomDto> roomDtos, Property property) {
