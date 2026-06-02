@@ -1,6 +1,7 @@
 package com.openroof.openroof.dto.property;
 
 import com.openroof.openroof.model.enums.*;
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -24,7 +25,7 @@ public record UpdatePropertyRequest(
 
         ListingType listingType,
 
-        @DecimalMin(value = "0.0", inclusive = false, message = "El alquiler debe ser mayor a 0") BigDecimal rentAmount,
+        @MaxDigits(integer = 20) @DecimalMin(value = "0.0", inclusive = false, message = "El alquiler debe ser mayor a 0") BigDecimal rentAmount,
 
         @Size(max = 3, message = "La moneda debe tener máximo 3 caracteres") String rentCurrency,
         @Size(max = 20) String rentFrequency,
@@ -32,31 +33,31 @@ public record UpdatePropertyRequest(
 
         @Size(max = 500, message = "La dirección no puede exceder 500 caracteres") String address,
 
-        BigDecimal lat,
-        BigDecimal lng,
+        @MaxDigits(integer = 20) BigDecimal lat,
+        @MaxDigits(integer = 20) BigDecimal lng,
         Long locationId,
 
-        @Positive(message = "El precio debe ser mayor a 0") BigDecimal price,
+        @MaxDigits(integer = 20) @Positive(message = "El precio debe ser mayor a 0") BigDecimal price,
 
-        @Min(value = 0, message = "Los dormitorios no pueden ser negativos") Integer bedrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "Los dormitorios no pueden ser negativos") Integer bedrooms,
 
-        @DecimalMin(value = "0", message = "Los baños no pueden ser negativos") BigDecimal bathrooms,
+        @MaxDigits(integer = 20) @DecimalMin(value = "0", message = "Los baños no pueden ser negativos") BigDecimal bathrooms,
 
-        @Min(value = 0, message = "Los medios baños no pueden ser negativos") Integer halfBathrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "Los medios baños no pueden ser negativos") Integer halfBathrooms,
 
-        @Min(value = 0, message = "Los baños completos no pueden ser negativos") Integer fullBathrooms,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "Los baños completos no pueden ser negativos") Integer fullBathrooms,
 
-        @DecimalMin(value = "0", message = "La superficie no puede ser negativa") BigDecimal surfaceArea,
+        @MaxDigits(integer = 20) @DecimalMin(value = "0", message = "La superficie no puede ser negativa") BigDecimal surfaceArea,
 
-        @DecimalMin(value = "0", message = "La superficie construida no puede ser negativa") BigDecimal builtArea,
+        @MaxDigits(integer = 20) @DecimalMin(value = "0", message = "La superficie construida no puede ser negativa") BigDecimal builtArea,
 
-        @Min(value = 0, message = "Los estacionamientos no pueden ser negativos") Integer parkingSpaces,
+        @MaxDigits(integer = 20) @Min(value = 0, message = "Los estacionamientos no pueden ser negativos") Integer parkingSpaces,
 
-        @Min(value = 1, message = "Los pisos deben ser al menos 1") Integer floorsCount,
+        @MaxDigits(integer = 20) @Min(value = 1, message = "Los pisos deben ser al menos 1") Integer floorsCount,
 
         Long agentId,
 
-        Integer constructionYear,
+        @MaxDigits(integer = 20) Integer constructionYear,
         ConstructionStatus constructionStatus,
         @Size(max = 100) String structureMaterial,
         @Size(max = 100) String wallsMaterial,

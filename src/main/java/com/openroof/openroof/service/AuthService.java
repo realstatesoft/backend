@@ -12,6 +12,8 @@ import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.exception.TooManyRequestsException;
+import com.openroof.openroof.security.AuthRateLimiter;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
@@ -28,7 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.RequiredArgsConstructor;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Map;
 
 /* * Auth: Enrique Rios
@@ -47,12 +54,19 @@ public class AuthService {
         private final AgentProfileRepository agentProfileRepository;
         private final EmailService emailService;
         private final AuditService auditService;
+        private final AuthRateLimiter authRateLimiter;
 
         /*
          * * Desc: Autentica al usuario y crea una sesión persistente con Refresh Token.
          */
         @Transactional
         public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+                // Rate limit por email antes de intentar autenticar.
+                if (!authRateLimiter.isLoginAllowedForEmail(request.getEmail())) {
+                        throw new TooManyRequestsException(
+                                        "Demasiados intentos para este correo. Por favor, intente más tarde.");
+                }
+
                 // Autenticar.
                 var auth = authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
@@ -175,8 +189,10 @@ public class AuthService {
                         throw new BadRequestException("Refresh token no proporcionado");
                 }
 
+                String oldRefreshTokenHash = hashRefreshToken(oldRefreshToken);
+
                 // 1. Buscar y bloquear la sesión en una sola transacción
-                var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshToken)
+                var session = userSessionRepository.findByTokenHashForUpdate(oldRefreshTokenHash)
                                 .orElseThrow(() -> new BadRequestException("Sesión inválida o ya utilizada"));
 
                 // 2. Obtener el usuario desde la sesión bloqueada
@@ -236,7 +252,7 @@ public class AuthService {
         @Transactional
         public void logout(String refreshToken) {
                 if (refreshToken != null && !refreshToken.isBlank()) {
-                        userSessionRepository.deleteByTokenHash(refreshToken);
+                        userSessionRepository.deleteByTokenHash(hashRefreshToken(refreshToken));
                 }
         }
 
@@ -282,11 +298,21 @@ public class AuthService {
                 // 4. Guardar la sesión con sus metadatos
                 var session = UserSession.builder()
                                 .user(user)
-                                .tokenHash(refreshToken)
+                                .tokenHash(hashRefreshToken(refreshToken))
                                 .expiresAt(LocalDateTime.now().plusDays(7))
                                 .requestMetadata(metadata)
                                 .build();
 
                 userSessionRepository.save(session);
+        }
+
+        private String hashRefreshToken(String refreshToken) {
+                try {
+                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                        byte[] hash = digest.digest(refreshToken.getBytes(StandardCharsets.UTF_8));
+                        return HexFormat.of().formatHex(hash);
+                } catch (NoSuchAlgorithmException ex) {
+                        throw new IllegalStateException("SHA-256 not available", ex);
+                }
         }
 }

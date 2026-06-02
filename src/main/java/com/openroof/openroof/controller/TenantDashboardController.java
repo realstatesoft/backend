@@ -26,6 +26,8 @@ import java.util.List;
 @Tag(name = "Tenant", description = "Endpoints para el tenant")
 public class TenantDashboardController {
 
+    private static final String ATTACHMENT_DISPOSITION = "attachment";
+
     private final TenantDashboardService tenantDashboardService;
     private final com.openroof.openroof.service.LeasePdfService leasePdfService;
 
@@ -62,7 +64,7 @@ public class TenantDashboardController {
         byte[] pdfBytes = leasePdfService.generatePdf(id, auth.getName());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder(ATTACHMENT_DISPOSITION)
                 .filename("contrato-arrendamiento-" + id + ".pdf")
                 .build());
         headers.setContentLength(pdfBytes.length);
@@ -86,7 +88,7 @@ public class TenantDashboardController {
         byte[] pdfBytes = tenantDashboardService.generateInvoicePdf(auth.getName(), id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder(ATTACHMENT_DISPOSITION)
                 .filename("factura-" + id + ".pdf")
                 .build());
         headers.setContentLength(pdfBytes.length);
@@ -100,7 +102,7 @@ public class TenantDashboardController {
         byte[] pdfBytes = tenantDashboardService.generateReceiptPdf(auth.getName(), id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder(ATTACHMENT_DISPOSITION)
                 .filename("recibo-" + id + ".pdf")
                 .build());
         headers.setContentLength(pdfBytes.length);

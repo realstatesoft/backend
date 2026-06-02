@@ -4,6 +4,7 @@ import com.openroof.openroof.model.enums.BillingFrequency;
 import com.openroof.openroof.model.enums.LateFeeType;
 import com.openroof.openroof.model.enums.LeaseType;
 import com.openroof.openroof.model.enums.UtilityType;
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
@@ -19,11 +20,11 @@ public record CreateLeaseRequest(
         @NotNull LeaseType leaseType,
         @NotNull @FutureOrPresent LocalDate startDate,
         LocalDate endDate,
-        @NotNull @DecimalMin("0.0") BigDecimal monthlyRent,
-        @NotNull @DecimalMin("0.0") BigDecimal securityDeposit,
+        @NotNull @DecimalMin("0.0") @MaxDigits(integer = 20) BigDecimal monthlyRent,
+        @NotNull @DecimalMin("0.0") @MaxDigits(integer = 20) BigDecimal securityDeposit,
         @NotNull BillingFrequency billingFrequency,
         LateFeeType lateFeeType,
-        BigDecimal lateFeeAmount,
+        @MaxDigits(integer = 20) BigDecimal lateFeeAmount,
         List<UtilityType> includedUtilities
 
 ) {}

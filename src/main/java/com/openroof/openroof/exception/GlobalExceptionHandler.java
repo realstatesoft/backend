@@ -13,7 +13,10 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.TransactionSystemException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +27,12 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Error interno del servidor";
+    private static final String OPERATION_NOT_ALLOWED_MESSAGE = "Operación no permitida";
+    private static final String FILE_PROCESSING_ERROR_MESSAGE = "Error al procesar el archivo";
+    private static final String VALIDATION_ERROR_MESSAGE = "Error de validación";
+    private static final String INVALID_REQUEST_MESSAGE = "Solicitud inválida";
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity
@@ -33,23 +42,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<ApiResponse<Void>> handleStorage(StorageException ex) {
+        log.error("Error de almacenamiento: ", ex);
         return ResponseEntity
                 .status(HttpStatus.BAD_GATEWAY)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error("Error en el servicio de almacenamiento"));
     }
 
     @ExceptionHandler(InvalidConfigurationException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidConfiguration(InvalidConfigurationException ex) {
+        log.error("Error de configuración interna: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("Solicitud no legible: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Solicitud inválida: " + ex.getMostSpecificCause().getMessage()));
+                .body(ApiResponse.error(INVALID_REQUEST_MESSAGE));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -76,25 +88,42 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
+        boolean hasDigitsOrMaxDigitsViolation = false;
+
+        for (org.springframework.validation.ObjectError error : ex.getBindingResult().getAllErrors()) {
+            String field = error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName();
             String message = error.getDefaultMessage();
             errors.put(field, message);
-        });
+            
+            if (error.getCodes() != null) {
+                for (String code : error.getCodes()) {
+                    if (code != null && (code.equals("MaxDigits") || code.equals("Digits") ||
+                            code.startsWith("MaxDigits.") || code.startsWith("Digits."))) {
+                        hasDigitsOrMaxDigitsViolation = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        HttpStatus status = hasDigitsOrMaxDigitsViolation ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.BAD_REQUEST;
+        String message = hasDigitsOrMaxDigitsViolation ? "El campo numérico excede la longitud máxima permitida" : "Error de validación";
+
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(status)
                 .body(ApiResponse.<Map<String, String>>builder()
                         .success(false)
-                        .message("Error de validación")
+                        .message(message)
                         .data(errors)
                         .build());
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        log.warn("Violación de restricción: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(VALIDATION_ERROR_MESSAGE));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -102,6 +131,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("Credenciales inválidas"));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(TooManyRequestsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
@@ -125,11 +161,66 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Acceso denegado"));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Violación de integridad de datos: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(OPERATION_NOT_ALLOWED_MESSAGE));
+    }
+
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTransactionSystem(TransactionSystemException ex) {
+        Throwable cause = ex.getRootCause();
+        if (cause instanceof ConstraintViolationException cve) {
+            log.warn("Violación de restricción en transacción: {}", cve.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(VALIDATION_ERROR_MESSAGE));
+        }
+        log.error("Error del sistema de transacciones: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("Archivo demasiado grande: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(FILE_PROCESSING_ERROR_MESSAGE));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Argumento inválido: {}", ex.getMessage());
+        if (isFileRelatedMessage(ex.getMessage())) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(FILE_PROCESSING_ERROR_MESSAGE));
+        }
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(OPERATION_NOT_ALLOWED_MESSAGE));
+    }
+
+    private static boolean isFileRelatedMessage(String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains("archivo")
+                || lower.contains("content-type")
+                || lower.contains("multipart")
+                || lower.contains("upload");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Unhandled exception: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor: " + ex.getMessage()));
+                .body(ApiResponse.error(INTERNAL_SERVER_ERROR_MESSAGE));
     }
 }

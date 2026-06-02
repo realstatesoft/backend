@@ -121,7 +121,8 @@ public class TenantDashboardService {
                         i.getBalance(),
                         i.getDueDate(),
                         i.getStatus().name(),
-                        due < 0 ? 0 : due);
+                        due < 0 ? 0 : due,
+                        i.getLease().getCurrency());
                 })
                 .sorted(Comparator.comparing(NextInstallmentInfo::dueDate))
                 .limit(4)
@@ -259,7 +260,8 @@ public class TenantDashboardService {
                                 p.getMethod().name(),
                                 p.getAmount(),
                                 p.getPaidAt(),
-                                p.getReceiptPdfUrl()), Collectors.toList())
+                                p.getReceiptPdfUrl(),
+                                p.getCurrency()), Collectors.toList())
                 ));
 
         List<TenantInstallmentItem> items = installmentsPage.getContent().stream()
@@ -276,6 +278,7 @@ public class TenantDashboardService {
                             i.getStatus().name(),
                             i.getDueDate(),
                             i.getInvoicePdfUrl(),
+                            i.getLease().getCurrency(),
                             payments);
                 })
                 .toList();
@@ -560,7 +563,8 @@ public class TenantDashboardService {
                 next.getBalance(),
                 next.getDueDate(),
                 next.getStatus().name(),
-                daysUntilDue);
+                daysUntilDue,
+                next.getLease().getCurrency());
     }
 
     private LastPaymentInfo buildLastPaymentInfo(Long tenantId) {

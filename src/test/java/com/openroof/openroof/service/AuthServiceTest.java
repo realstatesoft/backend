@@ -3,6 +3,8 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.register.RegisterRequest;
 import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
+import com.openroof.openroof.dto.security.LoginRequest;
+import com.openroof.openroof.exception.TooManyRequestsException;
 import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.model.user.UserSession;
@@ -11,6 +13,7 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
+import com.openroof.openroof.security.AuthRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +24,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +59,8 @@ class AuthServiceTest {
     @Mock
     private AuditService auditService;
     @Mock
+    private AuthRateLimiter authRateLimiter;
+    @Mock
     private HttpServletRequest httpRequest;
 
     private AuthService authService;
@@ -61,15 +75,18 @@ class AuthServiceTest {
                 userSessionRepository,
                 agentProfileRepository,
                 emailService,
-                auditService
+                auditService,
+                authRateLimiter
         );
 
-        when(passwordEncoder.encode(any())).thenReturn("encoded");
-        when(jwtService.generateToken(any(User.class))).thenReturn("access-token");
-        when(jwtService.generateRefreshToken(any(User.class))).thenReturn("refresh-token");
-        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
-        when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
+        lenient().when(authRateLimiter.isLoginAllowedForEmail(any())).thenReturn(true);
+
+        lenient().when(passwordEncoder.encode(any())).thenReturn("encoded");
+        lenient().when(jwtService.generateToken(any(User.class))).thenReturn("access-token");
+        lenient().when(jwtService.generateRefreshToken(any(User.class))).thenReturn("refresh-token");
+        lenient().when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        lenient().when(httpRequest.getHeader("X-Forwarded-For")).thenReturn(null);
+        lenient().when(httpRequest.getHeader("User-Agent")).thenReturn("JUnit");
     }
 
     @Test
@@ -77,7 +94,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("User One")
                 .email("user1@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000001")
                 .role("USER")
                 .build();
@@ -100,7 +117,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("Agent One")
                 .email("agent1@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000002")
                 .role("AGENT")
                 .build();
@@ -126,7 +143,7 @@ class AuthServiceTest {
         RegisterRequest request = RegisterRequest.builder()
                 .name("User Two")
                 .email("user2@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000003")
                 .role("USER")
                 .build();
@@ -148,7 +165,7 @@ class AuthServiceTest {
         AgentSignupRequest request = AgentSignupRequest.builder()
                 .name("Agent Professional")
                 .email("agent.pro@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000004")
                 .companyName("Pro Real Estate")
                 .licenseNumber("LIC-2024-001")
@@ -187,7 +204,7 @@ class AuthServiceTest {
         AgentSignupRequest request = AgentSignupRequest.builder()
                 .name("Simple Agent")
                 .email("simple@test.com")
-                .password("123456")
+                .password("Password1!")
                 .phone("+595981000005")
                 // Sin campos adicionales opcionales
                 .build();
@@ -211,5 +228,103 @@ class AuthServiceTest {
         AgentProfile savedProfile = profileCaptor.getValue();
         assertNotNull(savedProfile.getUser());
         // Los campos opcionales deben ser null/default
+    }
+
+    @Test
+    void register_persistsRefreshTokenAsHash() {
+        RegisterRequest request = RegisterRequest.builder()
+                .name("Secure User")
+                .email("secure@test.com")
+                .password("123456")
+                .phone("+595981000006")
+                .role("USER")
+                .build();
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+
+        authService.register(request, httpRequest);
+
+        ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        verify(userSessionRepository).save(sessionCaptor.capture());
+        String persistedTokenHash = sessionCaptor.getValue().getTokenHash();
+
+        assertNotEquals("refresh-token", persistedTokenHash);
+        assertEquals(hash("refresh-token"), persistedTokenHash);
+    }
+
+    @Test
+    void refreshToken_usesHashedLookupAndKeepsRotationFlow() {
+        User user = User.builder()
+                .email("rotating@test.com")
+                .passwordHash("encoded")
+                .name("Rotating User")
+                .phone("+595981000007")
+                .role(UserRole.USER)
+                .build();
+
+        UserSession existingSession = UserSession.builder()
+                .user(user)
+                .tokenHash(hash("old-refresh-token"))
+                .build();
+
+        when(userSessionRepository.findByTokenHashForUpdate(hash("old-refresh-token")))
+                .thenReturn(Optional.of(existingSession));
+        when(jwtService.isTokenValid("old-refresh-token", user)).thenReturn(true);
+
+        AuthResponse response = authService.refreshToken("old-refresh-token", httpRequest);
+
+        assertNotNull(response);
+        verify(userSessionRepository).findByTokenHashForUpdate(hash("old-refresh-token"));
+        verify(userSessionRepository).delete(existingSession);
+
+        ArgumentCaptor<UserSession> newSessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        verify(userSessionRepository).save(newSessionCaptor.capture());
+        assertNotEquals("refresh-token", newSessionCaptor.getValue().getTokenHash());
+        assertEquals(hash("refresh-token"), newSessionCaptor.getValue().getTokenHash());
+    }
+
+    @Test
+    void logout_deletesByHashedToken() {
+        authService.logout("logout-refresh-token");
+
+        verify(userSessionRepository).deleteByTokenHash(hash("logout-refresh-token"));
+    }
+
+    @Test
+    void logoutAllSessions_deletesAllSessionsForUser() {
+        User user = User.builder()
+                .email("all-sessions@test.com")
+                .passwordHash("encoded")
+                .name("All Sessions")
+                .role(UserRole.USER)
+                .build();
+
+        when(userRepository.findByEmail("all-sessions@test.com")).thenReturn(Optional.of(user));
+
+        authService.logoutAllSessions("all-sessions@test.com");
+
+        verify(userSessionRepository).deleteByUser(user);
+    }
+
+    private String hash(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 not available", ex);
+        }
+    }
+
+    @Test
+    void login_blocksWhenEmailRateLimitExceeded() {
+        when(authRateLimiter.isLoginAllowedForEmail("blocked@test.com")).thenReturn(false);
+
+        LoginRequest request = LoginRequest.builder()
+                .email("blocked@test.com")
+                .password("anyPassword")
+                .build();
+
+        assertThrows(TooManyRequestsException.class, () -> authService.login(request, httpRequest));
     }
 }

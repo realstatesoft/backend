@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.reservation;
 
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,7 @@ import java.math.BigDecimal;
 
 public record CreateReservationRequest(
         @NotNull Long propertyId,
-        @NotNull @DecimalMin(value = "0.00", inclusive = false) @Digits(integer = 10, fraction = 2)
+        @NotNull @DecimalMin(value = "0.00", inclusive = false) @Digits(integer = 10, fraction = 2) @MaxDigits(integer = 20)
         BigDecimal amount,
         @Size(max = 1000) String notes
 ) {}

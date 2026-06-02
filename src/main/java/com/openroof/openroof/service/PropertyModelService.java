@@ -8,6 +8,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.repository.PropertyMediaRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +31,7 @@ public class PropertyModelService {
     private final PropertyRepository propertyRepository;
     private final PropertyMediaRepository mediaRepository;
     private final SupabaseStorageService storageService;
+    private final FileUploadValidator fileUploadValidator;
 
     @Value("${upload.models.allowed-types:model/gltf-binary,model/gltf+json}")
     private String allowedTypesCsv;
@@ -40,16 +40,10 @@ public class PropertyModelService {
     private String maxModelFileSizeRaw;
 
     private DataSize maxModelFileSize;
-    private Set<String> normalizedAllowedTypes;
 
     @PostConstruct
     void initConfig() {
         this.maxModelFileSize = DataSize.parse(maxModelFileSizeRaw.trim());
-        this.normalizedAllowedTypes = Arrays.stream(allowedTypesCsv.split(","))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
     }
 
     @Transactional
@@ -158,25 +152,16 @@ public class PropertyModelService {
     }
 
     private void validateModelFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("El archivo está vacío");
+        var allowedKinds = FileUploadValidator.kindsFromCsv(allowedTypesCsv);
+        if (allowedKinds.isEmpty()) {
+            allowedKinds = FileUploadValidator.modelKinds();
         }
-
-        if (file.getSize() > maxModelFileSize.toBytes()) {
-            throw new BadRequestException("El modelo supera el tamaño máximo permitido de " + maxModelFileSizeRaw);
-        }
-
-        String contentType = file.getContentType();
-        String filename = file.getOriginalFilename();
-        boolean isAllowedType = contentType != null && normalizedAllowedTypes.contains(contentType.toLowerCase().trim());
-        
-        // Extension check (case-insensitive) as safety/fallback
-        boolean hasValidExtension = filename != null && 
-                (filename.toLowerCase().endsWith(".glb") || filename.toLowerCase().endsWith(".gltf"));
-
-        if (!isAllowedType && !hasValidExtension) {
-            throw new BadRequestException("Tipo de archivo no permitido: " + contentType + ". Solo se admiten .glb y .gltf");
-        }
+        fileUploadValidator.validate(
+                file,
+                maxModelFileSize.toBytes(),
+                maxModelFileSizeRaw.trim(),
+                allowedKinds
+        );
     }
 
     private PropertyMediaResponse mapToResponse(PropertyMedia m) {

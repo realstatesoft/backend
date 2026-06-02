@@ -49,9 +49,35 @@ upload:
   max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
   allowed-types: ${UPLOAD_ALLOWED_TYPES:image/jpeg,image/png,image/webp}
 
-# ── CORS — orígenes permitidos (URL del frontend en Vercel) ──
+# ── CORS (producción) — solo dominios exactos, sin wildcard ──
+# CORS_ALLOWED_ORIGINS: dominios productivos oficiales (comma-separated).
+# CORS_ALLOWED_PREVIEW_ORIGINS: previews aprobados explícitamente (comma-separated).
+# Ejemplo:
+# CORS_ALLOWED_ORIGINS=https://app.openroof.com,https://www.openroof.com
+# CORS_ALLOWED_PREVIEW_ORIGINS=https://openroof-qa.vercel.app,https://openroof-staging.vercel.app
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://*.vercel.app,http://localhost:5173}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.openroof.com}
+  allowed-preview-origins: ${CORS_ALLOWED_PREVIEW_ORIGINS:}
+
+# ── Security headers (CSP para respuestas JSON/PDF de la API) ──
+security:
+  headers:
+    csp-enabled: true
+
+# ── Auth rate limiting (valores estrictos para producción) ──
+# Ajustar via variables de entorno si es necesario.
+auth:
+  rate-limit:
+    login:
+      max-per-ip: ${AUTH_RATE_LIMIT_LOGIN_MAX_IP:10}
+      max-per-email: ${AUTH_RATE_LIMIT_LOGIN_MAX_EMAIL:5}
+      window-minutes: ${AUTH_RATE_LIMIT_LOGIN_WINDOW:15}
+    register:
+      max-per-ip: ${AUTH_RATE_LIMIT_REGISTER_MAX_IP:5}
+      window-minutes: ${AUTH_RATE_LIMIT_REGISTER_WINDOW:60}
+    refresh:
+      max-per-ip: ${AUTH_RATE_LIMIT_REFRESH_MAX_IP:20}
+      window-minutes: ${AUTH_RATE_LIMIT_REFRESH_WINDOW:15}
 
 # ── Logging reducido en producción ──
 logging:
