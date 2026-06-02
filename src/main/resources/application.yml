@@ -157,7 +157,6 @@ mail:
 screening:
   provider: ${SCREENING_PROVIDER:INTERNAL}
 
-
 ---
 # Developer profile: activate with -Dspring.profiles.active=dev
 spring:

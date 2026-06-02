@@ -2,9 +2,11 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.user.UpdateUserRequest;
 import com.openroof.openroof.dto.user.UserProfileResponse;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.service.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Optional;
 
@@ -24,6 +27,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private StorageService storageService;
 
     @InjectMocks
     private UserService userService;
@@ -147,6 +153,87 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("fantasma@openroof.com");
 
+        verify(userRepository, never()).save(any());
+    }
+
+    // ─── uploadAvatar ─────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("uploadAvatar: llama al storage, actualiza URL y retorna perfil")
+    void uploadAvatar_shouldUploadAndUpdateAvatarUrl() {
+        when(userRepository.findByEmail("test@openroof.com"))
+                .thenReturn(Optional.of(mockUser));
+        when(storageService.upload(any(), eq("avatars")))
+                .thenReturn(new StorageService.UploadResult("https://storage.example.com/new.jpg", "avatars/new.jpg", 100L, "image/jpeg"));
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "avatar", "photo.jpg", "image/jpeg", new byte[100]
+        );
+
+        UserProfileResponse response = userService.uploadAvatar("test@openroof.com", file);
+
+        assertThat(mockUser.getAvatarUrl()).isEqualTo("https://storage.example.com/new.jpg");
+        verify(storageService).upload(file, "avatars");
+        verify(userRepository).save(mockUser);
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    @DisplayName("uploadAvatar: lanza BadRequestException cuando el archivo está vacío")
+    void uploadAvatar_shouldThrow_whenFileIsEmpty() {
+        MockMultipartFile empty = new MockMultipartFile(
+                "avatar", "photo.jpg", "image/jpeg", new byte[0]
+        );
+
+        assertThatThrownBy(() -> userService.uploadAvatar("test@openroof.com", empty))
+                .isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(storageService);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("uploadAvatar: lanza BadRequestException cuando el tipo MIME no está permitido")
+    void uploadAvatar_shouldThrow_whenContentTypeNotAllowed() {
+        MockMultipartFile pdf = new MockMultipartFile(
+                "avatar", "doc.pdf", "application/pdf", new byte[100]
+        );
+
+        assertThatThrownBy(() -> userService.uploadAvatar("test@openroof.com", pdf))
+                .isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    @DisplayName("uploadAvatar: lanza BadRequestException cuando el archivo supera 5 MB")
+    void uploadAvatar_shouldThrow_whenFileTooLarge() {
+        byte[] big = new byte[6 * 1024 * 1024]; // 6 MB
+        MockMultipartFile file = new MockMultipartFile(
+                "avatar", "big.jpg", "image/jpeg", big
+        );
+
+        assertThatThrownBy(() -> userService.uploadAvatar("test@openroof.com", file))
+                .isInstanceOf(BadRequestException.class);
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    @DisplayName("uploadAvatar: no llama al storage cuando el usuario no existe")
+    void uploadAvatar_shouldThrow_whenUserNotFound() {
+        when(userRepository.findByEmail("noexiste@openroof.com"))
+                .thenReturn(Optional.empty());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "avatar", "photo.png", "image/png", new byte[100]
+        );
+
+        assertThatThrownBy(() -> userService.uploadAvatar("noexiste@openroof.com", file))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(storageService, never()).upload(any(), any());
         verify(userRepository, never()).save(any());
     }
 }

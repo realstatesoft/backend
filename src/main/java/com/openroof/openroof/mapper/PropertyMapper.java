@@ -6,6 +6,7 @@ import com.openroof.openroof.common.embeddable.UtilityInfo;
 import com.openroof.openroof.dto.property.*;
 import com.openroof.openroof.model.property.*;
 import com.openroof.openroof.model.enums.ListingType;
+import com.openroof.openroof.repository.AgentProfileRepository;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -20,6 +21,12 @@ import java.util.Optional;
  */
 @Component
 public class PropertyMapper {
+
+    private final AgentProfileRepository agentProfileRepository;
+
+    public PropertyMapper(AgentProfileRepository agentProfileRepository) {
+        this.agentProfileRepository = agentProfileRepository;
+    }
 
     // ─── Entity → Response ────────────────────────────────────────
 
@@ -74,6 +81,11 @@ public class PropertyMapper {
                 // Relaciones
                 p.getOwner() != null ? p.getOwner().getId() : null,
                 p.getOwner() != null ? p.getOwner().getName() : null,
+                p.getOwner() != null ? p.getOwner().getAvatarUrl() : null,
+                p.getOwner() != null
+                        ? agentProfileRepository.findByUser_Id(p.getOwner().getId())
+                                .map(ap -> ap.getId()).orElse(null)
+                        : null,
                 p.getAgent() != null ? p.getAgent().getId() : null,
                 p.getLocation() != null ? p.getLocation().getId() : null,
                 p.getLocation() != null ? p.getLocation().getName() : null,
