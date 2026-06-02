@@ -73,6 +73,21 @@ public class AgentClientService {
     }
 
     @Transactional(readOnly = true)
+    public Page<MyAgentSummaryResponse> getByUser(Long userId, Pageable pageable) {
+        Page<AgentClient> page = agentClientRepository.findByUser_Id(userId, pageable);
+        // Initialize lazy associations while still inside the transaction
+        page.getContent().forEach(ac -> {
+            if (ac.getAgent() != null) {
+                org.hibernate.Hibernate.initialize(ac.getAgent());
+                if (ac.getAgent().getUser() != null) {
+                    org.hibernate.Hibernate.initialize(ac.getAgent().getUser());
+                }
+            }
+        });
+        return page.map(agentClientMapper::toMyAgentSummaryResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Page<AgentClientSummaryResponse> searchClients(Long agentId, AgentClientSearchRequest criteria, Pageable pageable) {
         Specification<AgentClient> spec = AgentClientSpecification.filterBy(agentId, criteria);
         return agentClientRepository.findAll(spec, pageable)

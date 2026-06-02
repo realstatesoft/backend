@@ -92,4 +92,14 @@ public class AgentClientSecurityImpl implements AgentClientSecurity {
         }
         return currentUser.getRole() == UserRole.AGENT;
     }
+
+    @Override
+    public boolean canAccessMyAgents(Object principal) {
+        if (!(principal instanceof User currentUser)) {
+            return false;
+        }
+        return currentUser.getRole() == UserRole.USER
+                || currentUser.getRole() == UserRole.AGENT
+                || currentUser.getRole() == UserRole.ADMIN;
+    }
 }

@@ -5,4 +5,5 @@ public interface AgentClientSecurity {
     boolean canAccessExternal(Long externalClientId, Object principal);
     boolean canManageAgent(Long agentId, Object principal);
     boolean isAgent(Object principal);
+    boolean canAccessMyAgents(Object principal);
 }
