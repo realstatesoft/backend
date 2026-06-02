@@ -108,7 +108,7 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
-                                .addFilterBefore(authRateLimitingFilter, PropertyViewRateLimitingFilter.class)
+                                .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class)
