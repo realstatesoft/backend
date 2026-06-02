@@ -2,6 +2,7 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.dto.property.GeoFilterRequest;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.service.PropertyService;
 import com.openroof.openroof.service.RentCalculationService;
@@ -110,6 +111,11 @@ public class PropertyController {
             @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
 
             @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Vértices del polígono como JSON: [[lat1,lng1],[lat2,lng2],...]")
+            @RequestParam(required = false) String polygon,
+            @Parameter(description = "Latitud del centro del círculo") @RequestParam(required = false) Double circleLat,
+            @Parameter(description = "Longitud del centro del círculo") @RequestParam(required = false) Double circleLng,
+            @Parameter(description = "Radio del círculo en metros") @RequestParam(required = false) Double circleRadius,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -118,9 +124,11 @@ public class PropertyController {
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, null);
 
+        GeoFilterRequest geoFilter = new GeoFilterRequest(polygon, circleLat, circleLng, circleRadius);
+
         Long userId = (auth != null && auth.getPrincipal() instanceof User user) ? user.getId() : null;
 
-        Page<PropertySummaryResponse> page = propertyService.getAll(filter, pageable, userId);
+        Page<PropertySummaryResponse> page = propertyService.getAll(filter, geoFilter, pageable, userId);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
@@ -169,6 +177,11 @@ public class PropertyController {
             @Parameter(description = "ID de la ubicación/zona") @RequestParam(required = false) Long locationId,
             @Parameter(description = "Cantidad mínima de baños") @RequestParam(required = false) java.math.BigDecimal minBathrooms,
             @Parameter(description = "Cantidad mínima de dormitorios") @RequestParam(required = false) Integer minBedrooms,
+            @Parameter(description = "Vértices del polígono como JSON: [[lat1,lng1],[lat2,lng2],...]")
+            @RequestParam(required = false) String polygon,
+            @Parameter(description = "Latitud del centro del círculo") @RequestParam(required = false) Double circleLat,
+            @Parameter(description = "Longitud del centro del círculo") @RequestParam(required = false) Double circleLng,
+            @Parameter(description = "Radio del círculo en metros") @RequestParam(required = false) Double circleRadius,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication auth) {
 
@@ -177,9 +190,11 @@ public class PropertyController {
                 minPrice, maxPrice, locationId,
                 minBathrooms, minBedrooms, keyword);
 
+        GeoFilterRequest geoFilter = new GeoFilterRequest(polygon, circleLat, circleLng, circleRadius);
+
         Long userId = (auth != null && auth.getPrincipal() instanceof User user) ? user.getId() : null;
 
-        Page<PropertySummaryResponse> page = propertyService.search(filter, pageable, userId);
+        Page<PropertySummaryResponse> page = propertyService.search(filter, geoFilter, pageable, userId);
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 

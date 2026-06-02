@@ -303,7 +303,7 @@ class PropertyServiceCrudFlowTest {
         when(propertyRepository.count(any(Specification.class))).thenReturn(25L);
 
         Pageable pageable = PageRequest.of(2, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
-        propertyService.search(null, pageable, userId);
+        propertyService.search(null, null, pageable, userId);
 
         verify(typedQuery).setFirstResult(20);
         verify(typedQuery).setMaxResults(10);

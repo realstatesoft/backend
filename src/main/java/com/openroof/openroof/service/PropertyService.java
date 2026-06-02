@@ -1,6 +1,7 @@
 package com.openroof.openroof.service;
 
 import com.openroof.openroof.dto.property.*;
+import com.openroof.openroof.dto.property.GeoFilterRequest;
 import com.openroof.openroof.common.embeddable.RequestMetadata;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
@@ -243,9 +244,13 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, Pageable pageable, Long userId) {
+    public Page<PropertySummaryResponse> getAll(PropertyFilterRequest filter, GeoFilterRequest geoFilter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
-        
+
+        if (geoFilter != null && !geoFilter.isEmpty()) {
+            return applyGeoFilter(spec, geoFilter, pageable);
+        }
+
         // Si no hay usuario autenticado o se pidió un orden específico (no default), usamos JPA directo.
         if (userId == null || !isDefaultSort(pageable)) {
             return propertyRepository.findAll(spec, sanitizePageable(pageable))
@@ -273,8 +278,12 @@ public class PropertyService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PropertySummaryResponse> search(PropertyFilterRequest filter, Pageable pageable, Long userId) {
+    public Page<PropertySummaryResponse> search(PropertyFilterRequest filter, GeoFilterRequest geoFilter, Pageable pageable, Long userId) {
         Specification<Property> spec = PropertySpecification.buildFilter(filter);
+
+        if (geoFilter != null && !geoFilter.isEmpty()) {
+            return applyGeoFilter(spec, geoFilter, pageable);
+        }
 
         if (userId == null || !isDefaultSort(pageable)) {
             return propertyRepository.findAll(spec, sanitizePageable(pageable))
@@ -282,6 +291,44 @@ public class PropertyService {
         }
 
         return getPageWithRelevance(spec, pageable, userId);
+    }
+
+    /**
+     * Aplica un filtro geoespacial (polígono o círculo) a los resultados:
+     * <ol>
+     *   <li>Añade un bounding-box a la consulta JPA para pre-filtrar en BD.</li>
+     *   <li>Post-filtra en memoria con la geometría exacta (ray-casting / haversine).</li>
+     *   <li>Pagina en memoria para mantener la consistencia de totales.</li>
+     * </ol>
+     * Máximo {@value #MAX_GEO_CANDIDATES} candidatos desde la BD para evitar cargas excesivas.
+     */
+    private static final int MAX_GEO_CANDIDATES = 1000;
+
+    private Page<PropertySummaryResponse> applyGeoFilter(
+            Specification<Property> baseSpec, GeoFilterRequest geoFilter, Pageable pageable) {
+
+        Specification<Property> bboxSpec = GeoFilterUtil.buildBoundingBoxSpec(geoFilter);
+        Specification<Property> combined = bboxSpec != null ? baseSpec.and(bboxSpec) : baseSpec;
+
+        // Fetch candidates from DB (bounding-box pre-filter, up to MAX_GEO_CANDIDATES)
+        Pageable unbounded = PageRequest.of(0, MAX_GEO_CANDIDATES,
+                pageable.getSort().isSorted() ? pageable.getSort() : Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Property> candidates = propertyRepository.findAll(combined, unbounded).getContent();
+
+        // Exact geometry post-filter
+        List<PropertySummaryResponse> filtered = candidates.stream()
+                .filter(p -> p.hasCoordinates() && GeoFilterUtil.matches(p.getLat(), p.getLng(), geoFilter))
+                .map(propertyMapper::toSummaryResponse)
+                .toList();
+
+        // In-memory pagination
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        List<PropertySummaryResponse> pageContent = start < filtered.size()
+                ? filtered.subList(start, end)
+                : List.of();
+
+        return new PageImpl<>(pageContent, pageable, filtered.size());
     }
 
     @Transactional(readOnly = true)

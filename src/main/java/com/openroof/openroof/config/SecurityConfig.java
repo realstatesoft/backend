@@ -109,10 +109,10 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
-                                 .addFilterBefore(securityHeadersFilter, org.springframework.security.web.header.HeaderWriterFilter.class)
-                                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
-                                 .addFilterBefore(propertyViewRateLimitingFilter, org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter.class)
-                                 .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(securityHeadersFilter, org.springframework.security.web.header.HeaderWriterFilter.class)
+                                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                                .addFilterBefore(propertyViewRateLimitingFilter, org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter.class)
+                                .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .headers(headers -> headers
                                         .httpStrictTransportSecurity(hsts -> hsts
                                                 .includeSubDomains(true)
