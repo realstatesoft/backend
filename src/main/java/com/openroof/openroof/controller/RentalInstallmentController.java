@@ -7,6 +7,8 @@ import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.service.RentalInstallmentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,8 +34,13 @@ public class RentalInstallmentController {
     @GetMapping("/api/leases/{id}/installments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Listar cuotas de un contrato (paginado)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cuotas obtenidas correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
     public ResponseEntity<ApiResponse<Page<RentalInstallmentResponse>>> listByLease(
-            @PathVariable Long id,
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
             @PageableDefault(size = 12, sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable,
             Principal principal) {
         User user = resolveUser(principal);
@@ -43,8 +50,13 @@ public class RentalInstallmentController {
     @GetMapping("/api/rentals/installments/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Detalle de una cuota")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cuota encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cuota no encontrada")
+    })
     public ResponseEntity<ApiResponse<RentalInstallmentResponse>> getById(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la cuota") @PathVariable Long id,
             Principal principal) {
         User user = resolveUser(principal);
         return ResponseEntity.ok(ApiResponse.ok(installmentService.getById(id, user.getId())));

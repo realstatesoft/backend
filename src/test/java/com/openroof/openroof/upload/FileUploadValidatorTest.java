@@ -4,6 +4,12 @@ import com.openroof.openroof.exception.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static com.openroof.openroof.upload.UploadTestFixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,6 +86,15 @@ class FileUploadValidatorTest {
     }
 
     @Test
+    void validate_readsOnlyHeaderInsteadOfFullContent() {
+        MultipartFile file = new HeaderOnlyMultipartFile("id.pdf", "application/pdf", PDF, 10_000_000);
+
+        var result = validator.validate(file, 10_000_000, "10MB", FileUploadValidator.documentKinds());
+
+        assertEquals(DetectedFileKind.PDF, result.kind());
+    }
+
+    @Test
     void normalizeExtensionForStorage_rejectsBlockedExtension() {
         assertEquals("", FileUploadValidator.normalizeExtensionForStorage("malware.exe", ""));
     }
@@ -87,5 +102,53 @@ class FileUploadValidatorTest {
     @Test
     void normalizeExtensionForStorage_rejectsBlockedFallbackExtension() {
         assertEquals("", FileUploadValidator.normalizeExtensionForStorage("file", ".exe"));
+    }
+
+    private record HeaderOnlyMultipartFile(
+            String originalFilename,
+            String contentType,
+            byte[] header,
+            long size
+    ) implements MultipartFile {
+
+        @Override
+        public String getName() {
+            return "file";
+        }
+
+        @Override
+        public String getOriginalFilename() {
+            return originalFilename;
+        }
+
+        @Override
+        public String getContentType() {
+            return contentType;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return size == 0;
+        }
+
+        @Override
+        public long getSize() {
+            return size;
+        }
+
+        @Override
+        public byte[] getBytes() throws IOException {
+            throw new IOException("getBytes should not be called");
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            return new ByteArrayInputStream(header);
+        }
+
+        @Override
+        public void transferTo(File dest) {
+            throw new UnsupportedOperationException("Not needed for this test");
+        }
     }
 }

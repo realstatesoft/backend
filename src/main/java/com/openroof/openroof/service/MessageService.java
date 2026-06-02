@@ -5,6 +5,7 @@ import com.openroof.openroof.dto.message.MessageResponse;
 import com.openroof.openroof.dto.message.SendMessageRequest;
 import com.openroof.openroof.dto.notification.CreateNotificationRequest;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.model.enums.NotificationType;
 import com.openroof.openroof.model.messaging.Message;
 import com.openroof.openroof.model.property.Property;
@@ -92,6 +93,9 @@ return latestMessages.stream().map(m -> {
 @Transactional
     public MessageResponse send(String email, SendMessageRequest request) {
         User sender = findUserByEmail(email);
+        if (sender.getId().equals(request.receiverId())) {
+            throw new BadRequestException("A user cannot send a message to themselves.");
+        }
         User receiver = userRepository.findById(request.receiverId())
                 .orElseThrow(() -> new ResourceNotFoundException("Destinatario no encontrado"));
 

@@ -6,6 +6,8 @@ import com.openroof.openroof.dto.payment.PaymentResponse;
 import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,10 @@ public class PaymentController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Registrar un nuevo pago")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Pago registrado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos")
+    })
     public ResponseEntity<ApiResponse<PaymentResponse>> create(
             @Valid @RequestBody PaymentRequest request,
             Principal principal) {
@@ -42,9 +48,12 @@ public class PaymentController {
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Mis pagos")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente")
+    })
     public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getMyPayments(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            @RequestParam(required = false) PaymentStatus status,
+            @Parameter(description = "Filtrar por estado (PENDING, APPROVED, REJECTED, REFUNDED)") @RequestParam(required = false) PaymentStatus status,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(
                 paymentService.getMyPayments(principal.getName(), status, pageable)));
@@ -53,8 +62,13 @@ public class PaymentController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Ver un pago por ID")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pago encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Pago no encontrado")
+    })
     public ResponseEntity<ApiResponse<PaymentResponse>> getById(
-            @PathVariable Long id,
+            @Parameter(description = "ID del pago") @PathVariable Long id,
             Principal principal) {
         return ResponseEntity.ok(ApiResponse.ok(paymentService.getById(id, principal.getName())));
     }
@@ -62,10 +76,14 @@ public class PaymentController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Listar todos los pagos (ADMIN)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado (solo ADMIN)")
+    })
     public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getAll(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) PaymentStatus status) {
+            @Parameter(description = "Filtrar por ID de usuario") @RequestParam(required = false) Long userId,
+            @Parameter(description = "Filtrar por estado (PENDING, APPROVED, REJECTED)") @RequestParam(required = false) PaymentStatus status) {
         return ResponseEntity.ok(ApiResponse.ok(
                 paymentService.getAll(userId, status, pageable)));
     }
@@ -73,7 +91,14 @@ public class PaymentController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Aprobar un pago (ADMIN)")
-    public ResponseEntity<ApiResponse<PaymentResponse>> approve(@PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pago aprobado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El pago no está en estado PENDING"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado (solo ADMIN)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Pago no encontrado")
+    })
+    public ResponseEntity<ApiResponse<PaymentResponse>> approve(
+            @Parameter(description = "ID del pago") @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(
                 paymentService.approvePayment(id), "Pago aprobado"));
     }
@@ -81,7 +106,14 @@ public class PaymentController {
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Rechazar un pago (ADMIN)")
-    public ResponseEntity<ApiResponse<PaymentResponse>> reject(@PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pago rechazado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El pago no está en estado PENDING"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado (solo ADMIN)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Pago no encontrado")
+    })
+    public ResponseEntity<ApiResponse<PaymentResponse>> reject(
+            @Parameter(description = "ID del pago") @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(
                 paymentService.rejectPayment(id), "Pago rechazado"));
     }

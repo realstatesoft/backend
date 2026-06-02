@@ -15,6 +15,7 @@ import com.openroof.openroof.repository.PropertyRepository;
 import com.openroof.openroof.repository.PropertyViewRepository;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,6 +60,8 @@ class PropertyServiceCompareTest {
     private UserPreferenceRepository userPreferenceRepository;
     @Mock
     private PropertyRelevanceService propertyRelevanceService;
+    @Mock
+    private EntityManager entityManager;
 
     private PropertyService propertyService;
 
@@ -78,7 +81,8 @@ class PropertyServiceCompareTest {
                 notificationService,
                 auditService,
                 userPreferenceRepository,
-                propertyRelevanceService
+                propertyRelevanceService,
+                entityManager
         );
     }
 

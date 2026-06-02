@@ -86,7 +86,7 @@ class TenantDashboardServiceTest {
         when(rentalInstallmentRepository.sumPendingBalanceByLeaseId(eq(100L), any())).thenReturn(new BigDecimal("500"));
         when(maintenanceRequestRepository.countByTenantIdAndStatusIn(eq(testUser.getId()), any())).thenReturn(2L);
         when(messageRepository.countUnreadByUserId(testUser.getId())).thenReturn(5L);
-        when(paymentRepository.sumCompletedByUserSince(eq(testUser.getId()), any(com.openroof.openroof.model.enums.PaymentStatus.class), any())).thenReturn(new BigDecimal("12000"));
+        when(leasePaymentRepository.sumCompletedByTenantSince(eq(testUser.getId()), any(com.openroof.openroof.model.enums.LeasePaymentStatus.class), any())).thenReturn(new BigDecimal("12000"));
 
         // Mock para buildLastPaymentInfo
         org.springframework.data.domain.Page<com.openroof.openroof.model.payment.Payment> paymentPage = new org.springframework.data.domain.PageImpl<>(java.util.List.of());
@@ -211,7 +211,10 @@ class TenantDashboardServiceTest {
     @DisplayName("getPayments() - Retorna historial de cuotas paginado")
     void getPayments_returnsPaginatedInstallments() {
         when(userRepository.findByEmail(testEmail)).thenReturn(Optional.of(testUser));
-        Lease lease = Lease.builder().status(LeaseStatus.ACTIVE).build();
+        Lease lease = Lease.builder()
+                .status(LeaseStatus.ACTIVE)
+                .currency("USD")
+                .build();
         lease.setId(100L);
         when(leaseRepository.findAllByPrimaryTenantIdAndStatusOrderByCreatedAtDesc(testUser.getId(), LeaseStatus.ACTIVE)).thenReturn(List.of(lease));
 
@@ -223,6 +226,7 @@ class TenantDashboardServiceTest {
                 .paidAmount(new BigDecimal("1000"))
                 .status(com.openroof.openroof.model.enums.InstallmentStatus.PAID)
                 .dueDate(LocalDate.now().plusDays(5))
+                .lease(lease)
                 .build();
         installment.setId(200L);
 

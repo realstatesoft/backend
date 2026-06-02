@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 
 import com.openroof.openroof.model.enums.NotificationType;
+import com.openroof.openroof.exception.BadRequestException;
 
 @ExtendWith(MockitoExtension.class)
 class MessageServiceTest {
@@ -182,6 +183,20 @@ class MessageServiceTest {
                     argThat(name -> name != null && !name.isEmpty()),
                     eq("Deferred")
             );
+        }
+
+        @Test
+        @DisplayName("Enviar mensaje a uno mismo -> lanza BadRequestException")
+        void sendMessage_toSelf_throwsBadRequestException() {
+            var request = new SendMessageRequest(1L, "Mensaje a mí mismo", null);
+
+            when(userRepository.findByEmail(senderEmail)).thenReturn(Optional.of(sender));
+
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> messageService.send(senderEmail, request))
+                    .isInstanceOf(BadRequestException.class)
+                    .hasMessage("A user cannot send a message to themselves.");
+
+            verify(messageRepository, never()).save(any());
         }
     }
 
