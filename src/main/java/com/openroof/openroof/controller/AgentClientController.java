@@ -91,6 +91,21 @@ public class AgentClientController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
+    @GetMapping("/my-agents")
+    @PreAuthorize("isAuthenticated() and @agentClientSecurity.canAccessMyAgents(authentication.principal)")
+    @Operation(summary = "Listar los agentes del usuario autenticado (paginado)")
+    public ResponseEntity<ApiResponse<Page<MyAgentSummaryResponse>>> getMyAgents(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal User currentUser,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        int size = Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
+        PageRequest clampedPageable = PageRequest.of(
+                pageable.getPageNumber(), size, pageable.getSort());
+
+        Page<MyAgentSummaryResponse> page = agentClientService.getByUser(currentUser.getId(), clampedPageable);
+        return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
     @GetMapping("/export")
     @PreAuthorize("isAuthenticated() and @agentClientSecurity.isAgent(authentication.principal)")
     @Operation(summary = "Exportar clientes del agente autenticado a CSV")
