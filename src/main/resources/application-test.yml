@@ -19,3 +19,10 @@ spring:
 
   liquibase:
     enabled: false
+
+# ── Swagger/OpenAPI (habilitado en test para validar endpoints) ──
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
