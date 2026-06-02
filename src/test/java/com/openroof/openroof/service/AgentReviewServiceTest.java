@@ -372,6 +372,7 @@ class AgentReviewServiceTest {
                 1L, 100L, 10L, "Reviewer", null, null, null, 5, "great",
                 LocalDateTime.now(), LocalDateTime.now(), true);
 
+        when(agentProfileRepository.existsById(100L)).thenReturn(true);
         when(reviewRepository.findByAgent_IdAndUser_Id(100L, 10L)).thenReturn(Optional.of(review));
         when(reviewMapper.toResponse(eq(review), eq(10L))).thenReturn(expected);
 
@@ -383,6 +384,7 @@ class AgentReviewServiceTest {
 
     @Test
     void getMyReview_notFound_returnsNull() {
+        when(agentProfileRepository.existsById(100L)).thenReturn(true);
         when(reviewRepository.findByAgent_IdAndUser_Id(100L, 10L)).thenReturn(Optional.empty());
 
         AgentReviewResponse result = service.getMyReview(100L, 10L);

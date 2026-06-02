@@ -9,6 +9,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.repository.*;
 import com.openroof.openroof.repository.UserPreferenceRepository;
 import com.openroof.openroof.mapper.PropertyMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,7 @@ class PropertySimilarTest {
     @Mock private AuditService auditService;
     @Mock private UserPreferenceRepository userPreferenceRepository;
     @Mock private PropertyRelevanceService propertyRelevanceService;
+    @Mock private EntityManager entityManager;
 
     private PropertyService propertyService;
 
@@ -95,7 +97,8 @@ class PropertySimilarTest {
                 notificationService,
                 auditService,
                 userPreferenceRepository,
-                propertyRelevanceService
+                propertyRelevanceService,
+                entityManager
         );
 
         Location location = Location.builder()

@@ -88,6 +88,22 @@ public class AgentClientMapper {
                 ac.getCreatedAt());
     }
 
+    public MyAgentSummaryResponse toMyAgentSummaryResponse(AgentClient ac) {
+        AgentProfile agent = ac.getAgent();
+        User agentUser = agent != null ? agent.getUser() : null;
+
+        return new MyAgentSummaryResponse(
+                ac.getId(),
+                agent != null ? agent.getId() : null,
+                agentUser != null ? agentUser.getName() : null,
+                agentUser != null ? agentUser.getAvatarUrl() : null,
+                agent != null ? agent.getCompanyName() : null,
+                agent != null ? agent.getAvgRating() : null,
+                agent != null ? agent.getTotalReviews() : null,
+                enumName(ac.getStatus()),
+                ac.getCreatedAt());
+    }
+
     // ─── Request → Entity ────────────────────────────────────────
 
     public AgentClient toEntity(CreateAgentClientRequest req, AgentProfile agent, User user) {

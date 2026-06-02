@@ -8,6 +8,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.repository.PropertyMediaRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar planos de propiedades (floor plans).
@@ -38,6 +36,7 @@ public class PropertyFloorPlanService {
     private final PropertyRepository         propertyRepository;
     private final PropertyMediaRepository    mediaRepository;
     private final SupabaseStorageService     storageService;
+    private final FileUploadValidator        fileUploadValidator;
 
     @Value("${upload.floor-plans.max-file-size:10MB}")
     private String maxFileSizeRaw;
@@ -48,17 +47,11 @@ public class PropertyFloorPlanService {
     @Value("${upload.floor-plans.max-per-property:5}")
     private int maxPerProperty;
 
-    private long        maxFileSizeBytes;
-    private Set<String> normalizedAllowedTypes;
+    private long maxFileSizeBytes;
 
     @PostConstruct
     void initConfig() {
         maxFileSizeBytes = DataSize.parse(maxFileSizeRaw.trim()).toBytes();
-        normalizedAllowedTypes = Arrays.stream(allowedTypesRaw.split(","))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
     }
 
     // ─── UPLOAD (ligado a propiedad) ─────────────────────────────────────────
@@ -105,7 +98,7 @@ public class PropertyFloorPlanService {
                 .stream()
                 .filter(m -> m.getType() == MediaType.FLOOR_PLAN)
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // ─── DELETE ──────────────────────────────────────────────────────────────
@@ -183,18 +176,11 @@ public class PropertyFloorPlanService {
     }
 
     private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
+        var allowedKinds = FileUploadValidator.kindsFromCsv(allowedTypesRaw);
+        if (allowedKinds.isEmpty()) {
+            allowedKinds = FileUploadValidator.documentKinds();
         }
-        if (file.getSize() > maxFileSizeBytes) {
-            throw new BadRequestException(
-                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeRaw.trim() + ".");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !normalizedAllowedTypes.contains(contentType.trim().toLowerCase())) {
-            throw new BadRequestException(
-                    "Tipo de archivo no permitido: " + contentType + ". Se aceptan PDF, JPG, PNG o WebP.");
-        }
+        fileUploadValidator.validate(file, maxFileSizeBytes, maxFileSizeRaw.trim(), allowedKinds);
     }
 
     private Property findPropertyOrThrow(Long id) {

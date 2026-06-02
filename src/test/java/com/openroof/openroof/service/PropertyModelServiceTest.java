@@ -7,6 +7,7 @@ import com.openroof.openroof.model.property.Property;
 import com.openroof.openroof.model.property.PropertyMedia;
 import com.openroof.openroof.repository.PropertyMediaRepository;
 import com.openroof.openroof.repository.PropertyRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static com.openroof.openroof.upload.UploadTestFixtures.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,16 +43,17 @@ class PropertyModelServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Configurar valores @Value manualmente para el test unitario
         ReflectionTestUtils.setField(propertyModelService, "allowedTypesCsv", "model/gltf-binary, model/gltf+json");
         ReflectionTestUtils.setField(propertyModelService, "maxModelFileSizeRaw", "10MB");
+        ReflectionTestUtils.setField(propertyModelService, "fileUploadValidator",
+                new FileUploadValidator());
         propertyModelService.initConfig();
     }
 
     @Test
     void uploadModel_WhenPropertyNotFound_ShouldThrowException() {
         when(propertyRepository.findById(1L)).thenReturn(Optional.empty());
-        MockMultipartFile file = new MockMultipartFile("file", "test.glb", "model/gltf-binary", "data".getBytes());
+        MockMultipartFile file = glb("test.glb");
 
         assertThrows(ResourceNotFoundException.class, () -> 
             propertyModelService.uploadModel(1L, file)
@@ -75,10 +79,22 @@ class PropertyModelServiceTest {
         property.setId(1L);
         when(propertyRepository.findById(1L)).thenReturn(Optional.of(property));
         
-        MockMultipartFile invalidFile = new MockMultipartFile("file", "image.jpg", "image/jpeg", "data".getBytes());
+        assertThrows(BadRequestException.class, () ->
+            propertyModelService.uploadModel(1L, spoofedJpegAsGlb())
+        );
+    }
 
-        assertThrows(BadRequestException.class, () -> 
-            propertyModelService.uploadModel(1L, invalidFile)
+    @Test
+    void uploadModel_WhenFakeExtensionOnValidGlb_ShouldThrowBadRequest() {
+        Property property = new Property();
+        property.setId(1L);
+        when(propertyRepository.findById(1L)).thenReturn(Optional.of(property));
+
+        MockMultipartFile fakeExt = new MockMultipartFile(
+                "file", "model.jpg", "model/gltf-binary", GLB);
+
+        assertThrows(BadRequestException.class, () ->
+            propertyModelService.uploadModel(1L, fakeExt)
         );
     }
 
@@ -91,7 +107,7 @@ class PropertyModelServiceTest {
             property.setId(1L);
             when(propertyRepository.findById(1L)).thenReturn(Optional.of(property));
             
-            MockMultipartFile file = new MockMultipartFile("file", "model.glb", "model/gltf-binary", "valid data".getBytes());
+            MockMultipartFile file = glb("model.glb");
             
             StorageService.UploadResult mockResult = new StorageService.UploadResult(
                 "https://storage.com/model.glb", "properties/1/models/model.glb", 1024L, "model/gltf-binary");

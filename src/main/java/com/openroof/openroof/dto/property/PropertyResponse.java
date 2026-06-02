@@ -53,6 +53,8 @@ public record PropertyResponse(
         // Relaciones
         Long ownerId,
         String ownerName,
+        String ownerAvatarUrl,
+        Long ownerAgentProfileId,
         Long agentId,
         Long locationId,
         String locationName,

@@ -14,6 +14,8 @@ public record TenantInstallmentItem(
     BigDecimal balance,
     String status,
     LocalDate dueDate,
+    String invoiceUrl,
+    String currency,
     List<LeasePaymentInfo> payments
 ) {
     public record LeasePaymentInfo(
@@ -21,7 +23,8 @@ public record TenantInstallmentItem(
         String method,
         BigDecimal amount,
         LocalDateTime date,
-        String receiptUrl
+        String receiptUrl,
+        String currency
     ) {}
 
 }

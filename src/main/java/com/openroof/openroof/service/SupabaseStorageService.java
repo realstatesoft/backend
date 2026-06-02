@@ -2,8 +2,10 @@ package com.openroof.openroof.service;
 
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.StorageException;
+import com.openroof.openroof.upload.FileUploadValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -62,6 +64,7 @@ public class SupabaseStorageService implements StorageService {
 
         this.restClient = RestClient.builder()
                 .baseUrl(supabaseUrl + "/storage/v1")
+                .defaultHeader("apikey", serviceRoleKey)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceRoleKey)
                 .build();
     }
@@ -72,8 +75,8 @@ public class SupabaseStorageService implements StorageService {
             throw new IllegalArgumentException("El archivo está vacío o no fue proporcionado.");
         }
 
-        String originalFilename = file.getOriginalFilename();
-        String extension = extractExtension(originalFilename);
+        String sanitizedFilename = FileUploadValidator.sanitizeFilename(file.getOriginalFilename());
+        String extension = extractExtension(sanitizedFilename);
 
         // Permitimos sobrepasar el límite global para documentos KYC, PDFs, Modelos 3D y Planos,
         // ya que sus servicios específicos aplican sus propias reglas de tamaño.
@@ -108,13 +111,24 @@ public class SupabaseStorageService implements StorageService {
         String key = buildKey(folder, extension);
 
         try {
-            byte[] fileBytes = file.getBytes();
+            InputStreamResource fileResource = new InputStreamResource(file.getInputStream()) {
+                @Override
+                public long contentLength() {
+                    return file.getSize();
+                }
+
+                @Override
+                public String getFilename() {
+                    return sanitizedFilename;
+                }
+            };
 
             restClient.post()
                     .uri("/object/{bucket}/{key}", bucket, key)
                     .header("x-upsert", "true")
                     .contentType(MediaType.parseMediaType(file.getContentType()))
-                    .body(fileBytes)
+                    .contentLength(file.getSize())
+                    .body(fileResource)
                     .retrieve()
                     .toBodilessEntity();
 
@@ -156,10 +170,7 @@ public class SupabaseStorageService implements StorageService {
     // ─── Helpers ─────────────────────────────────────────────────────────
 
     private String extractExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf('.'));
+        return FileUploadValidator.normalizeExtensionForStorage(filename, "");
     }
 
     private String buildKey(String folder, String extension) {
@@ -167,6 +178,11 @@ public class SupabaseStorageService implements StorageService {
         if (folder == null || folder.isBlank()) {
             return uuid + extension;
         }
-        return folder.replaceAll("/+$", "") + "/" + uuid + extension;
+        int len = folder.length();
+        while (len > 0 && folder.charAt(len - 1) == '/') {
+            len--;
+        }
+        String cleanedFolder = folder.substring(0, len);
+        return cleanedFolder + "/" + uuid + extension;
     }
 }

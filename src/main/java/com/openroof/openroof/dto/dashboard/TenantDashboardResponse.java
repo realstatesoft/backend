@@ -66,7 +66,8 @@ public record TenantDashboardResponse(
                 BigDecimal balance,
                 LocalDate dueDate,
                 String status,
-                long daysUntilDue
+                long daysUntilDue,
+                String currency
         ) {}
 
         public record LastPaymentInfo(

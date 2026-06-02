@@ -10,6 +10,7 @@ import com.openroof.openroof.model.enums.DocumentType;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserDocumentRepository;
 import com.openroof.openroof.repository.UserRepository;
+import com.openroof.openroof.upload.FileUploadValidator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +23,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -41,6 +40,7 @@ public class UserDocumentService {
     private final UserRepository userRepository;
     private final StorageService storageService;
     private final EmailService emailService;
+    private final FileUploadValidator fileUploadValidator;
 
     @Value("${upload.documents.max-file-size:10MB}")
     private String maxFileSizeRaw;
@@ -48,17 +48,11 @@ public class UserDocumentService {
     @Value("${upload.documents.allowed-types:application/pdf,image/jpeg,image/png,image/webp}")
     private String allowedTypesRaw;
 
-    // Parsed once at startup to avoid repeated parsing on every request
     private long maxFileSizeBytes;
-    private List<String> trimmedAllowedTypes;
 
     @PostConstruct
     void initConfig() {
         maxFileSizeBytes = DataSize.parse(maxFileSizeRaw.trim()).toBytes();
-        trimmedAllowedTypes = Arrays.stream(allowedTypesRaw.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
     }
 
     // ─── Lectura ───────────────────────────────────────────────────────────────
@@ -251,21 +245,11 @@ public class UserDocumentService {
     // ─── Validaciones ─────────────────────────────────────────────────────────
 
     private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BadRequestException("El archivo está vacío o no fue proporcionado.");
+        var allowedKinds = FileUploadValidator.kindsFromCsv(allowedTypesRaw);
+        if (allowedKinds.isEmpty()) {
+            allowedKinds = FileUploadValidator.documentKinds();
         }
-
-        if (file.getSize() > maxFileSizeBytes) {
-            throw new BadRequestException(
-                    "El archivo supera el tamaño máximo permitido de " + maxFileSizeRaw.trim() + ".");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !trimmedAllowedTypes.contains(contentType.trim())) {
-            throw new BadRequestException(
-                    "Tipo de archivo no permitido: " + contentType
-                            + ". Tipos aceptados: PDF, JPG, PNG, WebP.");
-        }
+        fileUploadValidator.validate(file, maxFileSizeBytes, maxFileSizeRaw.trim(), allowedKinds);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ package com.openroof.openroof.config;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -27,9 +28,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.openroof.openroof.security.JwtAuthenticationFilter;
+import com.openroof.openroof.security.AuthRateLimitingFilter;
 import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Configuración central de Spring Security.
@@ -38,12 +41,17 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
-        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,https://*.vercel.app}")
+        @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:4200,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174}")
         private String allowedOriginsRaw;
 
+        @Value("${cors.allowed-preview-origins:}")
+        private String allowedPreviewOriginsRaw;
+
         private final JwtAuthenticationFilter jwtAuthFilter;
+        private final AuthRateLimitingFilter authRateLimitingFilter;
         private final PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
         private final SecurityHeadersFilter securityHeadersFilter;
         private final UserDetailsService userDetailsService;
@@ -66,9 +74,10 @@ public class SecurityConfig {
         };
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(AbstractHttpConfigurer::disable)
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+                try {
+                        http
+                                .csrf(csrf -> csrf.ignoringRequestMatchers("/**"))
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -100,9 +109,10 @@ public class SecurityConfig {
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                                 .authenticationProvider(authenticationProvider())
-                                .addFilterBefore(propertyViewRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(securityHeadersFilter, JwtAuthenticationFilter.class)
+                                .addFilterBefore(securityHeadersFilter, org.springframework.security.web.header.HeaderWriterFilter.class)
+                                .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                                .addFilterBefore(propertyViewRateLimitingFilter, org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter.class)
+                                .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                                 .headers(headers -> headers
                                         .httpStrictTransportSecurity(hsts -> hsts
                                                 .includeSubDomains(true)
@@ -110,7 +120,10 @@ public class SecurityConfig {
                                         .frameOptions(frame -> frame.sameOrigin())
                                         .contentTypeOptions(content -> {}));
 
-                return http.build();
+                        return http.build();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo configurar la cadena de seguridad", e);
+                }
         }
 
         @Bean
@@ -121,8 +134,12 @@ public class SecurityConfig {
         }
 
         @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-                return config.getAuthenticationManager();
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+                try {
+                        return config.getAuthenticationManager();
+                } catch (Exception e) {
+                        throw new IllegalStateException("No se pudo obtener el administrador de autenticación", e);
+                }
         }
 
         @Bean
@@ -133,11 +150,22 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration config = new CorsConfiguration();
-                List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
+                List<String> origins = Stream.concat(
+                                Arrays.stream(allowedOriginsRaw.split(",")),
+                                Arrays.stream(allowedPreviewOriginsRaw.split(",")))
                                 .map(String::trim)
                                 .filter(s -> !s.isEmpty())
+                                .filter(s -> {
+                                        boolean isWildcard = s.contains("*");
+                                        if (isWildcard) {
+                                                log.warn("Se ignora origen CORS con wildcard por seguridad: {}", s);
+                                        }
+                                        return !isWildcard;
+                                })
+                                .distinct()
                                 .toList();
-                config.setAllowedOriginPatterns(origins);
+
+                config.setAllowedOrigins(origins);
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);

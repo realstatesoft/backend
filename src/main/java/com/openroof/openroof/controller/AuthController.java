@@ -1,12 +1,14 @@
 package com.openroof.openroof.controller;
 
-import java.security.Principal; // IMPORT CORRECTO
-import java.util.Map;
+import java.security.Principal;
+import java.time.Duration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,11 +19,12 @@ import com.openroof.openroof.dto.register.RegisterRequest;
 import com.openroof.openroof.dto.register.AgentSignupRequest;
 import com.openroof.openroof.dto.security.AuthResponse;
 import com.openroof.openroof.dto.security.LoginRequest;
-import com.openroof.openroof.service.AuthService; // PARA VALIDACIONES
+import com.openroof.openroof.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -29,90 +32,111 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints para registro, login y gestión de sesiones")
-@CrossOrigin(originPatterns = "*")
 public class AuthController {
+
+    private static final String REFRESH_COOKIE_NAME = "refresh_token";
+    private static final long REFRESH_COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60L;
+
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String cookieSameSite;
 
     private final AuthService authService;
 
-    @Operation(summary = "Iniciar sesión", description = "Autentica credenciales y retorna tokens de acceso y refresco")
+    @Operation(summary = "Iniciar sesión", description = "Autentica credenciales y retorna token de acceso; emite refresh token como cookie HttpOnly")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody LoginRequest loginRequest,
-            HttpServletRequest request) { // Inyectamos el request
-        return ResponseEntity.ok(ApiResponse.ok(authService.login(loginRequest, request), "Login exitoso"));
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(loginRequest, request);
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.ok(authResponse, "Login exitoso"));
     }
 
-    /*
-     * * Auth: Enrique Rios
-     * Desc: Registra un nuevo usuario y crea su sesión inicial.
-     */
-    @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta y retorna tokens de acceso")
+    @Operation(summary = "Registrar usuario", description = "Crea una nueva cuenta y retorna token de acceso; emite refresh token como cookie HttpOnly")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest registerRequest,
-            HttpServletRequest request) { // Inyectamos el request
-        return ResponseEntity.ok(ApiResponse.ok(authService.register(registerRequest, request), "Registro exitoso"));
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.register(registerRequest, request);
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.ok(authResponse, "Registro exitoso"));
     }
 
-    /*
-     * Desc: Endpoint específico para registrar agentes.
-     * Utiliza la misma lógica que el registro normal pero forzando Role.AGENT
-     * y permitiendo campos adicionales específicos de agente.
-     */
     @Operation(
-        summary = "Registrar agente", 
-        description = "Endpoint específico para registro de agentes. Fuerza automáticamente el role AGENT y permite campos adicionales como empresa y licencia."
+        summary = "Registrar agente",
+        description = "Registro de agentes con role AGENT forzado; emite refresh token como cookie HttpOnly"
     )
     @PostMapping("/register-agent")
     public ResponseEntity<ApiResponse<AuthResponse>> registerAgent(
             @Valid @RequestBody AgentSignupRequest agentSignupRequest,
-            HttpServletRequest request) {
-        return ResponseEntity.ok(
-            ApiResponse.ok(
-                authService.registerAgent(agentSignupRequest, request), 
-                "Registro de agente exitoso"
-            )
-        );
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.registerAgent(agentSignupRequest, request);
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.ok(authResponse, "Registro de agente exitoso"));
     }
 
-    /*
-     * * Auth: Enrique Rios
-     * Desc: Renueva el Access Token usando el Refresh Token.
-     */
-    @Operation(summary = "Refrescar token", description = "Genera un nuevo Access Token y rota el Refresh Token")
+    @Operation(summary = "Refrescar token", description = "Lee el refresh token desde la cookie HttpOnly, genera nuevo access token y rota el refresh token")
     @PostMapping("/refresh-token")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
-            @RequestBody Map<String, String> requestBody,
-            HttpServletRequest request) {
-
-        String refreshToken = requestBody.get("refreshToken");
-        return ResponseEntity.ok(
-                ApiResponse.ok(authService.refreshToken(refreshToken, request), "Token renovado exitosamente"));
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenFromCookie,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        AuthResponse authResponse = authService.refreshToken(refreshTokenFromCookie, request);
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        authResponse.setRefreshToken(null);
+        return ResponseEntity.ok(ApiResponse.ok(authResponse, "Token renovado exitosamente"));
     }
 
-    /*
-     * * Auth: Enrique Rios
-     * Desc: Cierra la sesión actual (Invalida el Refresh Token en DB).
-     */
-    @Operation(summary = "Cerrar sesión", description = "Invalida el token actual del usuario en el servidor")
+    @Operation(summary = "Cerrar sesión", description = "Invalida el refresh token en servidor y borra la cookie HttpOnly")
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
-        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        authService.logout(authHeader);
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenFromCookie,
+            HttpServletResponse response) {
+        authService.logout(refreshTokenFromCookie);
+        clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.ok(null, "Sesión cerrada exitosamente"));
     }
 
-    /*
-     * * Auth: Enrique Rios
-     * Desc: Invalida TODAS las sesiones del usuario (Logout global).
-     */
-    @Operation(summary = "Cerrar todas las sesiones", description = "Expulsa al usuario de todos sus dispositivos")
+    @Operation(summary = "Cerrar todas las sesiones", description = "Expulsa al usuario de todos sus dispositivos y borra la cookie HttpOnly")
     @PostMapping("/logout-all")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> logoutAll(Principal principal) {
-        // principal.getName() devuelve el email/username del token
+    public ResponseEntity<ApiResponse<Void>> logoutAll(
+            Principal principal,
+            HttpServletResponse response) {
         authService.logoutAllSessions(principal.getName());
+        clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.ok(null, "Se han cerrado todas las sesiones exitosamente"));
+    }
+
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/api/auth")
+                .maxAge(Duration.ofSeconds(REFRESH_COOKIE_MAX_AGE_SECONDS))
+                .sameSite(cookieSameSite)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE_NAME, "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/api/auth")
+                .maxAge(Duration.ZERO)
+                .sameSite(cookieSameSite)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

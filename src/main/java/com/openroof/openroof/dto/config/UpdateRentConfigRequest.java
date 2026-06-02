@@ -1,5 +1,6 @@
 package com.openroof.openroof.dto.config;
 
+import com.openroof.openroof.validation.MaxDigits;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -13,11 +14,13 @@ public record UpdateRentConfigRequest(
         @NotNull
         @Min(1)
         @Max(12)
+        @MaxDigits(integer = 20)
         Integer depositMonths,
 
         @NotNull
         @Digits(integer = 3, fraction = 2)
         @DecimalMin(value = "0.00", inclusive = false)
         @DecimalMax("100.00")
+        @MaxDigits(integer = 20)
         BigDecimal commissionPercent
 ) {}

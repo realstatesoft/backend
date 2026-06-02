@@ -14,6 +14,8 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.service.ESignatureService;
 import com.openroof.openroof.service.LeaseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,11 @@ public class LeaseController {
     @PostMapping
     @PreAuthorize("@leaseSecurity.canCreateLease(#dto.propertyId(), authentication.principal)")
     @Operation(summary = "Crear un contrato de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Contrato creado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para crear contratos en esta propiedad")
+    })
     public ResponseEntity<ApiResponse<LeaseResponse>> create(
             @Valid @RequestBody CreateLeaseRequest dto,
             Principal principal) {
@@ -62,8 +69,13 @@ public class LeaseController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Ver un contrato de arrendamiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contrato encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
     public ResponseEntity<ApiResponse<LeaseResponse>> getById(
-            @PathVariable Long id,
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
             Principal principal) {
         User user = resolveUser(principal);
         return ResponseEntity.ok(ApiResponse.ok(leaseService.getLease(id, user.getId())));
@@ -72,9 +84,12 @@ public class LeaseController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Listar contratos del usuario autenticado")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contratos obtenidos correctamente")
+    })
     public ResponseEntity<ApiResponse<Page<LeaseSummaryResponse>>> list(
-            @RequestParam(required = false) LeaseStatus status,
-            @RequestParam(required = false) Long propertyId,
+            @Parameter(description = "Filtrar por estado (DRAFT, ACTIVE, TERMINATED, EXPIRED)") @RequestParam(required = false) LeaseStatus status,
+            @Parameter(description = "Filtrar por ID de propiedad") @RequestParam(required = false) Long propertyId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Principal principal) {
         User user = resolveUser(principal);
@@ -86,8 +101,14 @@ public class LeaseController {
     @PutMapping("/{id}")
     @PreAuthorize("@leaseSecurity.canManageLease(#id, authentication.principal)")
     @Operation(summary = "Actualizar un contrato de arrendamiento (solo en estado DRAFT)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contrato actualizado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El contrato no está en estado DRAFT"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para modificar este contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
     public ResponseEntity<ApiResponse<LeaseResponse>> update(
-            @PathVariable Long id,
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
             @Valid @RequestBody CreateLeaseRequest dto) {
         return ResponseEntity.ok(ApiResponse.ok(leaseService.updateLease(id, dto), "Contrato actualizado"));
     }
@@ -95,8 +116,14 @@ public class LeaseController {
     @PostMapping("/{id}/activate")
     @PreAuthorize("@leaseSecurity.canManageLease(#id, authentication.principal)")
     @Operation(summary = "Activar un contrato (requiere firmas de ambas partes)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contrato activado y cuotas generadas"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El contrato no está en estado DRAFT o falta alguna firma"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para activar este contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
     public ResponseEntity<ApiResponse<List<RentalInstallmentResponse>>> activate(
-            @PathVariable Long id) {
+            @Parameter(description = "ID del contrato") @PathVariable Long id) {
         List<RentalInstallmentResponse> installments =
                 installmentMapper.toResponseList(leaseService.activateLease(id));
         return ResponseEntity.ok(ApiResponse.ok(installments, "Contrato activado"));
@@ -105,16 +132,28 @@ public class LeaseController {
     @PostMapping("/{id}/send-for-signature")
     @PreAuthorize("@leaseSecurity.canManageLease(#id, authentication.principal)")
     @Operation(summary = "Enviar lease a firma electrónica")
-    public ResponseEntity<ApiResponse<Void>> sendForSignature(@PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lease enviado a firma"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El contrato no está en estado DRAFT"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para enviar a firma"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
+    public ResponseEntity<ApiResponse<Void>> sendForSignature(
+            @Parameter(description = "ID del contrato") @PathVariable Long id) {
         eSignatureService.sendForSignature(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Lease enviado a firma"));
     }
 
     @PostMapping("/{id}/sign")
     @Operation(summary = "Firmar lease mediante token", description = "No requiere JWT; valida token de un solo uso.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Firma registrada correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Token inválido o expirado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
     public ResponseEntity<ApiResponse<Void>> sign(
-            @PathVariable Long id,
-            @RequestParam("token") String token,
+            @Parameter(description = "ID del contrato") @PathVariable Long id,
+            @Parameter(description = "Token de firma de un solo uso") @RequestParam("token") String token,
             @Valid @RequestBody(required = false) SignLeaseRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest
     ) {
@@ -128,7 +167,14 @@ public class LeaseController {
     @PostMapping("/{id}/terminate")
     @PreAuthorize("@leaseSecurity.canManageLease(#id, authentication.principal)")
     @Operation(summary = "Terminar un contrato activo")
-    public ResponseEntity<ApiResponse<LeaseResponse>> terminate(@PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contrato terminado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "El contrato no está en estado ACTIVE"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para terminar este contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
+    public ResponseEntity<ApiResponse<LeaseResponse>> terminate(
+            @Parameter(description = "ID del contrato") @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(leaseService.terminateLease(id), "Contrato terminado"));
     }
 
