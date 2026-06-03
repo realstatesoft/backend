@@ -8,12 +8,13 @@ public record PropertyAssignmentResponse(
         Long id,
         Long propertyId,
         String propertyTitle,
+        String propertyAddress,
+        String propertyImage,
         Long agentProfileId,
         Long agentUserId,
         String agentName,
-        Long assignedById,
-        String assignedByName,
+        Long ownerId,
+        String ownerName,
         AssignmentStatus status,
-        LocalDateTime assignedAt,
-        LocalDateTime createdAt
+        LocalDateTime assignedAt
 ) {}
