@@ -1013,6 +1013,7 @@ public class PropertyService {
         }
         if (callerRole == UserRole.AGENT) {
             if (property.getAgent() == null
+                    || property.getAgent().getUser() == null
                     || !property.getAgent().getUser().getId().equals(callerId)) {
                 throw new ForbiddenException("No tienes permiso para modificar esta propiedad");
             }
