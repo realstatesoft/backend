@@ -2,9 +2,12 @@ package com.openroof.openroof.controller;
 
 import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.rental.InstallmentPaymentRequest;
+import com.openroof.openroof.dto.rental.LeasePaymentResponse;
+import com.openroof.openroof.dto.rental.RentalInstallmentResponse;
 import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
+import com.openroof.openroof.mapper.RentalInstallmentMapper;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.rental.LeasePayment;
 import com.openroof.openroof.model.rental.RentalInstallment;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/rentals")
@@ -49,6 +53,7 @@ public class RentalController {
     private final RentalDocumentPdfService rentalDocumentPdfService;
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
+    private final RentalInstallmentMapper installmentMapper;
 
     private void verifyLeaseAccess(Lease lease, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
@@ -69,13 +74,14 @@ public class RentalController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
     })
-    public ResponseEntity<ApiResponse<List<RentalInstallment>>> getInstallments(
+    public ResponseEntity<ApiResponse<List<RentalInstallmentResponse>>> getInstallments(
             @Parameter(description = "ID del contrato") @RequestParam Long leaseId, Principal principal) {
         Lease lease = leaseRepository.findById(leaseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
         verifyLeaseAccess(lease, principal.getName());
         List<RentalInstallment> installments = installmentRepository.findByLeaseIdOrderByDueDateAsc(leaseId);
-        return ResponseEntity.ok(ApiResponse.ok(installments));
+        List<RentalInstallmentResponse> response = installmentMapper.toResponseList(installments);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping("/payments")
@@ -86,13 +92,31 @@ public class RentalController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
     })
-    public ResponseEntity<ApiResponse<List<LeasePayment>>> getPayments(
+    public ResponseEntity<ApiResponse<List<LeasePaymentResponse>>> getPayments(
             @Parameter(description = "ID del contrato") @RequestParam Long leaseId, Principal principal) {
         Lease lease = leaseRepository.findById(leaseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado"));
         verifyLeaseAccess(lease, principal.getName());
         List<LeasePayment> payments = leasePaymentRepository.findByLeaseIdOrderByCreatedAtDesc(leaseId);
-        return ResponseEntity.ok(ApiResponse.ok(payments));
+        List<LeasePaymentResponse> response = payments.stream()
+                .map(this::toPaymentResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    private LeasePaymentResponse toPaymentResponse(LeasePayment payment) {
+        return new LeasePaymentResponse(
+                payment.getId(),
+                payment.getLease() != null ? payment.getLease().getId() : null,
+                payment.getInstallment() != null ? payment.getInstallment().getId() : null,
+                payment.getAmount(),
+                payment.getCurrency(),
+                payment.getMethod() != null ? payment.getMethod().name() : null,
+                payment.getStatus() != null ? payment.getStatus().name() : null,
+                payment.getType() != null ? payment.getType().name() : null,
+                payment.getPaidAt(),
+                payment.getReceiptPdfUrl()
+        );
     }
 
     @PostMapping("/installments/{id}/payments")
