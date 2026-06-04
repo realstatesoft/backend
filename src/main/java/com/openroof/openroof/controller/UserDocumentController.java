@@ -136,4 +136,25 @@ public class UserDocumentController {
         UserDocumentResponse doc = documentService.updateStatus(id, request);
         return ResponseEntity.ok(ApiResponse.ok(doc, "Estado actualizado exitosamente"));
     }
+
+    // ─── GET /users/documents/{id}/url ────────────────────────────────────────
+
+    @Operation(
+            summary = "Obtener URL firmada del documento",
+            description = "Retorna una URL temporal firmada (válida 1 hora) para acceder al documento. "
+                    + "Solo el dueño o un ADMIN pueden solicitarla."
+    )
+    @GetMapping("/documents/{id}/url")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getSignedUrl(
+            @PathVariable Long id,
+            Principal principal
+    ) {
+        String signedUrl = documentService.getDocumentSignedUrl(id, principal.getName());
+        java.util.Map<String, Object> body = java.util.Map.of(
+                "signedUrl", signedUrl,
+                "expiresIn", 3600
+        );
+        return ResponseEntity.ok(ApiResponse.ok(body));
+    }
 }

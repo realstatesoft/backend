@@ -27,6 +27,15 @@ public interface StorageService {
     void delete(String key);
 
     /**
+     * Genera una URL firmada con expiración para un objeto privado del storage.
+     *
+     * @param objectPath     clave del objeto dentro del bucket (e.g. "documents/42/uuid.pdf")
+     * @param expiresInSeconds tiempo de validez de la URL en segundos
+     * @return URL firmada temporal
+     */
+    String generateSignedUrl(String objectPath, int expiresInSeconds);
+
+    /**
      * DTO con el resultado de la subida.
      */
     record UploadResult(

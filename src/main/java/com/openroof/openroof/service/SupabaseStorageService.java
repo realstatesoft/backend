@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -32,6 +33,7 @@ public class SupabaseStorageService implements StorageService {
     private final RestClient restClient;
     private final String supabaseUrl;
     private final String bucket;
+    private final String documentsBucket;
     private final long maxFileSizeBytes;
     private final String maxFileSizeLabel;
 
@@ -39,6 +41,7 @@ public class SupabaseStorageService implements StorageService {
             @Value("${supabase.url}") String supabaseUrl,
             @Value("${supabase.service-role-key}") String serviceRoleKey,
             @Value("${supabase.storage.bucket}") String bucket,
+            @Value("${supabase.storage.documents-bucket}") String documentsBucket,
             @Value("${upload.max-file-size:15MB}") String maxFileSize
     ) {
         if (supabaseUrl == null || supabaseUrl.isBlank() || "undefined".equalsIgnoreCase(supabaseUrl.trim())) {
@@ -50,6 +53,9 @@ public class SupabaseStorageService implements StorageService {
         if (bucket == null || bucket.isBlank() || "undefined".equalsIgnoreCase(bucket.trim())) {
             throw new IllegalStateException("supabase.storage.bucket configuration is missing, empty, or undefined. Please configure it in the environment.");
         }
+        if (documentsBucket == null || documentsBucket.isBlank() || "undefined".equalsIgnoreCase(documentsBucket.trim())) {
+            throw new IllegalStateException("supabase.storage.documents-bucket configuration is missing, empty, or undefined. Please configure it in the environment.");
+        }
         
         if (!supabaseUrl.startsWith("http")) {
             throw new IllegalStateException("La URL de Supabase es inválida o no tiene esquema: '" + supabaseUrl + "'");
@@ -59,6 +65,7 @@ public class SupabaseStorageService implements StorageService {
 
         this.supabaseUrl = supabaseUrl;
         this.bucket = bucket;
+        this.documentsBucket = documentsBucket;
         this.maxFileSizeBytes = DataSize.parse(maxFileSize).toBytes();
         this.maxFileSizeLabel = maxFileSize;
 
@@ -108,6 +115,8 @@ public class SupabaseStorageService implements StorageService {
         // SupabaseStorageService duplicating or conflicting with those rules.
 
 
+        // Documents go to the private bucket; everything else to the public bucket.
+        String targetBucket = (folder != null && folder.startsWith("documents/")) ? documentsBucket : bucket;
         String key = buildKey(folder, extension);
 
         try {
@@ -124,7 +133,7 @@ public class SupabaseStorageService implements StorageService {
             };
 
             restClient.post()
-                    .uri("/object/{bucket}/{key}", bucket, key)
+                    .uri("/object/{bucket}/{key}", targetBucket, key)
                     .header("x-upsert", "true")
                     .contentType(MediaType.parseMediaType(file.getContentType()))
                     .contentLength(file.getSize())
@@ -132,7 +141,10 @@ public class SupabaseStorageService implements StorageService {
                     .retrieve()
                     .toBodilessEntity();
 
-            String publicUrl = supabaseUrl + "/storage/v1/object/public/" + bucket + "/" + key;
+            // Documents use a private bucket — no public URL. Other assets use the public bucket URL.
+            String publicUrl = targetBucket.equals(documentsBucket)
+                    ? supabaseUrl + "/storage/v1/object/" + documentsBucket + "/" + key
+                    : supabaseUrl + "/storage/v1/object/public/" + bucket + "/" + key;
 
             log.info("Archivo subido a Supabase Storage: {} ({} bytes)", key, file.getSize());
 
@@ -147,6 +159,39 @@ public class SupabaseStorageService implements StorageService {
         }
     }
 
+    // ─── Signed URL ───────────────────────────────────────────────────────
+
+    @Override
+    public String generateSignedUrl(String objectPath, int expiresInSeconds) {
+        if (objectPath == null || objectPath.isBlank()) {
+            throw new IllegalArgumentException("objectPath no puede ser nulo o vacío.");
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restClient.post()
+                    .uri("/object/sign/{bucket}/{objectPath}", documentsBucket, objectPath)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("expiresIn", expiresInSeconds))
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response == null || !response.containsKey("signedURL")) {
+                throw new StorageException("La API de Supabase no retornó signedURL para: " + objectPath, null);
+            }
+            String signedPath = (String) response.get("signedURL");
+            // signedPath puede ser relativo (/storage/v1/object/sign/...) o absoluto
+            if (signedPath.startsWith("http")) {
+                return signedPath;
+            }
+            return supabaseUrl + signedPath;
+        } catch (StorageException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al generar URL firmada para '{}': {}", objectPath, e.getMessage(), e);
+            throw new StorageException("No se pudo generar URL firmada para '" + objectPath + "': " + e.getMessage(), e);
+        }
+    }
+
     // ─── Delete ──────────────────────────────────────────────────────────
 
     @Override
@@ -155,9 +200,10 @@ public class SupabaseStorageService implements StorageService {
             log.warn("delete() invocado con clave nula o vacía; operación ignorada.");
             return;
         }
+        String targetBucket = key.startsWith("documents/") ? documentsBucket : bucket;
         try {
             restClient.delete()
-                    .uri("/object/{bucket}/{key}", bucket, key)
+                    .uri("/object/{bucket}/{key}", targetBucket, key)
                     .retrieve()
                     .toBodilessEntity();
             log.info("Archivo eliminado de Supabase Storage: {}", key);

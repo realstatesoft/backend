@@ -3,10 +3,12 @@ package com.openroof.openroof.service;
 import com.openroof.openroof.dto.document.UpdateDocumentStatusRequest;
 import com.openroof.openroof.dto.document.UserDocumentResponse;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ForbiddenException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.model.document.UserDocument;
 import com.openroof.openroof.model.enums.DocumentStatus;
 import com.openroof.openroof.model.enums.DocumentType;
+import com.openroof.openroof.model.enums.UserRole;
 import com.openroof.openroof.model.user.User;
 import com.openroof.openroof.repository.UserDocumentRepository;
 import com.openroof.openroof.repository.UserRepository;
@@ -241,7 +243,28 @@ public class UserDocumentService {
 
         return UserDocumentResponse.from(doc);
     }
+    // ─── URL firmada ───────────────────────────────────────────────────────
 
+    /**
+     * Genera una URL firmada (válida 1 hora) para acceder al documento.
+     * Solo el dueño del documento o un ADMIN pueden solicitarla.
+     */
+    @Transactional(readOnly = true)
+    public String getDocumentSignedUrl(Long documentId, String requesterEmail) {
+        User requester = findUser(requesterEmail);
+
+        UserDocument doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado: " + documentId));
+
+        boolean isOwner = doc.getUser().getId().equals(requester.getId());
+        boolean isAdmin = requester.getRole() == UserRole.ADMIN;
+
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException("No tienes permiso para acceder a este documento.");
+        }
+
+        return storageService.generateSignedUrl(doc.getFilename(), 3600);
+    }
     // ─── Validaciones ─────────────────────────────────────────────────────────
 
     private void validateFile(MultipartFile file) {

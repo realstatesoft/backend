@@ -120,6 +120,7 @@ supabase:
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
   storage:
     bucket: ${SUPABASE_STORAGE_BUCKET:openroof-images-test}
+    documents-bucket: ${SUPABASE_DOCUMENTS_BUCKET:openroof-documents-test}
 
 # ==================== UPLOAD ====================
 upload:
