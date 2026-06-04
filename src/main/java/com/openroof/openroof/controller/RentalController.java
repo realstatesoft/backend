@@ -15,6 +15,7 @@ import com.openroof.openroof.repository.LeaseRepository;
 import com.openroof.openroof.repository.RentalInstallmentRepository;
 import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.service.PaymentService;
+import com.openroof.openroof.service.RentalDocumentPdfService;
 import com.openroof.openroof.service.RentalPaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class RentalController {
     private final LeasePaymentRepository leasePaymentRepository;
     private final PaymentService paymentService;
     private final RentalPaymentService rentalPaymentService;
+    private final RentalDocumentPdfService rentalDocumentPdfService;
     private final LeaseRepository leaseRepository;
     private final UserRepository userRepository;
 
@@ -134,45 +137,49 @@ public class RentalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response, "Pago registrado"));
     }
 
-    @GetMapping({"/installments/{id}/invoice-url", "/installments/{id}/invoice.pdf"})
+    @GetMapping(value = "/installments/{id}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Obtener URL de la factura de una cuota")
+    @Operation(summary = "Descargar PDF de la factura de una cuota (generado on-the-fly)")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "URL de la factura obtenida"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF de la factura generado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Factura no generada o cuota no encontrada")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cuota no encontrada")
     })
-    public ResponseEntity<ApiResponse<String>> downloadInvoice(
+    public ResponseEntity<byte[]> downloadInvoice(
             @Parameter(description = "ID de la cuota") @PathVariable Long id, Principal principal) {
         RentalInstallment installment = installmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrada"));
         verifyLeaseAccess(installment.getLease(), principal.getName());
 
-        if (installment.getInvoicePdfUrl() == null || installment.getInvoicePdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("La factura aún no se ha generado"));
-        }
-
-        return ResponseEntity.ok(ApiResponse.ok(installment.getInvoicePdfUrl(), "URL de la factura obtenida"));
+        byte[] pdfBytes = rentalDocumentPdfService.generateInvoice(installment);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+                .filename("factura-" + id + ".pdf").build());
+        headers.setContentLength(pdfBytes.length);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    @GetMapping({"/payments/{id}/receipt-url", "/payments/{id}/receipt.pdf"})
+    @GetMapping(value = "/payments/{id}/receipt.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Obtener URL del recibo de un pago")
+    @Operation(summary = "Descargar PDF del recibo de un pago (generado on-the-fly)")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "URL del recibo obtenida"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF del recibo generado"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Recibo no generado o pago no encontrado")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Pago no encontrado")
     })
-    public ResponseEntity<ApiResponse<String>> downloadReceipt(
+    public ResponseEntity<byte[]> downloadReceipt(
             @Parameter(description = "ID del pago") @PathVariable Long id, Principal principal) {
         LeasePayment payment = leasePaymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
         verifyLeaseAccess(payment.getLease(), principal.getName());
 
-        if (payment.getReceiptPdfUrl() == null || payment.getReceiptPdfUrl().isBlank()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("El recibo aún no se ha generado"));
-        }
-
-        return ResponseEntity.ok(ApiResponse.ok(payment.getReceiptPdfUrl(), "URL del recibo obtenida"));
+        byte[] pdfBytes = rentalDocumentPdfService.generateReceipt(payment);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(org.springframework.http.ContentDisposition.builder("attachment")
+                .filename("recibo-" + id + ".pdf").build());
+        headers.setContentLength(pdfBytes.length);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 }

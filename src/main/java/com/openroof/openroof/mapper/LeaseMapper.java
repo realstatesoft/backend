@@ -67,6 +67,7 @@ public class LeaseMapper {
                 .billingFrequency(dto.billingFrequency())
                 .lateFeeType(dto.lateFeeType())
                 .lateFeeValue(dto.lateFeeAmount())
+                .currency(property.getRentCurrency() != null ? property.getRentCurrency() : "PYG")
                 .build();
     }
 
@@ -79,5 +80,10 @@ public class LeaseMapper {
         lease.setBillingFrequency(dto.billingFrequency());
         lease.setLateFeeType(dto.lateFeeType());
         lease.setLateFeeValue(dto.lateFeeAmount());
+        if (lease.getCurrency() == null) {
+            lease.setCurrency(lease.getProperty() != null && lease.getProperty().getRentCurrency() != null
+                    ? lease.getProperty().getRentCurrency()
+                    : "PYG");
+        }
     }
 }
