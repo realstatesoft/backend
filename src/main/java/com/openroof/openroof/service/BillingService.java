@@ -190,7 +190,7 @@ public class BillingService {
                     .type(LedgerEntryType.CREDIT)
                     .category(LedgerEntryCategory.RENT)
                     .amount(inst.getTotalAmount())
-                    .currency(lease.getCurrency() != null ? lease.getCurrency() : "PYG")
+                    .currency(resolveLeaseCurrency(lease))
                     .description("Cuota #" + inst.getInstallmentNumber()
                             + " \u2014 " + propertyTitle)
                     .build());
@@ -364,5 +364,15 @@ public class BillingService {
             case SEMIANNUAL -> 6;
             case ANNUAL -> 12;
         };
+    }
+
+    private String resolveLeaseCurrency(Lease lease) {
+        if (lease.getCurrency() != null) {
+            return lease.getCurrency();
+        }
+        if (lease.getProperty() != null && lease.getProperty().getRentCurrency() != null) {
+            return lease.getProperty().getRentCurrency();
+        }
+        return "PYG";
     }
 }
