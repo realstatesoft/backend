@@ -6,6 +6,8 @@ import com.openroof.openroof.dto.screening.TenantScreeningResponse;
 import com.openroof.openroof.dto.screening.UpdateScreeningRequest;
 import com.openroof.openroof.service.TenantScreeningService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,13 @@ public class TenantScreeningController {
             description = "Crea un tenant screening con provider=INTERNAL para una rental application. "
                     + "Setea expires_at = now + 90 días."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Screening creado exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Requiere rol ADMIN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Rental application no encontrada")
+    })
     @PostMapping("/tenant-screenings")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> create(
@@ -63,10 +72,17 @@ public class TenantScreeningController {
             description = "Permite al admin ingresar resultados del screening. Si no se envía "
                     + "recommendation, se recalcula automáticamente según las reglas de negocio."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Screening actualizado exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Requiere rol ADMIN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado")
+    })
     @PutMapping("/tenant-screenings/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> update(
-            @PathVariable Long id,
+            @Parameter(description = "ID del screening") @PathVariable Long id,
             @Valid @RequestBody UpdateScreeningRequest request
     ) {
         TenantScreeningResponse screening = screeningService.updateScreeningResults(id, request);
@@ -79,9 +95,17 @@ public class TenantScreeningController {
             summary = "Recalcular recomendación",
             description = "Aplica las reglas: evictions ⇒ REJECT; ratio>=3 y background CLEAR ⇒ APPROVE; resto ⇒ REVIEW."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Recomendación recalculada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Requiere rol ADMIN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado")
+    })
     @PostMapping("/tenant-screenings/{id}/recommendation")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<TenantScreeningResponse>> recalculate(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<TenantScreeningResponse>> recalculate(
+            @Parameter(description = "ID del screening") @PathVariable Long id
+    ) {
         TenantScreeningResponse screening = screeningService.calculateRecommendation(id);
         return ResponseEntity.ok(ApiResponse.ok(screening, "Recomendación recalculada"));
     }
@@ -89,19 +113,33 @@ public class TenantScreeningController {
     // ─── GET /tenant-screenings/{id} (ADMIN o AGENT asignado) ─────────────────
 
     @Operation(summary = "Obtener screening por id")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Screening encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al screening"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado")
+    })
     @GetMapping("/tenant-screenings/{id}")
     @PreAuthorize("isAuthenticated() and @screeningSecurity.hasReadAccess(#id, principal)")
-    public ResponseEntity<ApiResponse<TenantScreeningResponse>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<TenantScreeningResponse>> getById(
+            @Parameter(description = "ID del screening") @PathVariable Long id
+    ) {
         return ResponseEntity.ok(ApiResponse.ok(screeningService.getById(id)));
     }
 
     // ─── GET /tenant-screenings/by-application/{applicationId} ────────────────
 
     @Operation(summary = "Obtener screening por rental application id")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Screening encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado a la application"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado para la application")
+    })
     @GetMapping("/tenant-screenings/by-application/{applicationId}")
     @PreAuthorize("isAuthenticated() and @screeningSecurity.hasReadAccessByApplication(#applicationId, principal)")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> getByApplicationId(
-            @PathVariable Long applicationId
+            @Parameter(description = "ID de la rental application") @PathVariable Long applicationId
     ) {
         return ResponseEntity.ok(ApiResponse.ok(screeningService.getByApplicationId(applicationId)));
     }
@@ -113,10 +151,17 @@ public class TenantScreeningController {
             description = "Crea un screening con provider=INTERNAL para la rental application. "
                     + "Permitido para owner de la property, agente asignado o ADMIN."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Screening creado exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para crear screening en esta application"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Rental application no encontrada"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Ya existe un screening para esta application")
+    })
     @PostMapping("/rentals/applications/{id}/screening")
     @PreAuthorize("isAuthenticated() and @screeningSecurity.canManageByApplication(#id, principal)")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> createForApplication(
-            @PathVariable Long id
+            @Parameter(description = "ID de la rental application") @PathVariable Long id
     ) {
         TenantScreeningResponse screening = screeningService.createScreening(id);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
@@ -129,10 +174,16 @@ public class TenantScreeningController {
             description = "Devuelve el TenantScreeningResponse asociado a la rental application. "
                     + "Permitido para owner, agente asignado o ADMIN."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Screening encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para ver este screening"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado para la application")
+    })
     @GetMapping("/rentals/applications/{id}/screening")
     @PreAuthorize("isAuthenticated() and @screeningSecurity.hasReadAccessByApplication(#id, principal)")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> getForApplication(
-            @PathVariable Long id
+            @Parameter(description = "ID de la rental application") @PathVariable Long id
     ) {
         return ResponseEntity.ok(ApiResponse.ok(screeningService.getByApplicationId(id)));
     }
@@ -142,10 +193,17 @@ public class TenantScreeningController {
             description = "Permite cargar/ajustar resultados manuales del screening identificado por la application. "
                     + "Si no se envía recommendation, se recalcula. Permitido para owner, agente asignado o ADMIN."
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Screening actualizado exitosamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "No tiene permiso para modificar este screening"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Screening no encontrado para la application")
+    })
     @PatchMapping("/rentals/applications/{id}/screening")
     @PreAuthorize("isAuthenticated() and @screeningSecurity.canManageByApplication(#id, principal)")
     public ResponseEntity<ApiResponse<TenantScreeningResponse>> patchForApplication(
-            @PathVariable Long id,
+            @Parameter(description = "ID de la rental application") @PathVariable Long id,
             @Valid @RequestBody UpdateScreeningRequest request
     ) {
         TenantScreeningResponse screening = screeningService.updateScreeningResultsByApplication(id, request);
