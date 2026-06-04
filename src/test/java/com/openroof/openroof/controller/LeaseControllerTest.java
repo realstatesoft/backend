@@ -547,6 +547,7 @@ class LeaseControllerTest {
                 1L, 10L, 1,
                 new BigDecimal("1000.00"), BigDecimal.ZERO, new BigDecimal("1000.00"),
                 LocalDate.now().plusMonths(1), null,
-                InstallmentStatus.PENDING, null, LocalDateTime.now());
+                InstallmentStatus.PENDING, null, LocalDateTime.now(),
+                "PYG", null);
     }
 }

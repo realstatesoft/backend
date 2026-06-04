@@ -17,6 +17,8 @@ public interface LeasePaymentRepository extends JpaRepository<LeasePayment, Long
 
     List<LeasePayment> findByInstallmentId(Long installmentId);
 
+    List<LeasePayment> findByInstallmentIdOrderByPaidAtDesc(Long installmentId);
+
     List<LeasePayment> findByInstallmentIdIn(java.util.Collection<Long> installmentIds);
 
     List<LeasePayment> findByLeaseIdOrderByCreatedAtDesc(Long leaseId);
