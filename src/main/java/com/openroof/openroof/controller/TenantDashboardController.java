@@ -4,6 +4,8 @@ import com.openroof.openroof.common.ApiResponse;
 import com.openroof.openroof.dto.dashboard.*;
 import com.openroof.openroof.service.TenantDashboardService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,10 @@ public class TenantDashboardController {
     @GetMapping("/dashboard")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Resumen consolidado del dashboard del tenant")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Dashboard obtenido correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ApiResponse<TenantDashboardResponse>> getTenantDashboard(Authentication auth) {
         return ResponseEntity.ok(ApiResponse.ok(
                 tenantDashboardService.getDashboard(auth.getName())));
@@ -42,6 +48,10 @@ public class TenantDashboardController {
     @GetMapping("/lease")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Leases activos del tenant con documentos y contacto del landlord")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Leases obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ApiResponse<Page<TenantLeaseResponse>>> getTenantLeases(
             Authentication auth,
             @PageableDefault(size = 5, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
@@ -52,7 +62,15 @@ public class TenantDashboardController {
     @GetMapping("/lease/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Detalle de un lease específico del tenant")
-    public ResponseEntity<ApiResponse<TenantLeaseResponse>> getTenantLeaseById(Authentication auth, @PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lease encontrado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al lease"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Lease no encontrado")
+    })
+    public ResponseEntity<ApiResponse<TenantLeaseResponse>> getTenantLeaseById(
+            Authentication auth,
+            @Parameter(description = "ID del lease") @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(
                 tenantDashboardService.getLeaseById(auth.getName(), id)));
     }
@@ -60,7 +78,15 @@ public class TenantDashboardController {
     @GetMapping(value = "/lease/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Descargar PDF del contrato de arrendamiento")
-    public ResponseEntity<byte[]> downloadLeasePdf(@PathVariable Long id, Authentication auth) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF generado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al contrato"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Contrato no encontrado")
+    })
+    public ResponseEntity<byte[]> downloadLeasePdf(
+            @Parameter(description = "ID del lease") @PathVariable Long id,
+            Authentication auth) {
         byte[] pdfBytes = leasePdfService.generatePdf(id, auth.getName());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -74,6 +100,10 @@ public class TenantDashboardController {
     @GetMapping("/payments")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Historial de pagos del tenant")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ApiResponse<TenantPaymentsResponse>> getTenantPayments(
             Authentication auth,
             @PageableDefault(size = 12) Pageable pageable) {
@@ -84,7 +114,15 @@ public class TenantDashboardController {
     @GetMapping(value = "/payments/installments/{id}/invoice.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Descargar factura de una cuota del tenant")
-    public ResponseEntity<byte[]> downloadTenantInvoice(Authentication auth, @PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF generado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado a la factura"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cuota no encontrada")
+    })
+    public ResponseEntity<byte[]> downloadTenantInvoice(
+            Authentication auth,
+            @Parameter(description = "ID de la cuota") @PathVariable Long id) {
         byte[] pdfBytes = tenantDashboardService.generateInvoicePdf(auth.getName(), id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -98,7 +136,15 @@ public class TenantDashboardController {
     @GetMapping(value = "/payments/{id}/receipt.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Descargar recibo de pago del tenant")
-    public ResponseEntity<byte[]> downloadTenantReceipt(Authentication auth, @PathVariable Long id) {
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF generado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al recibo"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Pago no encontrado")
+    })
+    public ResponseEntity<byte[]> downloadTenantReceipt(
+            Authentication auth,
+            @Parameter(description = "ID del pago") @PathVariable Long id) {
         byte[] pdfBytes = tenantDashboardService.generateReceiptPdf(auth.getName(), id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -112,6 +158,10 @@ public class TenantDashboardController {
     @GetMapping("/maintenance")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Tickets de mantenimiento del tenant")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tickets obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ApiResponse<TenantMaintenanceResponse>> getTenantMaintenance(
             Authentication auth,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -122,6 +172,11 @@ public class TenantDashboardController {
     @PostMapping("/maintenance")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Crear solicitud de mantenimiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Solicitud creada correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
+    })
     public ResponseEntity<ApiResponse<TenantMaintenanceTicketItem>> createMaintenanceRequest(
             Authentication auth,
             @Valid @RequestBody CreateMaintenanceRequest request) {
@@ -132,9 +187,16 @@ public class TenantDashboardController {
     @PostMapping("/maintenance/{id}/rate")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Calificar solicitud de mantenimiento")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Calificación registrada correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado al ticket"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Ticket no encontrado")
+    })
     public ResponseEntity<ApiResponse<Void>> rateMaintenanceRequest(
             Authentication auth,
-            @PathVariable Long id,
+            @Parameter(description = "ID del ticket de mantenimiento") @PathVariable Long id,
             @Valid @RequestBody RateMaintenanceRequest request) {
         tenantDashboardService.rateMaintenanceRequest(auth.getName(), id, request);
         return ResponseEntity.ok(ApiResponse.ok(null));

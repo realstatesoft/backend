@@ -49,7 +49,8 @@ public class PaymentController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Mis pagos")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Pagos obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
     })
     public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getMyPayments(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
