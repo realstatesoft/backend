@@ -85,7 +85,8 @@ public class LeaseController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Listar contratos del usuario autenticado")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contratos obtenidos correctamente")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Contratos obtenidos correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autenticado")
     })
     public ResponseEntity<ApiResponse<Page<LeaseSummaryResponse>>> list(
             @Parameter(description = "Filtrar por estado (DRAFT, ACTIVE, TERMINATED, EXPIRED)") @RequestParam(required = false) LeaseStatus status,
