@@ -190,7 +190,7 @@ public class BillingService {
                     .type(LedgerEntryType.CREDIT)
                     .category(LedgerEntryCategory.RENT)
                     .amount(inst.getTotalAmount())
-                    .currency(lease.getCurrency() != null ? lease.getCurrency() : "USD")
+                    .currency(lease.getCurrency() != null ? lease.getCurrency() : "PYG")
                     .description("Cuota #" + inst.getInstallmentNumber()
                             + " \u2014 " + propertyTitle)
                     .build());
