@@ -69,6 +69,9 @@ class VisitRequestControllerTest {
     private PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
 
     @MockitoBean
+    private com.openroof.openroof.security.AuthRateLimiter authRateLimiter;
+
+    @MockitoBean
     private SecurityHeadersFilter securityHeadersFilter;
 
     @BeforeEach
@@ -80,6 +83,22 @@ class VisitRequestControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 
@@ -170,6 +189,19 @@ class VisitRequestControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.id").value(100L));
+        }
+
+        @Test
+        @DisplayName("USER puede aceptar y retorna 200")
+        void acceptWithUser_returns200() throws Exception {
+            when(visitRequestService.accept(101L, "owner@test.com"))
+                    .thenReturn(sampleResponse(101L));
+
+            mockMvc.perform(put("/visit-requests/101/accept")
+                            .with(user("owner@test.com").roles("USER")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.id").value(101L));
         }
     }
 

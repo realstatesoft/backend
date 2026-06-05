@@ -105,7 +105,7 @@ public class VisitRequestService {
         User currentUser = getUserByEmail(currentUserEmail);
         VisitRequest visitRequest = getVisitRequest(visitRequestId);
 
-        validateIsAssignedAgent(visitRequest, currentUser);
+        validateCanRespondToVisitRequest(visitRequest, currentUser);
         validatePendingOrCounterProposed(visitRequest);
 
         // Create the Visit
@@ -160,7 +160,7 @@ public class VisitRequestService {
         User currentUser = getUserByEmail(currentUserEmail);
         VisitRequest visitRequest = getVisitRequest(visitRequestId);
 
-        validateIsAssignedAgent(visitRequest, currentUser);
+        validateCanRespondToVisitRequest(visitRequest, currentUser);
         validatePendingOrCounterProposed(visitRequest);
 
         visitRequest.setStatus(VisitRequestStatus.REJECTED);
@@ -178,7 +178,7 @@ public class VisitRequestService {
         User currentUser = getUserByEmail(currentUserEmail);
         VisitRequest visitRequest = getVisitRequest(visitRequestId);
 
-        validateIsAssignedAgent(visitRequest, currentUser);
+        validateCanRespondToVisitRequest(visitRequest, currentUser);
         validatePendingOrCounterProposed(visitRequest);
 
         visitRequest.setCounterProposedAt(request.counterProposedAt());
@@ -307,17 +307,25 @@ public class VisitRequestService {
                         .build()));
     }
 
-    private void validateIsAssignedAgent(VisitRequest visitRequest, User currentUser) {
+    private void validateCanRespondToVisitRequest(VisitRequest visitRequest, User currentUser) {
         if (currentUser.getRole() == UserRole.ADMIN) return;
 
-        AgentProfile myProfile = agentProfileRepository.findByUser_Id(currentUser.getId())
-                .orElseThrow(() -> new BadRequestException(
-                        "No tienes un perfil de agente asociado a tu cuenta"));
-
-        if (visitRequest.getAgent() == null
-                || !visitRequest.getAgent().getId().equals(myProfile.getId())) {
-            throw new BadRequestException("No eres el agente asignado a esta solicitud de visita");
+        if (visitRequest.getProperty().getOwner() != null
+                && visitRequest.getProperty().getOwner().getId().equals(currentUser.getId())) {
+            return;
         }
+
+        if (visitRequest.getAgent() != null) {
+            boolean isAssignedAgent = agentProfileRepository.findByUser_Id(currentUser.getId())
+                    .map(profile -> visitRequest.getAgent().getId().equals(profile.getId()))
+                    .orElse(false);
+
+            if (isAssignedAgent) {
+                return;
+            }
+        }
+
+        throw new BadRequestException("No puedes responder esta solicitud de visita");
     }
 
     private void validatePendingOrCounterProposed(VisitRequest visitRequest) {
