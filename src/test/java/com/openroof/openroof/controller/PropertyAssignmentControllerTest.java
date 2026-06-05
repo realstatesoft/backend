@@ -88,13 +88,14 @@ class PropertyAssignmentControllerTest {
                 id,
                 10L,
                 "Casa Norte",
+                "Calle 123",
+                "https://img.jpg",
                 20L,
                 30L,
                 "Agent",
                 40L,
                 "Owner",
                 status,
-                now,
                 now
         );
     }

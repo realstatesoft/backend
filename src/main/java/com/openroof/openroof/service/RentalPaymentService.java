@@ -60,7 +60,7 @@ public class RentalPaymentService {
                 .installment(installment)
                 .payer(payer)
                 .amount(amount)
-                .currency("PYG")
+                .currency(lease.getCurrency() != null ? lease.getCurrency() : "PYG")
                 .method(paymentMethod)
                 .status(LeasePaymentStatus.COMPLETED)
                 .type(LeasePaymentType.RENT)

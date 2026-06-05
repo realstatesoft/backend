@@ -4,6 +4,7 @@ import com.openroof.openroof.dto.screening.CreateScreeningRequest;
 import com.openroof.openroof.dto.screening.TenantScreeningResponse;
 import com.openroof.openroof.dto.screening.UpdateScreeningRequest;
 import com.openroof.openroof.exception.BadRequestException;
+import com.openroof.openroof.exception.ConflictException;
 import com.openroof.openroof.exception.ResourceNotFoundException;
 import com.openroof.openroof.mapper.TenantScreeningMapper;
 import com.openroof.openroof.model.rental.RentalApplication;
@@ -71,7 +72,7 @@ public class TenantScreeningService {
                         "RentalApplication", "id", applicationId));
 
         if (screeningRepository.existsByApplicationId(applicationId)) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Screening already exists for application " + applicationId);
         }
 
@@ -98,7 +99,7 @@ public class TenantScreeningService {
             saved = screeningRepository.saveAndFlush(screening);
         } catch (DataIntegrityViolationException ex) {
             log.debug("Concurrent screening insert for application={} rejected by UNIQUE constraint", applicationId);
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Screening already exists for application " + applicationId);
         }
         log.info("Created screening id={} provider={} for application={}",

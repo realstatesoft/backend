@@ -97,7 +97,7 @@ class TenantScreeningServiceTest {
     }
 
     @Test
-    void createScreening_concurrentRace_translatedToBadRequest() {
+    void createScreening_concurrentRace_translatedToConflict() {
         Long appId = 66L;
         RentalApplication app = RentalApplication.builder().build();
         app.setId(appId);
@@ -108,8 +108,8 @@ class TenantScreeningServiceTest {
                 .thenThrow(new org.springframework.dao.DataIntegrityViolationException(
                         "duplicate key value violates unique constraint"));
 
-        com.openroof.openroof.exception.BadRequestException ex = assertThrows(
-                com.openroof.openroof.exception.BadRequestException.class,
+        com.openroof.openroof.exception.ConflictException ex = assertThrows(
+                com.openroof.openroof.exception.ConflictException.class,
                 () -> service.createScreening(appId));
 
         org.junit.jupiter.api.Assertions.assertTrue(
@@ -118,14 +118,14 @@ class TenantScreeningServiceTest {
     }
 
     @Test
-    void createScreening_duplicate_throwsBadRequest() {
+    void createScreening_duplicate_throwsConflict() {
         Long appId = 55L;
         RentalApplication app = RentalApplication.builder().build();
         app.setId(appId);
         when(rentalApplicationRepository.findById(appId)).thenReturn(Optional.of(app));
         when(screeningRepository.existsByApplicationId(appId)).thenReturn(true);
 
-        assertThrows(com.openroof.openroof.exception.BadRequestException.class,
+        assertThrows(com.openroof.openroof.exception.ConflictException.class,
                 () -> service.createScreening(appId));
     }
 

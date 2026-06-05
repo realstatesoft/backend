@@ -4,6 +4,8 @@ import com.openroof.openroof.dto.rental.RentalInstallmentResponse;
 import com.openroof.openroof.model.enums.InstallmentStatus;
 import com.openroof.openroof.model.rental.Lease;
 import com.openroof.openroof.model.rental.RentalInstallment;
+import com.openroof.openroof.repository.LeasePaymentRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +23,16 @@ import static org.mockito.Mockito.when;
 @DisplayName("RentalInstallmentMapper — toResponse / toResponseList")
 class RentalInstallmentMapperTest {
 
-    private final RentalInstallmentMapper mapper = new RentalInstallmentMapper();
+    private LeasePaymentRepository leasePaymentRepository;
+    private RentalInstallmentMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        leasePaymentRepository = mock(LeasePaymentRepository.class);
+        when(leasePaymentRepository.findByInstallmentIdOrderByPaidAtDesc(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(List.of());
+        mapper = new RentalInstallmentMapper(leasePaymentRepository);
+    }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
 
