@@ -41,11 +41,11 @@ public class VisitRequestController {
                 .body(ApiResponse.ok(response, "Solicitud de visita creada"));
     }
 
-    // ─── ACCEPT (agent) ───────────────────────────────────────────
+    // ─── ACCEPT (agent/owner) ─────────────────────────────────────
 
     @PutMapping("/{id}/accept")
-    @PreAuthorize("hasAnyRole('AGENT','ADMIN')")
-    @Operation(summary = "Aceptar solicitud y confirmar visita (AGENT)")
+    @PreAuthorize("hasAnyRole('USER','AGENT','ADMIN')")
+    @Operation(summary = "Aceptar solicitud y confirmar visita (owner/agent)")
     public ResponseEntity<ApiResponse<VisitRequestResponse>> accept(
             @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             Principal principal) {
@@ -54,11 +54,11 @@ public class VisitRequestController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Solicitud aceptada. Visita confirmada"));
     }
 
-    // ─── REJECT (agent) ───────────────────────────────────────────
+    // ─── REJECT (agent/owner) ─────────────────────────────────────
 
     @PutMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('AGENT','ADMIN')")
-    @Operation(summary = "Rechazar solicitud de visita (AGENT)")
+    @PreAuthorize("hasAnyRole('USER','AGENT','ADMIN')")
+    @Operation(summary = "Rechazar solicitud de visita (owner/agent)")
     public ResponseEntity<ApiResponse<VisitRequestResponse>> reject(
             @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             Principal principal) {
@@ -67,11 +67,11 @@ public class VisitRequestController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Solicitud rechazada"));
     }
 
-    // ─── COUNTER PROPOSE (agent) ──────────────────────────────────
+    // ─── COUNTER PROPOSE (agent/owner) ────────────────────────────
 
     @PutMapping("/{id}/counter-propose")
-    @PreAuthorize("hasAnyRole('AGENT','ADMIN')")
-    @Operation(summary = "Proponer nuevo horario (AGENT)")
+    @PreAuthorize("hasAnyRole('USER','AGENT','ADMIN')")
+    @Operation(summary = "Proponer nuevo horario (owner/agent)")
     public ResponseEntity<ApiResponse<VisitRequestResponse>> counterPropose(
             @Parameter(description = "ID de la solicitud") @PathVariable Long id,
             @Valid @RequestBody CounterProposeRequest request,

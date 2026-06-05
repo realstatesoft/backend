@@ -266,7 +266,7 @@ class VisitRequestServiceTest {
             verify(visitRepository).save(visitCaptor.capture());
             assertThat(visitCaptor.getValue().getStatus()).isEqualTo(VisitStatus.CONFIRMED);
             assertThat(visitCaptor.getValue().getProperty().getId()).isEqualTo(property.getId());
-            verify(agentAgendaRepository, times(1)).save(any(AgentAgenda.class));
+            verify(agentAgendaRepository, times(2)).save(any(AgentAgenda.class));
         }
 
         @Test
@@ -304,7 +304,7 @@ class VisitRequestServiceTest {
             verify(agentClientRepository).save(any(AgentClient.class));
             verify(clientInteractionService, times(2))
                     .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
-            verify(agentAgendaRepository, times(1)).save(any(AgentAgenda.class));
+            verify(agentAgendaRepository, times(2)).save(any(AgentAgenda.class));
         }
 
         @Test
@@ -334,7 +334,37 @@ class VisitRequestServiceTest {
             verify(agentClientRepository, never()).save(any(AgentClient.class));
             verify(clientInteractionService)
                     .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), eq(proposedAt));
-            verify(agentAgendaRepository, times(1)).save(any(AgentAgenda.class));
+            verify(agentAgendaRepository, times(2)).save(any(AgentAgenda.class));
+        }
+
+        @Test
+        @DisplayName("Owner USER acepta solicitud directa sin agente y crea Visit")
+        void acceptByOwnerUserWithoutAgent_createsVisitAndMarksAccepted() {
+            Property directProperty = createProperty(77L, "Casa directa", ownerUser, null);
+            LocalDateTime proposedAt = fixedNow.plusDays(2);
+            VisitRequest visitRequest = createVisitRequest(88L, directProperty, buyerUser, null, proposedAt, VisitRequestStatus.PENDING);
+
+            when(userRepository.findByEmail("owner@openroof.com")).thenReturn(Optional.of(ownerUser));
+            when(visitRequestRepository.findById(88L)).thenReturn(Optional.of(visitRequest));
+            when(visitRepository.save(any(Visit.class))).thenAnswer(invocation -> {
+                Visit visit = invocation.getArgument(0);
+                visit.setId(99L);
+                return visit;
+            });
+            when(visitRequestRepository.save(visitRequest)).thenReturn(visitRequest);
+
+            VisitRequestResponse response = visitRequestService.accept(88L, "owner@openroof.com");
+
+            assertThat(response.status()).isEqualTo(VisitRequestStatus.ACCEPTED);
+            assertThat(response.visitId()).isEqualTo(99L);
+
+            ArgumentCaptor<Visit> visitCaptor = ArgumentCaptor.forClass(Visit.class);
+            verify(visitRepository).save(visitCaptor.capture());
+            assertThat(visitCaptor.getValue().getAgent()).isNull();
+            assertThat(visitCaptor.getValue().getStatus()).isEqualTo(VisitStatus.CONFIRMED);
+            verify(agentProfileRepository, never()).findByUser_Id(ownerUser.getId());
+            verify(clientInteractionService, never())
+                    .recordVisitConfirmed(anyLong(), anyLong(), anyLong(), any(LocalDateTime.class));
         }
     }
 
@@ -358,7 +388,7 @@ class VisitRequestServiceTest {
 
             assertThatThrownBy(() -> visitRequestService.counterPropose(3001L, request, "other-agent@openroof.com"))
                     .isInstanceOf(BadRequestException.class)
-                    .hasMessage("No eres el agente asignado a esta solicitud de visita");
+                    .hasMessage("No puedes responder esta solicitud de visita");
 
             verify(visitRequestRepository, never()).save(any());
         }
