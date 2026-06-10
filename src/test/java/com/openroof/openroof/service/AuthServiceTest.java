@@ -13,6 +13,7 @@ import com.openroof.openroof.repository.UserRepository;
 import com.openroof.openroof.repository.AgentProfileRepository;
 import com.openroof.openroof.model.agent.AgentProfile;
 import com.openroof.openroof.security.JwtService;
+import com.openroof.openroof.exception.BadRequestException;
 import com.openroof.openroof.security.AuthRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,11 +129,11 @@ class AuthServiceTest {
 
         assertNotNull(response);
         assertEquals("agent1@test.com", response.getEmail());
-        assertEquals("AGENT", response.getRole());
+        assertEquals("AGENT_PENDING", response.getRole());
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertEquals(UserRole.AGENT, captor.getValue().getRole());
+        assertEquals(UserRole.AGENT_PENDING, captor.getValue().getRole());
         ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
         verify(agentProfileRepository).save(profileCaptor.capture());
         assertEquals(captor.getValue(), profileCaptor.getValue().getUser());
@@ -178,13 +179,13 @@ class AuthServiceTest {
 
         assertNotNull(response);
         assertEquals("agent.pro@test.com", response.getEmail());
-        assertEquals("AGENT", response.getRole());
+        assertEquals("AGENT_PENDING", response.getRole());
 
         // Verificar que se guarde el usuario con role AGENT
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         User savedUser = userCaptor.getValue();
-        assertEquals(UserRole.AGENT, savedUser.getRole());
+        assertEquals(UserRole.AGENT_PENDING, savedUser.getRole());
         assertEquals("Agent Professional", savedUser.getName());
         assertEquals("agent.pro@test.com", savedUser.getEmail());
         assertEquals("+595981000004", savedUser.getPhone());
@@ -215,12 +216,12 @@ class AuthServiceTest {
 
         assertNotNull(response);
         assertEquals("simple@test.com", response.getEmail());
-        assertEquals("AGENT", response.getRole());
+        assertEquals("AGENT_PENDING", response.getRole());
 
         // Verificar que se guarde el usuario
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        assertEquals(UserRole.AGENT, userCaptor.getValue().getRole());
+        assertEquals(UserRole.AGENT_PENDING, userCaptor.getValue().getRole());
 
         // Verificar que se cree el AgentProfile básico
         ArgumentCaptor<AgentProfile> profileCaptor = ArgumentCaptor.forClass(AgentProfile.class);
@@ -305,6 +306,73 @@ class AuthServiceTest {
 
         verify(userSessionRepository).deleteByUser(user);
     }
+
+        @Test
+        void approveAgentRequest_adminApprovesPendingAgent() {
+        User admin = User.builder()
+            .email("admin@test.com")
+            .passwordHash("encoded")
+            .name("Admin")
+            .role(UserRole.ADMIN)
+            .build();
+
+        User pendingAgent = User.builder()
+            .email("pending-agent@test.com")
+            .passwordHash("encoded")
+            .name("Pending Agent")
+            .role(UserRole.AGENT_PENDING)
+            .build();
+        pendingAgent.setId(99L);
+
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(99L)).thenReturn(Optional.of(pendingAgent));
+
+        authService.approveAgentRequest(99L, "admin@test.com");
+
+        assertEquals(UserRole.AGENT, pendingAgent.getRole());
+        verify(userRepository).save(pendingAgent);
+        }
+
+        @Test
+        void rejectAgentRequest_adminRejectsPendingAgent() {
+        User admin = User.builder()
+            .email("admin@test.com")
+            .passwordHash("encoded")
+            .name("Admin")
+            .role(UserRole.ADMIN)
+            .build();
+
+        User pendingAgent = User.builder()
+            .email("pending-agent@test.com")
+            .passwordHash("encoded")
+            .name("Pending Agent")
+            .role(UserRole.AGENT_PENDING)
+            .build();
+        pendingAgent.setId(100L);
+
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(100L)).thenReturn(Optional.of(pendingAgent));
+
+        authService.rejectAgentRequest(100L, "admin@test.com");
+
+        assertEquals(UserRole.USER, pendingAgent.getRole());
+        verify(userRepository).save(pendingAgent);
+        }
+
+        @Test
+        void approveAgentRequest_nonAdminFails() {
+        User regularUser = User.builder()
+            .email("user@test.com")
+            .passwordHash("encoded")
+            .name("Regular User")
+            .role(UserRole.USER)
+            .build();
+
+        when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(regularUser));
+
+        assertThrows(BadRequestException.class,
+            () -> authService.approveAgentRequest(99L, "user@test.com"));
+        }
 
     private String hash(String value) {
         try {

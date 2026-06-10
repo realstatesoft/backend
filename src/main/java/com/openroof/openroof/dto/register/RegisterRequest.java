@@ -12,6 +12,8 @@ import jakarta.validation.constraints.Pattern;
 /**
  * Auth: Enrique Rios
  * Desc: DTO para la captura de datos en el registro de nuevos usuarios.
+ * Si role=AGENT, el backend registra la solicitud como AGENT_PENDING
+ * hasta aprobación administrativa.
  */
 @Data
 @Builder
@@ -31,6 +33,7 @@ public class RegisterRequest {
 
     private String phone;
 
+    // Valores esperados: USER o AGENT (AGENT queda en estado pendiente).
     @NotBlank(message = "El rol es obligatorio")
     private String role;
 }
