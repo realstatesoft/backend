@@ -157,6 +157,25 @@ mail:
 screening:
   provider: ${SCREENING_PROVIDER:INTERNAL}
 
+# ==================== PASARELA DE PAGOS ====================
+# Dev: MOCK (simula el contrato Bancard vPOS, confirma vía webhook propio).
+# Prod: PAYMENT_GATEWAY=BANCARD + BANCARD_BASE_URL=https://vpos.infonet.com.py + llaves del portal de comercios.
+payments:
+  gateway: ${PAYMENT_GATEWAY:MOCK}        # MOCK | BANCARD
+  bancard:
+    base-url: ${BANCARD_BASE_URL:https://vpos.infonet.com.py:8888}  # staging; prod = https://vpos.infonet.com.py
+    public-key: ${BANCARD_PUBLIC_KEY:}
+    private-key: ${BANCARD_PRIVATE_KEY:}
+  checkout:
+    return-url: ${PAYMENT_RETURN_URL:${FRONTEND_URL:http://localhost:5173}/payments/result}
+    cancel-url: ${PAYMENT_CANCEL_URL:${FRONTEND_URL:http://localhost:5173}/payments/cancelled}
+  mock:
+    webhook-url: ${PAYMENT_MOCK_WEBHOOK_URL:http://localhost:8080/api/payments/webhooks/bancard}
+    confirm-delay-ms: ${PAYMENT_MOCK_CONFIRM_DELAY_MS:2000}
+  reconciliation:
+    cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}   # cada 5 min
+    stale-after-minutes: ${PAYMENT_RECONCILIATION_STALE_MINUTES:10}
+
 ---
 # Developer profile: activate with -Dspring.profiles.active=dev
 spring:

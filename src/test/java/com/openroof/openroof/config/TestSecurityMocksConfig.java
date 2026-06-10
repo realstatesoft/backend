@@ -18,4 +18,11 @@ public class TestSecurityMocksConfig {
     public JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint() {
         return Mockito.mock(JwtAuthenticationEntryPoint.class);
     }
+
+    // AuthRateLimitingFilter (dependencia de SecurityConfig) lo requiere; los
+    // slices @WebMvcTest no escanean @Component planos.
+    @Bean
+    public com.openroof.openroof.security.AuthRateLimiter authRateLimiter() {
+        return Mockito.mock(com.openroof.openroof.security.AuthRateLimiter.class);
+    }
 }

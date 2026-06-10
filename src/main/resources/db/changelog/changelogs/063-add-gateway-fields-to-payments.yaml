@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 063-add-gateway-fields-to-payments
+      author: enrique
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gateway
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gateway_process_id
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gateway_authorization_number
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gateway_ticket_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gateway_response_code
+                  type: VARCHAR(5)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: checkout_started_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+        # Idempotencia por usuario: dos pagos del mismo usuario no pueden compartir key.
+        # NULLs no chocan entre sí en Postgres, así que los pagos sin key no se ven afectados.
+        - addUniqueConstraint:
+            tableName: payments
+            columnNames: user_id, idempotency_key
+            constraintName: uq_payments_user_idempotency_key
+        - createIndex:
+            indexName: idx_payments_gateway_process_id
+            tableName: payments
+            columns:
+              - column:
+                  name: gateway_process_id
+        - createIndex:
+            indexName: idx_payments_checkout_started_at
+            tableName: payments
+            columns:
+              - column:
+                  name: checkout_started_at

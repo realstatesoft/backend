@@ -48,6 +48,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Error en el servicio de almacenamiento"));
     }
 
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentGateway(PaymentGatewayException ex) {
+        log.error("Error de pasarela de pagos: ", ex);
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error("Error de comunicación con la pasarela de pagos"));
+    }
+
     @ExceptionHandler(InvalidConfigurationException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidConfiguration(InvalidConfigurationException ex) {
         log.error("Error de configuración interna: ", ex);

@@ -64,6 +64,20 @@ class UserSettingsControllerTest {
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(inv -> {
+            ((FilterChain) inv.getArgument(2)).doFilter(
+                    inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
+            ((FilterChain) inv.getArgument(2)).doFilter(
+                    inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(inv -> {
             ((jakarta.servlet.http.HttpServletResponse) inv.getArgument(1)).setStatus(401);
             return null;
         }).when(jwtAuthenticationEntryPoint).commence(any(), any(), any());
@@ -186,10 +200,18 @@ class UserSettingsControllerTest {
         @Test
         @DisplayName("Rol AGENT → 403")
         void agentRole_returns403() throws Exception {
+            // Body válido: el parseo/validación del body ocurre antes que @PreAuthorize,
+            // así que un body inválido devolvería 400 en lugar de 403.
+            String body = """
+                    {"notifyPriceDrop": true, "notifyNewMatch": true,
+                     "notifyMessages": true, "notifyChannel": "EMAIL",
+                     "profileVisibleToAgents": true, "allowDirectContact": true}
+                    """;
+
             mockMvc.perform(put(BASE)
                             .with(user("agent").roles("AGENT"))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content(body))
                     .andExpect(status().isForbidden());
         }
     }

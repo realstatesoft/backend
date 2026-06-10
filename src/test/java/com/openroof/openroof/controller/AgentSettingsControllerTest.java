@@ -195,10 +195,17 @@ class AgentSettingsControllerTest {
         @Test
         @DisplayName("Rol USER → 403")
         void userRole_returns403() throws Exception {
+            // Body válido: el parseo/validación del body ocurre antes que @PreAuthorize,
+            // así que un body inválido devolvería 400 en lugar de 403.
+            String body = """
+                    {"autoAssignLeads": true, "notifyNewLead": true,
+                     "notifyVisitRequest": true, "notifyNewOffer": true, "workRadiusKm": 50}
+                    """;
+
             mockMvc.perform(put(BASE)
                             .with(user("buyer").roles("USER"))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content(body))
                     .andExpect(status().isForbidden());
         }
     }

@@ -33,7 +33,7 @@ import com.openroof.openroof.security.PropertyViewRateLimitingFilter;
 import com.openroof.openroof.service.ExchangeRateService;
 
 @WebMvcTest(ExchangeRateController.class)
-@Import({SecurityConfig.class, JacksonConfig.class})
+@Import({SecurityConfig.class, JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class ExchangeRateControllerTest {
 
     @Autowired
@@ -88,7 +88,7 @@ class ExchangeRateControllerTest {
     void getExchangeRates_isPublic() throws Exception {
         when(exchangeRateService.getExchangeRates()).thenReturn(sampleAggregateResponse());
 
-        mockMvc.perform(get("/api/exchange-rates"))
+        mockMvc.perform(get("/exchange-rates"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.rates[0].currencyCode").value("USD"))
@@ -99,7 +99,7 @@ class ExchangeRateControllerTest {
     void getExchangeRate_byCurrency_returnsSingleRate() throws Exception {
         when(exchangeRateService.getExchangeRate("usd")).thenReturn(sampleUsdResponse());
 
-        mockMvc.perform(get("/api/exchange-rates/usd"))
+        mockMvc.perform(get("/exchange-rates/usd"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.currencyCode").value("USD"))
                 .andExpect(jsonPath("$.data.sellRate").value(new BigDecimal("6360")));
@@ -109,7 +109,7 @@ class ExchangeRateControllerTest {
     void getExchangeRate_brl_returnsSingleRate() throws Exception {
         when(exchangeRateService.getExchangeRate("brl")).thenReturn(sampleBrlResponse());
 
-        mockMvc.perform(get("/api/exchange-rates/brl"))
+        mockMvc.perform(get("/exchange-rates/brl"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.currencyCode").value("BRL"))
                 .andExpect(jsonPath("$.data.sellRate").value(new BigDecimal("1260")));

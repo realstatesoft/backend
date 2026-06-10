@@ -61,6 +61,7 @@ class PaymentControllerTest {
     @MockitoBean com.openroof.openroof.security.PropertyViewRateLimiter propertyViewRateLimiter;
     @MockitoBean PropertyViewRateLimitingFilter propertyViewRateLimitingFilter;
     @MockitoBean SecurityHeadersFilter securityHeadersFilter;
+    @MockitoBean com.openroof.openroof.security.AuthRateLimiter authRateLimiter;
 
     @BeforeEach
     void setupJwtFilterPassThrough() throws Exception {
@@ -71,6 +72,24 @@ class PaymentControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(invocation -> {

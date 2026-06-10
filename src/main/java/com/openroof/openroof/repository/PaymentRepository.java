@@ -39,4 +39,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.user.id = :userId AND p.status = :status AND p.createdAt >= :since")
     BigDecimal sumCompletedByUserSince(@Param("userId") Long userId, @Param("status") PaymentStatus status, @Param("since") LocalDateTime since);
 
+    @EntityGraph(attributePaths = "user")
+    Optional<Payment> findByUser_IdAndIdempotencyKey(Long userId, String idempotencyKey);
+
+    // Reconciliación: pagos con checkout iniciado que siguen sin confirmación de la pasarela
+    @EntityGraph(attributePaths = "user")
+    java.util.List<Payment> findByStatusAndGatewayProcessIdIsNotNullAndCheckoutStartedAtBefore(
+            PaymentStatus status, LocalDateTime before);
+
 }

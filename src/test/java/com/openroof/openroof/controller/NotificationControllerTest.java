@@ -53,7 +53,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(
         controllers = NotificationController.class,
-        properties = "spring.config.location=classpath:/notification-controller-test.yml"
+        properties = {
+                "spring.config.location=classpath:/notification-controller-test.yml",
+                // El yml de arriba reemplaza application.yml; ReservationProperties
+                // (@Validated, @NotNull) necesita estos valores para que el contexto cargue.
+                "openroof.reservation.ttl-hours=72",
+                "openroof.reservation.default-percent=1.00"
+        }
 )
 @Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class NotificationControllerTest {
@@ -95,6 +101,22 @@ class NotificationControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 
@@ -188,7 +210,8 @@ class NotificationControllerTest {
                             .with(user("user@test.com").roles("USER")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data", hasSize(2)));
+                    // El controller devuelve Page → el array vive en $.data.content
+                    .andExpect(jsonPath("$.data.content", hasSize(2)));
         }
 
     }

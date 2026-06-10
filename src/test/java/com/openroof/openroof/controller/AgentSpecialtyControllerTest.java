@@ -76,6 +76,22 @@ class AgentSpecialtyControllerTest {
             return null;
         }).when(jwtAuthFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 
     @Nested

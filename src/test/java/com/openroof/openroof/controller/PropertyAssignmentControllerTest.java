@@ -80,6 +80,22 @@ class PropertyAssignmentControllerTest {
             return null;
         }).when(jwtAuthFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
     }
 
     private PropertyAssignmentResponse sampleResponse(Long id, AssignmentStatus status) {
@@ -105,14 +121,16 @@ class PropertyAssignmentControllerTest {
     class AssignTests {
 
         @Test
-        @DisplayName("OWNER crea asignación y retorna 201")
+        @DisplayName("Propietario (rol USER) crea asignación y retorna 201")
         void assignWithOwner_returns201() throws Exception {
+            // No existe rol OWNER en UserRole: los propietarios son USER,
+            // y el endpoint exige hasRole('USER') or hasRole('ADMIN').
             AssignPropertyRequest request = new AssignPropertyRequest(20L);
             when(assignmentService.assign(eq(10L), any(AssignPropertyRequest.class), eq("owner@test.com")))
                     .thenReturn(sampleResponse(100L, AssignmentStatus.PENDING));
 
             mockMvc.perform(post("/properties/10/assignments")
-                            .with(user("owner@test.com").roles("OWNER"))
+                            .with(user("owner@test.com").roles("USER"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
@@ -122,12 +140,13 @@ class PropertyAssignmentControllerTest {
         }
 
         @Test
-        @DisplayName("USER sin rol OWNER/ADMIN recibe 403")
+        @DisplayName("AGENT sin rol USER/ADMIN recibe 403")
         void assignWithUser_returns403() throws Exception {
+            // El endpoint permite USER o ADMIN; un AGENT no puede asignar.
             AssignPropertyRequest request = new AssignPropertyRequest(20L);
 
             mockMvc.perform(post("/properties/10/assignments")
-                            .with(user("user@test.com").roles("USER"))
+                            .with(user("user@test.com").roles("AGENT"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());

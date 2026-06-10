@@ -39,8 +39,12 @@ public class PaymentController {
     })
     public ResponseEntity<ApiResponse<PaymentResponse>> create(
             @Valid @RequestBody PaymentRequest request,
+            @Parameter(description = "Clave de idempotencia opcional: reintentos con la misma key devuelven el pago original sin duplicar")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Principal principal) {
-        PaymentResponse response = paymentService.create(request, principal.getName());
+        PaymentResponse response = (idempotencyKey == null || idempotencyKey.isBlank())
+                ? paymentService.create(request, principal.getName())
+                : paymentService.create(request, principal.getName(), idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Pago registrado"));
     }

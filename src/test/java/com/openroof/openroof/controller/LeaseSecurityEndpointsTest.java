@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * controlador.
  */
 @WebMvcTest(controllers = { AuthController.class })
-@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class})
+@Import({SecurityConfig.class, com.openroof.openroof.config.JacksonConfig.class, com.openroof.openroof.test.SliceSecurityBeans.class})
 class LeaseSecurityEndpointsTest {
 
     @Autowired

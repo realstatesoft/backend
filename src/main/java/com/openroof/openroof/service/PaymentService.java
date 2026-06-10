@@ -78,12 +78,18 @@ public class PaymentService {
     public PaymentResponse create(PaymentRequest request, String currentUserEmail, String idempotencyKey) {
         User user = getUserByEmail(currentUserEmail);
         validateMetadata(request.type(), request.metadata());
-        if (idempotencyKey != null) {
-            String masked = idempotencyKey.length() > 4
-                    ? "..." + idempotencyKey.substring(idempotencyKey.length() - 4)
+        String normalizedKey = (idempotencyKey == null || idempotencyKey.isBlank()) ? null : idempotencyKey;
+        if (normalizedKey != null) {
+            String masked = normalizedKey.length() > 4
+                    ? "..." + normalizedKey.substring(normalizedKey.length() - 4)
                     : "****";
+            var existing = paymentRepository.findByUser_IdAndIdempotencyKey(user.getId(), normalizedKey);
+            if (existing.isPresent()) {
+                log.info("Pago ya registrado con idempotencyKey={}, se devuelve el existente (id={})",
+                        masked, existing.get().getId());
+                return toResponse(existing.get());
+            }
             log.info("Registrando pago con idempotencyKey={}", masked);
-            // TODO: validar idempotencyKey contra pagos previos cuando exista soporte en el modelo
         }
 
         Payment payment = Payment.builder()
@@ -94,6 +100,7 @@ public class PaymentService {
                 .amount(request.amount())
                 .transactionCode(UUID.randomUUID().toString())
                 .metadata(request.metadata())
+                .idempotencyKey(normalizedKey)
                 .build();
 
         return toResponse(paymentRepository.save(payment));

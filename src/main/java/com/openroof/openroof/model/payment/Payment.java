@@ -1,11 +1,13 @@
 package com.openroof.openroof.model.payment;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import com.openroof.openroof.common.BaseEntity;
+import com.openroof.openroof.model.enums.PaymentGatewayProvider;
 import com.openroof.openroof.model.enums.PaymentType;
 import com.openroof.openroof.model.enums.PaymentStatus;
 import com.openroof.openroof.model.user.User;
@@ -58,4 +60,28 @@ public class Payment extends BaseEntity{
 
     @Embedded
     private PaymentMetadata metadata;
+
+    // ─── Idempotencia (clave provista por el cliente vía header Idempotency-Key) ───
+    @Column(name = "idempotency_key", length = 255)
+    private String idempotencyKey;
+
+    // ─── Integración con pasarela (null = flujo manual admin) ───
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gateway", length = 20)
+    private PaymentGatewayProvider gateway;
+
+    @Column(name = "gateway_process_id", length = 50)
+    private String gatewayProcessId;
+
+    @Column(name = "gateway_authorization_number", length = 10)
+    private String gatewayAuthorizationNumber;
+
+    @Column(name = "gateway_ticket_number", length = 20)
+    private String gatewayTicketNumber;
+
+    @Column(name = "gateway_response_code", length = 5)
+    private String gatewayResponseCode;
+
+    @Column(name = "checkout_started_at")
+    private LocalDateTime checkoutStartedAt;
 }

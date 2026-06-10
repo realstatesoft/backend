@@ -1,0 +1,674 @@
+openapi: 3.0.3
+info:
+  title: OpenRoof — Payments API (subset curado para app móvil)
+  description: >
+    Subconjunto de la API del monolito OpenRoof relevante para pagos.
+    Generado leyendo el código fuente (junio 2026). El spec completo auto-generado
+    vive en {BASE}/v3/api-docs. Todas las respuestas JSON van envueltas en ApiResponse.
+  version: 1.0.0
+servers:
+  - url: https://openroof-backend.onrender.com/api
+    description: Dev (verificar URL vigente; configurar por entorno)
+  - url: http://localhost:8080/api
+    description: Local
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Payments
+  - name: Rental Installments
+  - name: Lease Payments
+  - name: Tenant Dashboard
+  - name: Subscriptions
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login (refresh token llega como cookie HttpOnly)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: inquilino1@openroof.com }
+                password: { type: string, example: Test1234! }
+      responses:
+        "200":
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/AuthResponse" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /payments:
+    post:
+      tags: [Payments]
+      summary: Crear pago de plataforma (queda PENDING)
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: >
+            Clave de idempotencia opcional (recomendado UUID v4). Reintentos con la
+            misma key devuelven el pago original sin duplicar (igual 201).
+          schema: { type: string, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRequest" }
+      responses:
+        "201":
+          description: Pago registrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/PaymentResponse" }
+        "400": { $ref: "#/components/responses/Error400Validation" }
+        "401": { $ref: "#/components/responses/Error401" }
+    get:
+      tags: [Payments]
+      summary: Listar todos los pagos (solo ADMIN)
+      parameters:
+        - { name: userId, in: query, schema: { type: integer, format: int64 } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/PaymentStatus" } }
+        - { $ref: "#/components/parameters/page" }
+        - { $ref: "#/components/parameters/size" }
+        - { $ref: "#/components/parameters/sort" }
+      responses:
+        "200": { $ref: "#/components/responses/PaymentPage" }
+        "403": { $ref: "#/components/responses/Error403" }
+
+  /payments/my:
+    get:
+      tags: [Payments]
+      summary: Mis pagos (paginado)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "OJO: REFUNDED no existe en PaymentStatus (error en Swagger viejo)"
+          schema: { $ref: "#/components/schemas/PaymentStatus" }
+        - { $ref: "#/components/parameters/page" }
+        - { $ref: "#/components/parameters/size" }
+        - { $ref: "#/components/parameters/sort" }
+      responses:
+        "200": { $ref: "#/components/responses/PaymentPage" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /payments/{id}:
+    get:
+      tags: [Payments]
+      summary: Detalle de un pago (dueño o ADMIN)
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200":
+          description: Pago encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/PaymentResponse" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /payments/{id}/approve:
+    post:
+      tags: [Payments]
+      summary: Aprobar pago (ADMIN). Dispara highlight/suscripción según type.
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200": { description: Pago aprobado }
+        "400": { description: No estaba PENDING o metadata incompleta }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /payments/{id}/reject:
+    post:
+      tags: [Payments]
+      summary: Rechazar pago (ADMIN)
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200": { description: Pago rechazado }
+        "400": { description: No estaba PENDING }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /payments/{id}/checkout:
+    post:
+      tags: [Payments]
+      summary: Iniciar checkout de pasarela (Bancard vPOS / mock en dev)
+      description: >
+        Solo el dueño del pago y solo si está PENDING. Devuelve el process_id para
+        levantar el iframe de pago con bancard-checkout-js y la URL del script del
+        ambiente activo. Repetir el checkout devuelve el mismo process_id.
+        El resultado final llega por webhook: consultar GET /payments/{id} para ver
+        el estado (COMPLETED o REJECTED).
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutRequest" }
+      responses:
+        "200":
+          description: Checkout iniciado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/CheckoutResponse" }
+        "400": { description: El pago no está en estado PENDING }
+        "403": { description: El pago pertenece a otro usuario }
+        "404": { $ref: "#/components/responses/Error404" }
+        "502": { description: Error de comunicación con la pasarela }
+
+  /payments/webhooks/bancard:
+    post:
+      tags: [Payment Webhooks]
+      summary: Webhook single_buy_confirm de Bancard vPOS (público)
+      description: >
+        Invocado por Bancard (o por el MockPaymentGateway en dev) al finalizar una
+        transacción. Verifica token = md5(private_key + shop_process_id + "confirm" +
+        amount + currency). Responde 200 SIEMPRE en <30s, incluso con token inválido
+        (en ese caso no aplica cambios; la reconciliación programada resuelve).
+        No requiere autenticación JWT y no usa el envoltorio ApiResponse.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BancardConfirmRequest" }
+      responses:
+        "200":
+          description: Confirmación recibida (siempre)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+
+  /leases/{id}/installments:
+    get:
+      tags: [Rental Installments]
+      summary: Cuotas de un contrato (paginado, default sort dueDate,desc, size 12)
+      parameters:
+        - { $ref: "#/components/parameters/id" }
+        - { $ref: "#/components/parameters/page" }
+        - { $ref: "#/components/parameters/size" }
+        - { $ref: "#/components/parameters/sort" }
+      responses:
+        "200":
+          description: Página de cuotas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: "#/components/schemas/Page"
+                          - type: object
+                            properties:
+                              content:
+                                type: array
+                                items: { $ref: "#/components/schemas/RentalInstallmentResponse" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /rentals/installments/{id}:
+    get:
+      tags: [Rental Installments]
+      summary: Detalle de una cuota
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200":
+          description: Cuota
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/RentalInstallmentResponse" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /rentals/installments/{id}/payments:
+    post:
+      tags: [Lease Payments]
+      summary: Registrar pago de cuota (idempotente vía header Idempotency-Key)
+      parameters:
+        - { $ref: "#/components/parameters/id" }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID único por intento de pago; reusar en retries. Si ya existe, devuelve el pago original sin duplicar.
+          schema: { type: string, example: "a3a4dc1e-7b5e-49a1-9d3e-2b8a9f0c1d22" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InstallmentPaymentRequest" }
+      responses:
+        "201":
+          description: Pago registrado (COMPLETED). Cuota pasa a PARTIAL o PAID.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/LeasePaymentResponse" }
+        "400":
+          description: Falta Idempotency-Key · cuota PAID/WAIVED · monto excede saldo · validación
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /rentals/installments/{id}/invoice.pdf:
+    get:
+      tags: [Lease Payments]
+      summary: Factura PDF de la cuota
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /rentals/payments/{id}/receipt.pdf:
+    get:
+      tags: [Lease Payments]
+      summary: Recibo PDF del pago
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /tenant/payments:
+    get:
+      tags: [Tenant Dashboard]
+      summary: Resumen de pagos del inquilino (totales, próxima cuota, historial)
+      responses:
+        "200":
+          description: Resumen
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/TenantPaymentsResponse" }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /subscription-plans:
+    get:
+      tags: [Subscriptions]
+      summary: Planes activos (público, paginado)
+      security: []
+      responses:
+        "200": { description: Página de SubscriptionPlanResponse }
+
+  /subscriptions/my/active:
+    get:
+      tags: [Subscriptions]
+      summary: Mi suscripción activa
+      responses:
+        "200":
+          description: Suscripción activa
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/SubscriptionResponse" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /subscriptions/{id}/cancel:
+    post:
+      tags: [Subscriptions]
+      summary: Cancelar mi suscripción
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses:
+        "200": { description: Cancelada }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    page:
+      name: page
+      in: query
+      schema: { type: integer, default: 0 }
+    size:
+      name: size
+      in: query
+      schema: { type: integer }
+    sort:
+      name: sort
+      in: query
+      schema: { type: string, example: "createdAt,desc" }
+
+  responses:
+    PaymentPage:
+      description: Página de pagos
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiResponse"
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Page"
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: "#/components/schemas/PaymentResponse" }
+    Error400Validation:
+      description: Validación fallida (data = mapa campo→mensaje)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiResponse" }
+    Error401: { description: No autenticado }
+    Error403: { description: Acceso denegado }
+    Error404: { description: No encontrado }
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string, nullable: true }
+        timestamp: { type: string, format: date-time }
+
+    Page:
+      type: object
+      description: Serialización VIA_DTO de Spring Data
+      properties:
+        page:
+          type: object
+          properties:
+            size: { type: integer }
+            number: { type: integer }
+            totalElements: { type: integer, format: int64 }
+            totalPages: { type: integer }
+
+    AuthResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        accessToken: { type: string }
+        refreshToken: { type: string, nullable: true, description: Siempre null en el body; viaja como cookie HttpOnly }
+        email: { type: string }
+        role: { type: string, example: USER }
+        agentProfileId: { type: integer, format: int64, nullable: true }
+
+    PaymentType:
+      type: string
+      enum: [RESERVATION, CONTRACT, PROPERTY_HIGHLIGHT, SUBSCRIPTION, OTHER]
+    PaymentStatus:
+      type: string
+      enum: [PENDING, APPROVED, COMPLETED, REJECTED]
+    InstallmentStatus:
+      type: string
+      enum: [PENDING, PARTIAL, PAID, OVERDUE, WAIVED, IN_DISPUTE]
+    LeasePaymentStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED, DISPUTED]
+    PaymentMethod:
+      type: string
+      enum: [ACH, CARD, CASH, BANK_TRANSFER, CHECK, OTHER]
+    LeasePaymentType:
+      type: string
+      enum: [RENT, LATE_FEE, DEPOSIT, APPLICATION_FEE, MAINTENANCE, OTHER]
+
+    PaymentMetadata:
+      type: object
+      nullable: true
+      properties:
+        propertyId: { type: integer, format: int64, nullable: true }
+        highlightDays: { type: integer, nullable: true }
+        subscriptionPlanId: { type: integer, format: int64, nullable: true }
+
+    PaymentGatewayProvider:
+      type: string
+      enum: [MOCK, BANCARD]
+
+    CheckoutRequest:
+      type: object
+      description: Body opcional; sin él se usan las URLs por defecto de configuración.
+      properties:
+        returnUrl: { type: string, maxLength: 255, nullable: true, example: "https://app.openroof.com/payments/result" }
+        cancelUrl: { type: string, maxLength: 255, nullable: true, example: "https://app.openroof.com/payments/cancelled" }
+
+    CheckoutResponse:
+      type: object
+      properties:
+        processId: { type: string, example: "i5fn*lx6niQel0QzWK1g" }
+        checkoutScriptUrl:
+          type: string
+          description: Script bancard-checkout-js del ambiente activo, para levantar el iframe con el processId.
+          example: "https://vpos.infonet.com.py:8888/checkout/javascript/dist/bancard-checkout-4.0.0.js"
+        gateway: { $ref: "#/components/schemas/PaymentGatewayProvider" }
+
+    BancardConfirmRequest:
+      type: object
+      required: [operation]
+      properties:
+        operation: { $ref: "#/components/schemas/BancardConfirmOperation" }
+
+    BancardConfirmOperation:
+      type: object
+      description: Elemento operation del single_buy_confirm (spec Bancard v1.23). Campos extra se ignoran.
+      properties:
+        token: { type: string, description: "md5(private_key + shop_process_id + \"confirm\" + amount + currency)" }
+        shop_process_id: { type: string, description: "ID del Payment. Puede llegar como número o string.", example: "873" }
+        response: { type: string, enum: [S, N] }
+        response_details: { type: string }
+        amount: { type: string, example: "350000.00" }
+        currency: { type: string, example: PYG }
+        authorization_number: { type: string, nullable: true, description: Solo si la transacción es aprobada. }
+        ticket_number: { type: string, nullable: true }
+        response_code:
+          type: string
+          description: "00 aprobada · 05 tarjeta inhabilitada · 12 transacción inválida · 15 tarjeta inválida · 51 fondos insuficientes"
+          example: "00"
+        response_description: { type: string }
+        extended_response_description: { type: string }
+
+    PaymentRequest:
+      type: object
+      required: [type, amount, concept]
+      properties:
+        type: { $ref: "#/components/schemas/PaymentType" }
+        amount:
+          type: number
+          minimum: 0.01
+          description: Máx. 10 enteros y 2 decimales. En PYG usar enteros.
+          example: 350000
+        concept: { type: string, maxLength: 255, example: "Suscripción Plan Agente Pro - junio 2026" }
+        metadata: { $ref: "#/components/schemas/PaymentMetadata" }
+
+    PaymentResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 873 }
+        userId: { type: integer, format: int64, example: 42 }
+        userName: { type: string, example: "María González" }
+        type: { $ref: "#/components/schemas/PaymentType" }
+        status: { $ref: "#/components/schemas/PaymentStatus" }
+        concept: { type: string }
+        transactionCode: { type: string, format: uuid }
+        amount: { type: number, example: 350000.00 }
+        metadata: { $ref: "#/components/schemas/PaymentMetadata" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    InstallmentPaymentRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, minimum: 0.01, example: 2500000 }
+        method:
+          type: string
+          nullable: true
+          description: "TRANSFER|BANK_TRANSFER→BANK_TRANSFER, CASH, CHECK, ACH, CARD; otro→OTHER"
+          example: TRANSFER
+        notes: { type: string, nullable: true, example: "Transferencia Ueno Bank, comprobante #45812" }
+
+    LeasePaymentResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 91 }
+        leaseId: { type: integer, format: int64, example: 500 }
+        installmentId: { type: integer, format: int64, nullable: true, example: 601 }
+        amount: { type: number, example: 2500000.00 }
+        currency: { type: string, example: PYG }
+        method: { $ref: "#/components/schemas/PaymentMethod" }
+        status: { $ref: "#/components/schemas/LeasePaymentStatus" }
+        type: { $ref: "#/components/schemas/LeasePaymentType" }
+        paidAt: { type: string, format: date-time, nullable: true }
+        receiptPdfUrl: { type: string, nullable: true }
+
+    RentalInstallmentResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 601 }
+        leaseId: { type: integer, format: int64, example: 500 }
+        installmentNumber: { type: integer, example: 3 }
+        amount: { type: number, example: 2500000.00 }
+        lateFeeAmount: { type: number, nullable: true, example: 125000.00 }
+        totalAmount: { type: number, example: 2625000.00 }
+        dueDate: { type: string, format: date, example: "2026-06-05" }
+        paidDate: { type: string, format: date, nullable: true }
+        status: { $ref: "#/components/schemas/InstallmentStatus" }
+        notes: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        currency: { type: string, example: PYG }
+        payments:
+          type: array
+          items: { $ref: "#/components/schemas/LeasePaymentResponse" }
+
+    NextInstallmentInfo:
+      type: object
+      properties:
+        installmentId: { type: integer, format: int64 }
+        installmentNumber: { type: integer }
+        totalAmount: { type: number }
+        paidAmount: { type: number }
+        balance: { type: number }
+        dueDate: { type: string, format: date }
+        status: { type: string }
+        daysUntilDue: { type: integer, format: int64 }
+        currency: { type: string, example: PYG }
+
+    TenantPaymentsResponse:
+      type: object
+      properties:
+        totalPaidYear: { type: number, example: 12500000.00 }
+        installmentsOnTime: { type: integer, format: int64 }
+        installmentsLate: { type: integer, format: int64 }
+        nextPayment: { $ref: "#/components/schemas/NextInstallmentInfo" }
+        installments:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              installmentNumber: { type: integer }
+              period: { type: string, example: "junio 2026" }
+              totalAmount: { type: number }
+              paidAmount: { type: number }
+              balance: { type: number }
+              status: { type: string }
+              dueDate: { type: string, format: date }
+              invoiceUrl: { type: string, nullable: true }
+              currency: { type: string }
+              payments:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer, format: int64 }
+                    method: { type: string }
+                    amount: { type: number }
+                    date: { type: string, format: date-time }
+                    receiptUrl: { type: string, nullable: true }
+                    currency: { type: string }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        currentPage: { type: integer }
+
+    SubscriptionPlanResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64, example: 2 }
+        name: { type: string, example: "Agente Pro" }
+        description: { type: string }
+        price: { type: number, example: 350000.00 }
+        durationMonths: { type: integer, example: 1 }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        userName: { type: string }
+        plan: { $ref: "#/components/schemas/SubscriptionPlanResponse" }
+        status: { type: string, example: ACTIVE }
+        paymentId: { type: integer, format: int64 }
+        startsAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }

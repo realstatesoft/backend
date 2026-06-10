@@ -73,6 +73,9 @@ class AgentProfileControllerTest {
     @MockitoBean
     private SecurityHeadersFilter securityHeadersFilter;
 
+    @MockitoBean(name = "leadSecurity")
+    private com.openroof.openroof.security.LeadSecurity leadSecurity;
+
     private static final String API_BASE = "/agents";
 
     @BeforeEach
@@ -84,6 +87,24 @@ class AgentProfileControllerTest {
             chain.doFilter(req, res);
             return null;
         }).when(jwtAuthenticationFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(propertyViewRateLimitingFilter).doFilter(
+                any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
+
+        doAnswer(invocation -> {
+            ServletRequest req = invocation.getArgument(0);
+            ServletResponse res = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(req, res);
+            return null;
+        }).when(securityHeadersFilter).doFilter(
                 any(ServletRequest.class), any(ServletResponse.class), any(FilterChain.class));
 
         doAnswer(invocation -> {
@@ -299,7 +320,7 @@ class AgentProfileControllerTest {
                     List.of(sampleSummary()), PageRequest.of(0, 10), 1
             );
 
-            when(agentProfileService.search(eq("Test"), any())).thenReturn(page);
+            when(agentProfileService.searchWithFilters(eq("Test"), any(), any(), any())).thenReturn(page);
 
             mockMvc.perform(get(API_BASE + "/search").param("q", "Test"))
                     .andExpect(status().isOk())
@@ -366,8 +387,20 @@ class AgentProfileControllerTest {
                     "New Company", null, null, null, null, null
             );
 
+            // El @PreAuthorize del update evalúa @leadSecurity.isAgentOwner(principal, #id),
+            // que espera el User del dominio como principal. El mock de LeadSecurity
+            // devuelve false por defecto → 403.
+            com.openroof.openroof.model.user.User agentUser =
+                    com.openroof.openroof.model.user.User.builder()
+                            .email("agent@test.com")
+                            .passwordHash("hash")
+                            .name("Agent")
+                            .role(com.openroof.openroof.model.enums.UserRole.AGENT)
+                            .build();
+            agentUser.setId(77L);
+
             mockMvc.perform(put(API_BASE + "/10")
-                            .with(user("agent").roles("AGENT"))
+                            .with(user(agentUser))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());

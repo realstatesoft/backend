@@ -246,6 +246,71 @@ class PaymentServiceTest {
     }
 
     @Nested
+    @DisplayName("create() con idempotencyKey")
+    class CreateWithIdempotencyKey {
+
+        private final PaymentRequest request = new PaymentRequest(
+                PaymentType.RESERVATION, new BigDecimal("500.00"), "Señal de reserva", null);
+
+        @Test
+        @DisplayName("Persiste la key en el pago nuevo")
+        void persistsIdempotencyKey() {
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(paymentRepository.findByUser_IdAndIdempotencyKey(1L, "key-abc-123"))
+                    .thenReturn(Optional.empty());
+            when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
+                Payment p = inv.getArgument(0);
+                p.setId(20L);
+                p.setCreatedAt(LocalDateTime.now());
+                p.setUpdatedAt(LocalDateTime.now());
+                return p;
+            });
+
+            service.create(request, "user@test.com", "key-abc-123");
+
+            ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+            verify(paymentRepository).save(captor.capture());
+            assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("key-abc-123");
+        }
+
+        @Test
+        @DisplayName("Si la key ya existe devuelve el pago original sin duplicar")
+        void returnsExistingPaymentOnRepeatedKey() {
+            Payment existing = buildPayment(30L, user, PaymentStatus.PENDING);
+            existing.setIdempotencyKey("key-abc-123");
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(paymentRepository.findByUser_IdAndIdempotencyKey(1L, "key-abc-123"))
+                    .thenReturn(Optional.of(existing));
+
+            PaymentResponse response = service.create(request, "user@test.com", "key-abc-123");
+
+            assertThat(response.id()).isEqualTo(30L);
+            assertThat(response.transactionCode()).isEqualTo("uuid-test-30");
+            verify(paymentRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Key en blanco se ignora: crea el pago sin consultar duplicados")
+        void blankKeyIsIgnored() {
+            when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
+            when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
+                Payment p = inv.getArgument(0);
+                p.setId(21L);
+                p.setCreatedAt(LocalDateTime.now());
+                p.setUpdatedAt(LocalDateTime.now());
+                return p;
+            });
+
+            service.create(request, "user@test.com", "   ");
+
+            verify(paymentRepository, never()).findByUser_IdAndIdempotencyKey(anyLong(), any());
+            ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+            verify(paymentRepository).save(captor.capture());
+            assertThat(captor.getValue().getIdempotencyKey()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("getById()")
     class GetById {
 

@@ -123,15 +123,17 @@ class ContractControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /{id}/status - Cambiar estado con USER debe fallar con 403")
-    void updateStatus_withUser_returns403() throws Exception {
+    // El endpoint permite USER por diseño (@PreAuthorize hasAnyRole USER/AGENT/ADMIN):
+    // un comprador participa del contrato; la autorización fina la hace el service.
+    @DisplayName("PATCH /{id}/status - Cambiar estado con USER está permitido (autorización fina en service)")
+    void updateStatus_withUser_returns200() throws Exception {
         ContractStatusUpdateRequest request = new ContractStatusUpdateRequest(ContractStatus.SENT);
 
         mockMvc.perform(patch("/contracts/1/status")
                         .with(user("buyer").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

@@ -64,8 +64,17 @@ class AuthControllerTest {
     @MockitoBean
     private SecurityHeadersFilter securityHeadersFilter;
 
+    // AuthRateLimitingFilter (real en el slice por ser @Component Filter) necesita este bean
+    @MockitoBean
+    private com.openroof.openroof.security.AuthRateLimiter authRateLimiter;
+
     @BeforeEach
     void setUp() throws Exception {
+        // El mock devuelve false por defecto y el filtro respondería 429
+        when(authRateLimiter.isLoginAllowedForIp(any())).thenReturn(true);
+        when(authRateLimiter.isRegisterAllowedForIp(any())).thenReturn(true);
+        when(authRateLimiter.isRefreshAllowedForIp(any())).thenReturn(true);
+
         doAnswer(invocation -> {
             ServletRequest request = invocation.getArgument(0);
             ServletResponse response = invocation.getArgument(1);

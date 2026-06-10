@@ -95,6 +95,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/preferences/options").permitAll()
                                                 // Catálogo público de planes de suscripción
                                                 .requestMatchers(new org.springframework.security.web.util.matcher.RegexRequestMatcher("^/subscription-plans$|^/subscription-plans/\\d+$", "GET")).permitAll()
+                                                // Webhook de confirmación de Bancard vPOS (la verificación es por token md5 en el body)
+                                                .requestMatchers(HttpMethod.POST, "/payments/webhooks/bancard").permitAll()
                                                 // Endpoints públicos de alquileres (catálogo)
                                                 .requestMatchers(HttpMethod.GET, "/leases/public/**").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/leases/*/sign").permitAll()

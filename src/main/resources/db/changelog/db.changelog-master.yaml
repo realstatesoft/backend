@@ -223,4 +223,8 @@ databaseChangeLog:
   - include:
       file: changelogs/059-add-notes-to-lease-payments.yaml
       relativeToChangelogFile: true
+  # Payment Gateway (Bancard vPOS) - DB Migrations
+  - include:
+      file: changelogs/063-add-gateway-fields-to-payments.yaml
+      relativeToChangelogFile: true
 

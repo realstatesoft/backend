@@ -56,11 +56,16 @@ class LeadControllerTest {
     @MockitoBean
     private LeadSecurity leadSecurity;
 
-    private static final String API_BASE = "/api/leads";
+    // MockMvc no aplica server.servlet.context-path (/api), las rutas van sin prefijo
+    private static final String API_BASE = "/leads";
 
     @BeforeEach
     void setup() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        // Sin springSecurity() el SecurityContext nunca se puebla y los @PreAuthorize
+        // fallan con AuthenticationCredentialsNotFoundException → 500.
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
     }
 
     private LeadResponse sampleLeadResponse() {
@@ -205,10 +210,10 @@ class LeadControllerTest {
     class GetLeadsByAgentTests {
 
         @Test
-        @DisplayName("Obtener leads sin autenticación → 403")
-        void getLeadsByAgent_unauthenticated_returns403() throws Exception {
+        @DisplayName("Obtener leads sin autenticación → 401")
+        void getLeadsByAgent_unauthenticated_returns401() throws Exception {
             mockMvc.perform(get(API_BASE + "/agent/10"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -235,10 +240,10 @@ class LeadControllerTest {
     class GetLeadByIdTests {
 
         @Test
-        @DisplayName("Obtener lead sin autenticación → 403")
-        void getById_unauthenticated_returns403() throws Exception {
+        @DisplayName("Obtener lead sin autenticación → 401")
+        void getById_unauthenticated_returns401() throws Exception {
             mockMvc.perform(get(API_BASE + "/1"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -274,10 +279,10 @@ class LeadControllerTest {
     class CountByAgentTests {
 
         @Test
-        @DisplayName("Contar leads sin autenticación → 403")
-        void countByAgent_unauthenticated_returns403() throws Exception {
+        @DisplayName("Contar leads sin autenticación → 401")
+        void countByAgent_unauthenticated_returns401() throws Exception {
             mockMvc.perform(get(API_BASE + "/agent/10/count"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
